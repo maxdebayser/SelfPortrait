@@ -20,4 +20,29 @@ struct Select<true, U, V>
 	typedef U result;
 };
 
+
+namespace comparable_impl {
+
+	typedef char no;
+	typedef char yes[2];
+
+	template<class T>
+	no operator==( T const&, T const& );
+
+	yes& test_eq( bool );
+	no test_eq( no );
+
+	template<typename T>
+	struct test {
+		static T const& t1;
+		static T const& t2;
+		static bool const value = sizeof( test_eq(t1 == t2) ) == sizeof( yes );
+	};
+
+}
+
+template<typename T>
+struct comparable {
+	enum { value = comparable_impl::test<T>::value };
+};
 #endif

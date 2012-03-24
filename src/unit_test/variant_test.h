@@ -8,9 +8,12 @@ class VariantTestSuite : public CxxTest::TestSuite
 {
 public:
 	
+	// test methods must begin with "test", otherwise cxxtestgen ignores them
+
 	void testInvalid();
 	void testValue();
-	void testConversions();	
+	void testConversions();
+	void testNonCopyable();
 };
 
 

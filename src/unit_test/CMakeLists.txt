@@ -18,7 +18,7 @@ endforeach()
 add_custom_command(
 	OUTPUT runner.cpp
 	COMMAND cxxtestgen --error-printer --have-eh --have-std -o runner.cpp "${HEADER_FILES}"
-	DEPENDS ${HEADERS}
+	DEPENDS ${HEADER_FILES}
 )
 
 add_executable(unit_test ${HEADERS} ${SOURCES} runner.cpp)

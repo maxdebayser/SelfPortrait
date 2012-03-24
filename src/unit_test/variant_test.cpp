@@ -1,7 +1,9 @@
 #include "variant_test.h"
 
+#include <iostream>
 #include <string>
 using namespace std;
+
 
 
 void VariantTestSuite::testInvalid() {
@@ -49,4 +51,29 @@ void VariantTestSuite::testConversions() {
 	TS_ASSERT_EQUALS(v2.convertTo<int>(), 1);
 	TS_ASSERT_EQUALS(v2.convertTo<char>(), 1);
 	TS_ASSERT_DELTA(v2.convertTo<float>(), 1.23, 0.0001);	
+
+}
+
+struct NonCopyable {
+
+	NonCopyable(int i) : m_i(i) {}
+
+	NonCopyable(const NonCopyable&) = delete;
+	NonCopyable(NonCopyable&&) = delete;
+	NonCopyable& operator=(const NonCopyable&) = delete;
+	NonCopyable& operator=(NonCopyable&&) = delete;
+
+	int m_i;
+};
+
+
+void VariantTestSuite::testNonCopyable()
+{
+	VariantValue v1;
+	v1.construct<NonCopyable>(2);
+
+	NonCopyable& ref = v1.convertTo<NonCopyable&>();
+
+	TS_ASSERT_EQUALS(ref.m_i, 2);
+
 }

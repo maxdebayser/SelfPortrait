@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <typeinfo>
 #include <string>
+#include <utility>
 
 #include "str_conversion.h"
 #include "typeutils.h"
@@ -125,82 +126,135 @@ public:
 
 template <class T>
 class ValueHolder: public IValueHolder {
+
+	template<class Dummy,bool OK>
+	struct CloneHelper {
+		static IValueHolder* clone(const ValueHolder* holder) {
+			return new ValueHolder(holder->m_value);
+		}
+	};
+
+	template<class Dummy>
+	struct CloneHelper<Dummy, false> {
+		static IValueHolder* clone(const ValueHolder*) {
+			throw std::runtime_error("type has no copy constructor");
+		}
+	};
+
+	typedef CloneHelper<T, ::std::is_constructible<T, T>::value> Cloner;
+
+
+	template<class U,bool OK>
+	struct CompareHelper {
+		static bool equal(const U& u1, const U& u2) {
+			return u1 == u2;
+		}
+	};
+
+	template<class U>
+	struct CompareHelper<U, false> {
+		static bool equal(const U& u1, const U& u2) {
+			throw std::runtime_error("no equality operator exists for type");
+		}
+	};
+
+	typedef CompareHelper<T, comparable<T>::value> Compare;
+
+
 public:
 	typedef T ValueType;
-	
-	constexpr ValueHolder(ValueType value) : m_value(value) {}
-	
+
+	template<class... Args>
+	ValueHolder(Args&&... args) : m_value(*reinterpret_cast<ValueType*>(m_buffer)) {
+		new(m_buffer) ValueType( ::std::forward<Args>(args)...);
+	}
+
+	~ValueHolder() noexcept{
+		m_value.~ValueType();
+	}
+
 	ValueHolder(const ValueHolder&) = delete;
 	ValueHolder& operator=(ValueHolder) = delete;
-	
+
 	IValueHolder* clone() const override {
-			return new ValueHolder(m_value);
+		return Cloner::clone(this);
 	}
-	
+
 	virtual bool equals(const IValueHolder* rhs) const override {
 		auto that = dynamic_cast<const ValueHolder*>(rhs);
 		if (that != nullptr) {
-			return m_value == that->m_value;
+			return Compare::equal(m_value, that->m_value);
 		}
 		return false;
 	}
-		
+
 	const void * ptrToValue() const override {
 		return reinterpret_cast<const void*>(&m_value);
 	}
-	
+
 	void * ptrToValue() override {
 		return reinterpret_cast<void*>(&m_value);
 	}
-	
+
 	virtual const ::std::type_info& typeId() const override {
 		return typeid(ValueType);
 	}
-	
+
 	virtual ::std::size_t sizeOf() const override {
 		return sizeof(ValueType);
 	}
-	
+
 	virtual ::std::size_t alignOf() const override {
 		return alignof(ValueType);
 	}
-	
+
 	virtual bool isPOD() const {
 		return ::std::is_pod<ValueType>::value;
 	}
-	
+
 	virtual bool isIntegral() const override {
 		return ::std::is_integral<ValueType>::value;
 	}
-	
+
 	virtual bool isFloatingPoint() const override {
 		return ::std::is_floating_point<ValueType>::value;
 	}
-	
+
 	virtual bool isPointer() const override {
 		return ::std::is_pointer<ValueType>::value;
 	}
-	
+
 	virtual bool isStdString() const {
 		return ::std::is_same< ::std::string, ValueType>::value;
 	}
-	
+
 	virtual ::std::string convertToString() const override {
 			return ::std::move(toString(m_value));
 	}
-	
+
 	virtual number_conversion::dst_int_t convertToInteger() const override {
 		return ::convertToInteger(m_value);
 	}
-	
+
 	// convert to largest floating point type
 	virtual number_conversion::dst_float_t convertToFloatingPoint() const override {
 		return ::convertToFloatingPoint(m_value);
 	}
-		
+
 private:
-	ValueType m_value;
+	/*alignas(ValueType) char m_buffer[sizeof(ValueType)]*/
+
+	// Ugly hack until g++ supports alignas
+	union align_hack {
+		char c[sizeof(ValueType)];
+		typename ::std::aligned_storage<sizeof(ValueType), alignof(ValueType)>::type placeholder;
+	} m_hack;
+
+	char* m_buffer = m_hack.c;
+
+	ValueType& m_value;
 };
+
 
 // A variant value contains a value type by value
 class VariantValue {
@@ -209,8 +263,14 @@ public:
 	VariantValue() : m_impl() {}
 	
 	template<class ValueType>
-	VariantValue(ValueType t) :	m_impl(new ValueHolder<ValueType>(t)) {}
-		
+	VariantValue(ValueType t) : m_impl(new ValueHolder<ValueType>(t)) {}
+
+	template<class ValueType, class... Args>
+	VariantValue& construct(Args&&... args) {
+		m_impl = ::std::unique_ptr<ValueHolder<ValueType>>(new ValueHolder<ValueType>( ::std::forward<Args>(args)... ));
+		return *this;
+	}
+
 	VariantValue(const VariantValue& rhs) : m_impl(rhs.m_impl->clone()) {}
 	
 	VariantValue(VariantValue&& rhs) : m_impl(::std::move(rhs.m_impl)) {}
