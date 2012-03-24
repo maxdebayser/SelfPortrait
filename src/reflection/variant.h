@@ -124,6 +124,7 @@ public:
 };
 
 
+
 template <class T>
 class ValueHolder: public IValueHolder {
 
@@ -468,14 +469,14 @@ private:
 };
 
 inline bool operator==(const VariantValue& v1, const VariantValue& v2) {
-	
+
 	if ((v1.isValid() == false) && (v2.isValid() == false)) {
 		return true;
 	}
 	if ((v1.isValid() == false) || (v2.isValid() == false)) {
 		return false;
 	}
-	
+
 	if (v1.isArithmetical() && v2.isArithmetical()) {
 		if (v1.isIntegral() && v2.isIntegral()) {
 			return v1.m_impl->convertToInteger() == v2.m_impl->convertToInteger();

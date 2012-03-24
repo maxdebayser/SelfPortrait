@@ -10,6 +10,9 @@ set(LIBS
 	reflection
 )
 
+add_definitions(-D_CXXTEST_HAVE_STD -D_CXXTEST_HAVE_EH)
+
+
 set(HEADER_FILES)
 foreach(header ${HEADERS})
 	list(APPEND HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${header}")

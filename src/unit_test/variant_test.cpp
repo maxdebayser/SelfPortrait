@@ -4,8 +4,6 @@
 #include <string>
 using namespace std;
 
-
-
 void VariantTestSuite::testInvalid() {
 	VariantValue v;
 	TS_ASSERT(!v.isValid());
@@ -75,5 +73,10 @@ void VariantTestSuite::testNonCopyable()
 	NonCopyable& ref = v1.convertTo<NonCopyable&>();
 
 	TS_ASSERT_EQUALS(ref.m_i, 2);
+	TS_ASSERT_THROWS(VariantValue v2(v1), std::runtime_error);
+
+	VariantValue v3;
+	v3.construct<NonCopyable>(3);
+	TS_ASSERT_THROWS(bool b = (v1 == v3), std::runtime_error);
 
 }
