@@ -14,6 +14,7 @@ public:
 	void testValue();
 	void testConversions();
 	void testNonCopyable();
+	void testBaseConversion();
 };
 
 

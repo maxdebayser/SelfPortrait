@@ -20,6 +20,12 @@ void VariantTestSuite::testValue() {
 	
 	VariantValue v3("hello");
 	TS_ASSERT_EQUALS(v3.value<const char*>(), "hello");
+
+	VariantValue v4(3);
+	TS_ASSERT_EQUALS(v1,v4);
+
+	VariantValue v5 = v4;
+	TS_ASSERT_EQUALS(v5,v4);
 }
 
 void VariantTestSuite::testConversions() {
@@ -79,4 +85,63 @@ void VariantTestSuite::testNonCopyable()
 	v3.construct<NonCopyable>(3);
 	TS_ASSERT_THROWS(bool b = (v1 == v3), std::runtime_error);
 
+}
+
+namespace {
+	class Base {
+	public:
+
+		Base(double n) : d(n) {}
+		~Base() {}
+
+		virtual int method2() const = 0;
+		virtual double method1() const {
+			return d;
+		}
+
+		void setD(double e) { d = e; }
+
+		Base(const Base&) = delete;
+		Base& operator=(const Base&) = delete;
+		Base(Base&&) = delete;
+		Base& operator=(Base&&) = delete;
+	private:
+		double d;
+	};
+
+	class Derived: public Base {
+	public:
+		Derived() : Base(3.14), i(9) {}
+
+		int method2() const {
+			return i;
+		}
+	private:
+		int i;
+	};
+}
+
+void VariantTestSuite::testBaseConversion()
+{
+	VariantValue v1;
+	v1.construct<Derived>();
+
+	bool success = false;
+	Derived& dref = v1.convertTo<Derived&>(&success);
+
+	TS_ASSERT(success);
+
+	TS_ASSERT_EQUALS(dref.method2(), 9);
+	TS_ASSERT_EQUALS(dref.method1(), 3.14);
+
+	success = false;
+	Base& bref = v1.convertTo<Base&>(&success);
+	TS_ASSERT(success);
+
+	TS_ASSERT_EQUALS(bref.method2(), 9);
+	TS_ASSERT_EQUALS(bref.method1(), 3.14);
+
+	bref.setD(5.3);
+	TS_ASSERT_EQUALS(dref.method1(), 5.3);
+	TS_ASSERT_EQUALS(bref.method1(), 5.3);
 }

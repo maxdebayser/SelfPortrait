@@ -45,4 +45,21 @@ template<typename T>
 struct comparable {
 	enum { value = comparable_impl::test<T>::value };
 };
+
+template<class T>
+struct strip_reference {
+	typedef T type;
+};
+
+template<class T>
+struct strip_reference<T&> {
+	typedef T type;
+};
+
+
+template<class T>
+struct strip_reference<const T&> {
+	typedef T type;
+};
+
 #endif

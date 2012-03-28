@@ -3,7 +3,11 @@
 
 #include <memory>
 #include <stdexcept>
+
+#ifndef NO_RTTI
 #include <type_traits>
+#endif
+
 #include <typeinfo>
 #include <string>
 #include <utility>
@@ -65,6 +69,7 @@ namespace number_conversion {
 	};
 }
 
+
 template<class T>
 constexpr bool convertibleToInteger() {
 		return ::std::is_arithmetic<T>::value || ::std::is_convertible<T, ::number_conversion::dst_int_t>::value || ::std::is_same<T, ::std::string>::value || ::std::is_same<T, const char *>::value;
@@ -95,7 +100,9 @@ public:
 	
 	virtual void * ptrToValue() = 0;
 	
+#ifndef NO_RTTI
 	virtual const ::std::type_info& typeId() const = 0;
+#endif
 	
 	virtual ::std::size_t sizeOf() const = 0;
 	
@@ -110,6 +117,8 @@ public:
 	virtual bool isPointer() const = 0;
 	
 	virtual bool isStdString() const = 0;
+
+	virtual void throwCast() const = 0;
 	
 	virtual ::std::string convertToString() const = 0;
 	
@@ -182,9 +191,12 @@ public:
 	}
 
 	virtual bool equals(const IValueHolder* rhs) const override {
-		auto that = dynamic_cast<const ValueHolder*>(rhs);
-		if (that != nullptr) {
-			return Compare::equal(m_value, that->m_value);
+		if (rhs != nullptr) {
+			try {
+				rhs->throwCast();
+			} catch (ValueType* ptr) {
+				return Compare::equal(m_value, *ptr);
+			} catch (...) {}
 		}
 		return false;
 	}
@@ -196,11 +208,11 @@ public:
 	void * ptrToValue() override {
 		return reinterpret_cast<void*>(&m_value);
 	}
-
+#ifndef NO_RTTI
 	virtual const ::std::type_info& typeId() const override {
 		return typeid(ValueType);
 	}
-
+#endif
 	virtual ::std::size_t sizeOf() const override {
 		return sizeof(ValueType);
 	}
@@ -242,6 +254,10 @@ public:
 		return ::convertToFloatingPoint(m_value);
 	}
 
+	virtual void throwCast() const {
+		throw &m_value;
+	}
+
 private:
 	/*alignas(ValueType) char m_buffer[sizeof(ValueType)]*/
 
@@ -255,6 +271,7 @@ private:
 
 	ValueType& m_value;
 };
+
 
 
 // A variant value contains a value type by value
@@ -294,29 +311,25 @@ public:
 	
 	template<class ValueType>
 	bool isA() const {
-		if (isValid()) {
-			return (typeid(ValueType) == m_impl->typeId());
-		}
-		return false;
+		return (isValid() && (isAPriv<ValueType>() != nullptr));
 	}
 	
 private:
+
 	template<class ValueType>
-	struct directConversion {
-		static ValueType value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
-			if (success != nullptr) *success = true;
-			return *reinterpret_cast<const ValueType*>(holder->ptrToValue());
+	typename strip_reference<ValueType>::type* isAPriv() const {
+		if (isValid()) {
+			try {
+				m_impl->throwCast();
+			} catch(typename strip_reference<ValueType>::type* ptr) {
+				return ptr;
+			} catch (...) {
+				return nullptr;
+			}
 		}
-	};
-	
-	template<class ValueType>
-	struct directConversion<ValueType&> {
-		static ValueType& value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
-			if (success != nullptr) *success = true;
-			return *reinterpret_cast<ValueType*>(holder->ptrToValue());
-		}
-	};
-	
+		return nullptr;
+	}
+
 	template<class ValueType>
 	struct integralConversion {
 		static ValueType value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
@@ -362,19 +375,24 @@ public:
 	
 	template<class ValueType>
 	ValueType value() const {
-		if (!isA<ValueType>()) {
+
+		auto ptr = isAPriv<ValueType>();
+
+		if (ptr == nullptr) {
 			throw ::std::runtime_error("variant value is not of the requested type");
 		}
-		return directConversion<ValueType>::value(m_impl, nullptr);
+		return *ptr;
 	}
 	
 	template<class ValueType>
 	ValueType convertTo(bool * success = nullptr) const {
 		check_valid();
+
+		auto ptr = isAPriv<ValueType>();
 		
-		if (isA<ValueType>()) {
+		if (ptr != nullptr) {
 			if (success != nullptr) * success = true;
-			return value<ValueType>();		
+			return *ptr;
 		}
 		
 		return Select< ::std::is_integral<ValueType>::value,
@@ -387,7 +405,7 @@ public:
 	}
 	
 	// checks if a conversion is supported
-	// Even if this method return true, the conversion can fail
+	// Even if this method returns true, the conversion can fail
 	// For example a string can be converted to int if it contains a number
 	template<class ValueType>
 	bool mayConvertTo() const {
@@ -405,11 +423,12 @@ public:
 	}
 	
 	bool isValid() const { return m_impl.get() != nullptr; }
-	
+#ifndef NO_RTTI
 	const ::std::type_info& typeId() const {
 		check_valid();
 		return m_impl->typeId();
 	}
+#endif
 	
 	// Is a Plain-Old-Datatype (can be memcpy'd)
 	bool isStdString() const {
