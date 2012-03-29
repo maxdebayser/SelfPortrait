@@ -1,7 +1,6 @@
 #ifndef METHOD_H
 #define METHOD_H
 
-#include "object.h"
 #include "typelist.h"
 #include "variant.h"
 #include "function.h"
@@ -187,10 +186,10 @@ public:
 	virtual bool isVolatile() const = 0;
 	virtual bool isStatic() const = 0;	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(Object& object, const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(const Object& object, const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(volatile Object& object, const ::std::vector<VariantValue>& args) const = 0;	
-	virtual VariantValue call(const volatile Object& object, const ::std::vector<VariantValue>& args) const = 0;
+	virtual VariantValue call(VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
+	virtual VariantValue call(const VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
+	virtual VariantValue call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
+	virtual VariantValue call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
 	
 	AbstractMethodImpl(const AbstractMethodImpl&) = delete;
 	AbstractMethodImpl(AbstractMethodImpl&&) = delete;
@@ -224,50 +223,45 @@ public:
 		throw ::std::runtime_error("cannnot call non-static method withtout object");
 	}
 	
-	virtual VariantValue call(Object& object, const ::std::vector<VariantValue>& args) const {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
+	virtual VariantValue call(VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		bool success = false;
+		Clazz& ref = object.convertTo<Clazz&>(&success);
 		
-		ObjectImpl<Clazz>* objectI = dynamic_cast<ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
+		if (!success) {
 			throw ::std::runtime_error("method called with wrong type of object");
 		}
-		return MDescr::call(*(objectI->object()), m_ptr, args);
+		return MDescr::call(ref, m_ptr, args);
 	}
 		
-	virtual VariantValue call(const Object& object, const ::std::vector<VariantValue>& args) const {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
-		
-		const ObjectImpl<Clazz>* objectI = dynamic_cast<const ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
+	virtual VariantValue call(const VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		bool success = false;
+		const Clazz& ref = object.convertTo<const Clazz&>(&success);
+
+		if (!success) {
 			throw ::std::runtime_error("method called with wrong type of object");
-		}		
-		return MDescr::call(*(objectI->object()), m_ptr, args);
+		}
+		return MDescr::call(ref, m_ptr, args);
 	}
 	
 
-	virtual VariantValue call(volatile Object& object, const ::std::vector<VariantValue>& args) const {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
-		
-		volatile ObjectImpl<Clazz>* objectI = dynamic_cast<volatile ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
+	virtual VariantValue call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		bool success = false;
+		volatile Clazz& ref = object.convertTo<volatile Clazz&>(&success);
+
+		if (!success) {
 			throw ::std::runtime_error("method called with wrong type of object");
-		}		
-		return MDescr::call(*(objectI->object()), m_ptr, args);
+		}
+		return MDescr::call(ref, m_ptr, args);
 	}
 	
-	virtual VariantValue call(const volatile Object& object, const ::std::vector<VariantValue>& args) const {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
-		
-		const volatile ObjectImpl<Clazz>* objectI = dynamic_cast<const volatile ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
+	virtual VariantValue call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		bool success = false;
+		const volatile Clazz& ref = object.convertTo<const volatile Clazz&>(&success);
+
+		if (!success) {
 			throw ::std::runtime_error("method called with wrong type of object");
-		}		
-		return MDescr::call(*(objectI->object()), m_ptr, args);
-		
+		}
+		return MDescr::call(ref, m_ptr, args);
 	}
 	
 private:		
@@ -303,19 +297,19 @@ public:
 		return MDescr::call(m_ptr, args);
 	}
 	
-	virtual VariantValue call(Object&, const ::std::vector<VariantValue>& args) const {
+	virtual VariantValue call(VariantValue&, const ::std::vector<VariantValue>& args) const {
 		return MDescr::call(m_ptr, args);
 	}
 		
-	virtual VariantValue call(const Object&, const ::std::vector<VariantValue>& args) const {
+	virtual VariantValue call(const VariantValue&, const ::std::vector<VariantValue>& args) const {
 		return MDescr::call(m_ptr, args);
 	}	
 
-	virtual VariantValue call(volatile Object&, const ::std::vector<VariantValue>& args) const {
+	virtual VariantValue call(volatile VariantValue&, const ::std::vector<VariantValue>& args) const {
 		return MDescr::call(m_ptr, args);
 	}
 	
-	virtual VariantValue call(const volatile Object&, const ::std::vector<VariantValue>& args) const {
+	virtual VariantValue call(const volatile VariantValue&, const ::std::vector<VariantValue>& args) const {
 		return MDescr::call(m_ptr, args);
 	}	
 private:		

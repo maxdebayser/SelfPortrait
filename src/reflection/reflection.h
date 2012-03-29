@@ -98,22 +98,22 @@ public:
 		return call_helper(vargs );
 	}
 	template<class... Args>
-	VariantValue call(Object& object, const Args&... args) const {
+	VariantValue call(VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs{ VariantValue(args)... };
 		return call_helper(object, vargs );
 	}
 	template<class... Args>
-	VariantValue call(const Object& object, const Args&... args) const {
+	VariantValue call(const VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs{ VariantValue(args)... };
 		return call_helper(object, vargs );
 	}
 	template<class... Args>
-	VariantValue call(volatile Object& object, const Args&... args) const {
+	VariantValue call(volatile VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs{ VariantValue(args)... };
 		return call_helper(object, vargs );
 	}
 	template<class... Args>
-	VariantValue call(const volatile Object& object, const Args&... args) const {
+	VariantValue call(const volatile VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs{ VariantValue(args)... };
 		return call_helper(object, vargs );
 	}
@@ -123,10 +123,10 @@ private:
 	Method(AbstractMethodImpl* impl);
 	
 	VariantValue call_helper(const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(Object& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(const Object& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(volatile Object& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(const volatile Object& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue call_helper(VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue call_helper(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue call_helper(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue call_helper(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
 	
 	AbstractMethodImpl* m_impl;
 	

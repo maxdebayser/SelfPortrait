@@ -403,6 +403,11 @@ public:
 						stringConversion<ValueType>,
 						impossibleConversion<ValueType>>::result>::result>::result::value(m_impl, success);
 	}
+
+	template<class ValueType>
+	ValueType convertTo(bool * success = nullptr) const volatile {
+		return const_cast<VariantValue&>(*this).convertTo<ValueType>(success);
+	}
 	
 	// checks if a conversion is supported
 	// Even if this method returns true, the conversion can fail

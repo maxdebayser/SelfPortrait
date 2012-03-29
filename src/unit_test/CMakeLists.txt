@@ -1,9 +1,11 @@
 set(HEADERS
 	variant_test.h
+	method_test.h
 )
 
 set(SOURCES
 	variant_test.cpp
+	method_test.cpp
 )
 
 set(LIBS
@@ -20,7 +22,7 @@ endforeach()
 
 add_custom_command(
 	OUTPUT runner.cpp
-	COMMAND cxxtestgen --error-printer --have-eh --have-std -o runner.cpp "${HEADER_FILES}"
+	COMMAND cxxtestgen --error-printer --have-eh --have-std -o runner.cpp ${HEADER_FILES}
 	DEPENDS ${HEADER_FILES}
 )
 

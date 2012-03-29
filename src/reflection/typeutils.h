@@ -62,4 +62,15 @@ struct strip_reference<const T&> {
 	typedef T type;
 };
 
+template<class T>
+struct strip_reference<volatile T&> {
+	typedef T type;
+};
+
+
+template<class T>
+struct strip_reference<const volatile T&> {
+	typedef T type;
+};
+
 #endif

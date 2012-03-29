@@ -184,18 +184,18 @@ VariantValue Method::call_helper(const ::std::vector<VariantValue>& vargs) const
 	return m_impl->call(vargs );	
 }
 
-VariantValue Method::call_helper(Object& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::call_helper(VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+	return m_impl->call(object, vargs );
+}
+
+VariantValue Method::call_helper(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
 }
 
-VariantValue Method::call_helper(const Object& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::call_helper(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
 }
 
-VariantValue Method::call_helper(volatile Object& object, const ::std::vector<VariantValue>& vargs) const {
-	return m_impl->call(object, vargs );	
-}
-
-VariantValue Method::call_helper(const volatile Object& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::call_helper(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
 }
