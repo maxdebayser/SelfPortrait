@@ -29,9 +29,9 @@ public:
 	
 	void set(const VariantValue& value) const;
 	
-	VariantValue get(const Object& object) const;
-	void set(Object& object, const VariantValue& value) const;
-	void set(const Object& object, const VariantValue& value) const;
+	VariantValue get(const VariantValue& object) const;
+	void set(VariantValue& object, const VariantValue& value) const;
+	void set(const VariantValue& object, const VariantValue& value) const;
 	
 	
 private:
@@ -42,7 +42,7 @@ private:
 	template<class A>
 	friend Attribute make_attribute(::std::string name, A ptr);
 	template<class C, class A>
-	friend Attribute make_attribute(::std::string name, A ptr);
+	friend Attribute make_static_attribute(::std::string name, A ptr);
 };
 
 class AbstractConstructorImpl;
@@ -57,7 +57,7 @@ public:
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 	
 	template<class... Args>
-	Object call(const Args&... args) const {
+	VariantValue call(const Args&... args) const {
 		::std::vector<VariantValue> vargs{ VariantValue(args)... };
 		return call_helper(vargs);
 	}	
@@ -65,7 +65,7 @@ public:
 private:
 	Constructor(AbstractConstructorImpl* impl);
 	
-	Object call_helper(const ::std::vector<VariantValue>& vargs) const ;
+	VariantValue call_helper(const ::std::vector<VariantValue>& vargs) const ;
 	
 	AbstractConstructorImpl* m_impl;
 	

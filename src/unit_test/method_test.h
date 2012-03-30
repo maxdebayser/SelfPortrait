@@ -13,6 +13,7 @@ public:
 	void testCMethod();
 	void testVMethod();
 	void testCVMethod();
+	void testStaticMethod();
 };
 
 

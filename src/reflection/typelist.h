@@ -86,13 +86,13 @@ struct typelist_size;
 
 template<typename... T, template<typename...> class TL>
 struct typelist_size<TL<T...>> {
-	enum { size = sizeof...(T) };
+	enum { value = sizeof...(T) };
 };
 
 template<class TL>
 constexpr size_t size()
 {
-	return typelist_size<TL>::size;
+	return typelist_size<TL>::value;
 }
 
 
@@ -155,27 +155,27 @@ constexpr const std::type_info& typeid_at()
 
 struct success_t
 {
-		enum { result = true };
+		enum { value = true };
 };
 
 
 template<class TL, class T>
 struct search_type
 {
-		enum { result = Select<same_type<typename TL::Head, T>(), success_t, search_type<typename TL::Tail, T>>::result::result };
+		enum { value = Select<std::is_same<typename TL::Head, T>::value, success_t, search_type<typename TL::Tail, T>>::type::value };
 };
 
 template<class T>
 struct search_type<TypeList<>, T>
 {
-		enum { result = false };
+		enum { value = false };
 };
 
 
 template<class TL, class T>
 constexpr bool contains()
 {
-		return search_type<TL,T>::result;
+		return search_type<TL,T>::value;
 }
 
 

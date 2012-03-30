@@ -13,6 +13,7 @@ namespace {
 		int method2(int arg) const { return arg*3; }
 		int method3(int arg) volatile { return arg*4; }
 		int method4(int arg) const volatile { return arg*5; }
+		static int method5(int arg) { return arg*6; }
 	};
 
 }
@@ -21,6 +22,9 @@ namespace {
 void MethodTestSuite::testNonCVMethod() {
 
 	auto method = make_method("method1", &Test1::method1);
+
+	TS_ASSERT_THROWS(method.call(3), std::runtime_error);
+
 
 	VariantValue v1 = Test1();
 
@@ -128,3 +132,11 @@ void MethodTestSuite::testCVMethod()
 	TS_ASSERT_EQUALS(r4.value<int>(), 15);
 }
 
+
+void MethodTestSuite::testStaticMethod()
+{
+	auto method = make_static_method<Test1>("method5", &Test1::method5);
+	VariantValue r = method.call(3);
+	TS_ASSERT(r.isA<int>());
+	TS_ASSERT_EQUALS(r.value<int>(), 18);
+}

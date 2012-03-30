@@ -276,8 +276,8 @@ class StaticMethodImpl: public AbstractMethodImpl {
 public:
 	typedef function_type<_Method> MDescr;
 	typedef _Clazz Clazz;
-	typedef typename MDescr::ClazzRef ClazzRef;
-	typedef typename MDescr::ptr_to_method ptr_to_method;
+	typedef Clazz& ClazzRef;
+	typedef typename MDescr::ptr_to_function ptr_to_method;
 	
 	constexpr StaticMethodImpl(const ::std::string& name, ptr_to_method ptr) : m_name(name), m_ptr(ptr) {}
 	

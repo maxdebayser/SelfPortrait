@@ -14,7 +14,7 @@ namespace string_conversion_impl {
 	};
 
 	no operator<<( std::ostream const&, any_t const& );
-	no operator<<( std::istream const&, any_t const& );
+	no operator>>( std::istream &, const any_t & );
 
 	yes& test_ostream( std::ostream& );
 	no test_ostream( no );
@@ -31,9 +31,9 @@ namespace string_conversion_impl {
 		
 	template<typename T>
 	struct parseable {
-		static std::ostream &s;
-		static T const &t;
-		static bool const value = sizeof( test_ostream(s << t) ) == sizeof( yes );
+		static std::istream &s;
+		static T &t;
+		static bool const value = sizeof( test_istream(s >> t) ) == sizeof( yes );
 	};
 	
 	enum class ConversionTo {
@@ -77,25 +77,28 @@ namespace string_conversion_impl {
 	template<class T, enum ConversionFrom>
 	struct input_helper {
 		// T may not have a default constructor
-		static bool parse(T&, const ::std::string&) {
-			return false;
+		static T parse(const ::std::string&, bool * success) {
+			if (success) *success = false;
+			return T();
 		}
 	};
 	
 	template<class T>
 	struct input_helper<T, ConversionFrom::StringConvertsTo> {
-		static bool parse(T& t, const ::std::string& str) {
-			t = str;
-			return true;
+		static T parse(const ::std::string& str, bool * success) {
+			if (success) *success = true;
+			return T(str);
 		}
 	};
 
 	template<class T>
 	struct input_helper<T, ConversionFrom::Parseable> {
-		static bool parse(T& t, const ::std::string& str) {
+		static T parse(const ::std::string& str, bool * success) {
+			T t;
 			::std::istringstream ss(str);
 			ss >> t;
-			return !ss.fail();
+			if (success) *success = !ss.fail();
+			return t;
 		}
 	};
 	
@@ -141,19 +144,8 @@ template<class T>
 
 
 template<class T>
-bool fromString(T& t, const ::std::string& str) {
-	return string_conversion_impl::input_helper<T, string_conversion_impl::conversionFromType<T>()>::parse(t, str);
-}
-
-// convenient version from 
-template<class T>
 T fromString(const ::std::string& str, bool* success = nullptr) {
-	T t;
-	const bool ret = string_conversion_impl::input_helper<T, string_conversion_impl::conversionFromType<T>()>::parse(t, str);
-	if (success != nullptr) {
-			*success = ret;
-	}
-	return ::std::move(t);
+	return string_conversion_impl::input_helper<T, string_conversion_impl::conversionFromType<T>()>::parse(str, success);
 }
 
 

@@ -48,15 +48,15 @@ void Attribute::set(const VariantValue& value) const {
 	return m_impl->set(value);
 }
 
-VariantValue Attribute::get(const Object& object) const {
+VariantValue Attribute::get(const VariantValue& object) const {
 	return m_impl->get(object);
 }
 
-void Attribute::set(Object& object, const VariantValue& value) const  {
+void Attribute::set(VariantValue& object, const VariantValue& value) const  {
 	return m_impl->set(object, value);
 }
 
-void Attribute::set(const Object& object, const VariantValue& value) const {
+void Attribute::set(const VariantValue& object, const VariantValue& value) const {
 	return m_impl->set(object, value);
 }
 
@@ -129,7 +129,7 @@ bool Constructor::isDefaultConstructor() const {
 	return m_impl->argumentTypes();
 }
 
-Object Constructor::call_helper(const ::std::vector<VariantValue>& vargs) const {
+VariantValue Constructor::call_helper(const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(vargs);
 }
 

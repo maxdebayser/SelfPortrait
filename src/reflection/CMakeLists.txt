@@ -18,7 +18,3 @@ set(SOURCES
 
 
 add_library(reflection STATIC ${HEADERS} ${SOURCES})
-
-add_executable(test ${HEADERS} main.cpp)
-
-target_link_libraries(test reflection)

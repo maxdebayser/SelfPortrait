@@ -1,11 +1,19 @@
 set(HEADERS
-	variant_test.h
+	attribute_test.h
+	class_test.h
+	constructor_test.h
 	method_test.h
+	utilities_test.h
+	variant_test.h
 )
 
 set(SOURCES
-	variant_test.cpp
+	attribute_test.cpp
+	class_test.cpp
+	constructor_test.cpp
 	method_test.cpp
+	utilities_test.cpp
+	variant_test.cpp
 )
 
 set(LIBS

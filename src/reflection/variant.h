@@ -278,7 +278,7 @@ private:
 class VariantValue {
 public:
 	//! Creates an empty variant
-	VariantValue() : m_impl() {}
+	explicit VariantValue() : m_impl() {}
 	
 	template<class ValueType>
 	VariantValue(ValueType t) : m_impl(new ValueHolder<ValueType>(t)) {}
@@ -401,7 +401,7 @@ public:
 					floatConversion<ValueType>,
 					typename Select< ::std::is_same<ValueType, ::std::string>::value,
 						stringConversion<ValueType>,
-						impossibleConversion<ValueType>>::result>::result>::result::value(m_impl, success);
+						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl, success);
 	}
 
 	template<class ValueType>

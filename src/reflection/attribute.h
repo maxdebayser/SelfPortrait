@@ -6,7 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "object.h"
 #include "variant.h"
 #include "reflection.h"
 
@@ -112,9 +111,9 @@ public:
 	virtual VariantValue get() const = 0;
 	virtual void set(const VariantValue& value) const = 0;
 	
-	virtual VariantValue get(const Object& object) const = 0;
-	virtual void set(Object& object, const VariantValue& value) const = 0;
-	virtual void set(const Object& object, const VariantValue& value) const = 0;
+	virtual VariantValue get(const VariantValue& object) const = 0;
+	virtual void set(VariantValue& object, const VariantValue& value) const = 0;
+	virtual void set(const VariantValue& object, const VariantValue& value) const = 0;
 	
 	AbstractAttributeImpl(const AbstractAttributeImpl&) = delete;
 	AbstractAttributeImpl(AbstractAttributeImpl&&) = delete;
@@ -148,37 +147,34 @@ public:
 		throw ::std::runtime_error("cannot set value of non-static property without an object");
 	}
 	
-	virtual VariantValue get(const Object& object) const override {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
-		
-		const ObjectImpl<Clazz>* objectI = dynamic_cast<const ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
-			throw ::std::runtime_error("method called with wrong type of object");
+	virtual VariantValue get(const VariantValue& object) const override {
+		bool success = false;
+		const Clazz& ref = object.convertTo<const Clazz&>(&success);
+
+		if (!success) {
+			throw ::std::runtime_error("accessing attribute of an object of a different class");
 		}
-		return ADescr::get(*objectI->object(), m_ptr);
+		return ADescr::get(ref, m_ptr);
 	}
 	
-	virtual void set(Object& object, const VariantValue& value) const override {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
-		
-		ObjectImpl<Clazz>* objectI = dynamic_cast<ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
-			throw ::std::runtime_error("method called with wrong type of object");
+	virtual void set(VariantValue& object, const VariantValue& value) const override {
+		bool success = false;
+		Clazz& ref = object.convertTo<Clazz&>(&success);
+
+		if (!success) {
+			throw ::std::runtime_error("accessing attribute of an object of a different class");
 		}
-		return ADescr::set(*objectI->object(), m_ptr, value);
+		return ADescr::set(ref, m_ptr, value);
 	}
 	
-	virtual void set(const Object& object, const VariantValue& value) const override {
-		::std::shared_ptr<AbstractObjectImpl> sptr = object.impl();
-		
-		const ObjectImpl<Clazz>* objectI = dynamic_cast<const ObjectImpl<Clazz>*>(sptr.get());
-		
-		if (objectI == nullptr) {
-			throw ::std::runtime_error("method called with wrong type of object");
+	virtual void set(const VariantValue& object, const VariantValue& value) const override {
+		bool success = false;
+		const Clazz& ref = object.convertTo<const Clazz&>(&success);
+
+		if (!success) {
+			throw ::std::runtime_error("accessing attribute of an object of a different class");
 		}
-		return ADescr::set(*objectI->object(), m_ptr, value);
+		return ADescr::set(ref, m_ptr, value);
 	}
 	
 private:
@@ -205,11 +201,11 @@ public:
 	virtual VariantValue get() const override { return ADescr::get(m_ptr); }
 	virtual void set(const VariantValue& value) const override { ADescr::set(m_ptr, value); }
 	
-	virtual VariantValue get(const Object&) const override { return get(); }
+	virtual VariantValue get(const VariantValue&) const override { return get(); }
 	
-	virtual void set(Object&, const VariantValue& value) const  override { set(value); }
+	virtual void set(VariantValue&, const VariantValue& value) const  override { set(value); }
 	
-	virtual void set(const Object&, const VariantValue& value) const  override { set(value); }
+	virtual void set(const VariantValue&, const VariantValue& value) const  override { set(value); }
 	
 private:
 	::std::string m_name;
@@ -226,7 +222,7 @@ Attribute make_attribute(::std::string name, Attr ptr) {
 }
 
 template<class Clazz, class Attr>
-Attribute make_attribute(::std::string name, Attr ptr) {
+Attribute make_static_attribute(::std::string name, Attr ptr) {
 	static StaticAttributeImpl<Clazz,Attr> impl(name, ptr);
 	return Attribute(&impl);
 }
