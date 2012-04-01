@@ -20,7 +20,7 @@ set(LIBS
 	reflection
 )
 
-add_definitions(-D_CXXTEST_HAVE_STD -D_CXXTEST_HAVE_EH)
+add_definitions(-DCXXTEST_HAVE_STD -DCXXTEST_HAVE_EH)
 
 
 set(HEADER_FILES)
