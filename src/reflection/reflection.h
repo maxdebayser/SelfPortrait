@@ -2,7 +2,6 @@
 #define REFLECTION_H
 
 #include "variant.h"
-#include "object.h"
 
 #include <list>
 #include <typeinfo>
@@ -154,7 +153,7 @@ public:
 	
 	const std::string& fullyQualifiedName() const;
 	
-	const type_info& typeId() const;
+	const ::std::type_info& typeId() const;
 	
 	template<class C>
 	bool describes() const {

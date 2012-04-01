@@ -4,7 +4,6 @@ set(HEADERS
 	constructor.h
 	function.h
 	method.h
-	object.h
 	reflection.h
 	str_conversion.h
 	typelist.h
