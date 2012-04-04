@@ -46,6 +46,7 @@ namespace Test {
 
 		Test1(int arg1) : attribute1(arg1) {}
 
+		Test1(const Test1&) = delete;
 	};
 
 
@@ -72,6 +73,7 @@ BEGIN_CLASS(Test::Test1)
 	ATTRIBUTE(attribute1)
 	DEFAULT_CONSTRUCTOR()
 	CONSTRUCTOR(int)
+	CONSTRUCTOR(const Test::Test1&)
 END_CLASS
 
 

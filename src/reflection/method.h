@@ -90,7 +90,7 @@ struct method_type: public method_type_base<Functor> {
 	struct call_verifier {
 		::std::array<bool,N> success;
 		call_verifier(::std::size_t actual) {
-			if (actual < N) {
+			if (static_cast<int>(actual) < static_cast<int>(N)) {
 				throw ::std::runtime_error("method called with insufficient number of arguments");
 			}
 			success.fill(false);
@@ -182,6 +182,7 @@ public:
 	virtual const ::std::string& name() const = 0;
 	virtual ::std::size_t numberOfArguments() const = 0;
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
+	virtual const ::std::type_info& returnType() const = 0;
 	virtual bool isConst() const = 0;
 	virtual bool isVolatile() const = 0;
 	virtual bool isStatic() const = 0;	
@@ -204,6 +205,7 @@ public:
 	typedef typename MDescr::Clazz Clazz;
 	typedef typename MDescr::ClazzRef ClazzRef;
 	typedef typename MDescr::ptr_to_method ptr_to_method;
+	typedef typename MDescr::Result Result;
 	
 	constexpr MethodImpl(const ::std::string& name, ptr_to_method ptr) : m_name(name), m_ptr(ptr) {}
 	
@@ -212,6 +214,8 @@ public:
 	virtual ::std::size_t numberOfArguments() const { return size<typename MDescr::Arguments>(); }
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
+
+	virtual const ::std::type_info& returnType() const { return typeid(Result); }
 	
 	virtual bool isConst() const { return MDescr::is_const; }
 	
@@ -278,12 +282,15 @@ public:
 	typedef _Clazz Clazz;
 	typedef Clazz& ClazzRef;
 	typedef typename MDescr::ptr_to_function ptr_to_method;
+	typedef typename MDescr::Result Result;
 	
 	constexpr StaticMethodImpl(const ::std::string& name, ptr_to_method ptr) : m_name(name), m_ptr(ptr) {}
 	
 	virtual const ::std::string& name() const { return m_name; }
 	
 	virtual ::std::size_t numberOfArguments() const { return size<typename MDescr::Arguments>(); }
+
+	virtual const ::std::type_info& returnType() const { return typeid(Result); }
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
 	

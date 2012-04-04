@@ -26,7 +26,7 @@ struct function_type<_Result(*)(Args...)> {
 	struct call_verifier {
 		::std::array<bool,N> success;
 		call_verifier(::std::size_t actual) {
-			if (actual < N) {
+			if (static_cast<int>(actual) < static_cast<int>(N)) {
 				throw ::std::runtime_error("function called with insufficient number of arguments");
 			}
 			success.fill(false);

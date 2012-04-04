@@ -13,6 +13,7 @@ class AbstractAttributeImpl;
 class Attribute {
 public:
 	
+	Attribute();
 	Attribute(const Attribute& rhs);
 	Attribute(Attribute&& rhs);
 	Attribute& operator=(const Attribute& rhs);
@@ -49,6 +50,12 @@ class AbstractConstructorImpl;
 class Constructor {
 public:
 
+	Constructor();
+	Constructor(const Constructor& rhs);
+	Constructor& operator=(const Constructor& rhs);
+	Constructor(Constructor&& rhs);
+	Constructor& operator=(Constructor&& rhs);
+
 	::std::size_t numberOfArguments() const;
 	
 	bool isDefaultConstructor() const;
@@ -79,6 +86,7 @@ class AbstractMethodImpl;
 class Method {
 public:
 	
+	Method();
 	Method(const Method& rhs);
 	Method& operator=(const Method& rhs);
 	Method(Method&& rhs);
@@ -87,6 +95,9 @@ public:
 	const ::std::string& name() const;
 	::std::size_t numberOfArguments() const;
 	::std::vector<const ::std::type_info*> argumentTypes() const;
+
+	const ::std::type_info& returnType() const;
+
 	bool isConst() const;
 	bool isVolatile() const;
 	bool isStatic() const;
@@ -144,10 +155,16 @@ public:
 	typedef ::std::list<Constructor> ConstructorList;
 	typedef ::std::list<Class> ClassList;
 	typedef ::std::list<Attribute> AttributeList;
+
+	Class();
 	
 	Class(const Class& rhs);
-	
-	Class& operator=(Class rhs);
+
+	Class& operator=(const Class& rhs);
+
+	Class(Class&& rhs);
+
+	Class& operator=(Class&& rhs);
 		
 	std::string simpleName() const;
 	
@@ -172,7 +189,7 @@ public:
 	
 private:
 	
-	constexpr Class(const AbstractClassImpl* impl);
+	Class(const AbstractClassImpl* impl);
 	
 	const AbstractClassImpl* m_impl;
 	

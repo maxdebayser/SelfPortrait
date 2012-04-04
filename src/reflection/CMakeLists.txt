@@ -5,6 +5,7 @@ set(HEADERS
 	function.h
 	method.h
 	reflection.h
+	reflection_impl.h
 	str_conversion.h
 	typelist.h
 	typeutils.h

@@ -21,15 +21,15 @@ public:
 	typedef Class::ClassList ClassList;
 	typedef Class::AttributeList AttributeList;
 		
-	const std::string& fullyQualifiedName() const { return m_fqn; }
+	virtual const std::string& fullyQualifiedName() const { return m_fqn; }
 	
-	const MethodList& methods() const { return m_methods; }
+	virtual const MethodList& methods() const { return m_methods; }
 	
-	const ConstructorList& constructors() const { return m_constructors; }
+	virtual const ConstructorList& constructors() const { return m_constructors; }
 	
-	const ClassList& superclasses() const { return m_superclasses; }
+	virtual const ClassList& superclasses() const { return m_superclasses; }
 	
-	const AttributeList& attributes() const { return m_attributes; }
+	virtual const AttributeList& attributes() const { return m_attributes; }
 	
 	virtual const ::std::type_info& typeId() const = 0;
 	
@@ -77,23 +77,28 @@ protected:
 };
 
 template<class T>
-class ClassImpl: protected AbstractClassImpl {
+class ClassImpl: public AbstractClassImpl {
 public:
 	static_assert(::std::is_class<T>::value, "Meta-classes can only be used to describe classes");
 	
 	typedef T DescribedClass;
 		
-	static ClassImpl* instance() {
-		static ClassImpl _instance;
-		return &instance;
-	};
+	static ClassImpl* instance();
 	
 	virtual const ::std::type_info& typeId() const override {
 		return typeid(DescribedClass);
 	}
 	
+	bool open() const {
+		return m_open;
+	}
+
 	void close() {
 		m_open = false;
+
+		// clean duplicated method declarations
+
+
 	}
 	
 	void registerMethod(Method method) {
