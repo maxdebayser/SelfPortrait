@@ -24,12 +24,21 @@ return &instance;\
 #define SUPER_CLASS(CLASS_NAME) \
 instance.registerSuperClassPriv(ClassOf<CLASS_NAME>());
 
+#define METHOD(METHOD_NAME, RESULT, ...) \
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME));
 
-#define METHOD(METHOD_NAME) \
-	instance.registerMethodPriv(make_method(#METHOD_NAME, &ThisClass::METHOD_NAME));
+#define CONST_METHOD(METHOD_NAME, RESULT, ...) \
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(#METHOD_NAME, &ThisClass::METHOD_NAME));
 
-#define STATIC_METHOD(METHOD_NAME) \
-	instance.registerMethodPriv(make_static_method<ThisClass>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+#define VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+
+#define CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+
+
+#define STATIC_METHOD(METHOD_NAME, RESULT, ...) \
+	instance.registerMethodPriv(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME));
 
 #define ATTRIBUTE(ATTRIBUTE_NAME) \
 	instance.registerAttributePriv(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME));

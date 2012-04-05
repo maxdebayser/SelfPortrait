@@ -53,13 +53,13 @@ namespace Test {
 }
 
 BEGIN_CLASS(Test::TestBase1)
-	METHOD(method2)
-	METHOD(base1Method1)
+	METHOD(method2, double, double)
+	METHOD(base1Method1, int)
 	DEFAULT_CONSTRUCTOR()
 END_CLASS
 
 BEGIN_CLASS(Test::TestBase2)
-	METHOD(base2Method1)
+	CONST_METHOD(base2Method1, int)
 	DEFAULT_CONSTRUCTOR()
 END_CLASS
 
@@ -67,9 +67,9 @@ END_CLASS
 BEGIN_CLASS(Test::Test1)
 	SUPER_CLASS(Test::TestBase1)
 	SUPER_CLASS(Test::TestBase2)
-	METHOD(method1)
-	METHOD(method2)
-	STATIC_METHOD(staticMethod)
+	CONST_METHOD(method1, std::string)
+	METHOD(method2, double, double)
+	STATIC_METHOD(staticMethod, double)
 	ATTRIBUTE(attribute1)
 	DEFAULT_CONSTRUCTOR()
 	CONSTRUCTOR(int)
@@ -233,4 +233,42 @@ void ClassTestSuite::testClass()
 	TS_ASSERT(staticMethod.returnType() == typeid(double));
 	TS_ASSERT_EQUALS(staticMethod.numberOfArguments(), 0);
 	TS_ASSERT_EQUALS(staticMethod.call().value<double>(), 3.14);
+}
+
+
+namespace {
+
+	class OTest {
+	public:
+
+		int overload(int i) { return i; }
+
+		double overload(double i) { return i; }
+
+		int& constOverload() { return m_attr1; }
+		const int& constOverload() const { return m_attr1; }
+
+		static int staticOverload(int i) { return i+1; }
+		static double staticOverload(double i) { return i+1.0; }
+
+		int m_attr1 = 3;
+
+	};
+
+}
+
+BEGIN_CLASS(OTest)
+	METHOD(overload, int, int)
+	METHOD(overload, double, double)
+	METHOD(constOverload, int&)
+	CONST_METHOD(constOverload, const int&)
+	STATIC_METHOD(staticOverload, double, double)
+	STATIC_METHOD(staticOverload, int, int)
+END_CLASS
+
+void ClassTestSuite::testOverload()
+{
+
+
+
 }

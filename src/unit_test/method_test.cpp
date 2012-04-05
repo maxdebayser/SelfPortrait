@@ -13,6 +13,7 @@ namespace {
 		int method2(int arg) const { return arg*3; }
 		int method3(int arg) volatile { return arg*4; }
 		int method4(int arg) const volatile { return arg*5; }
+		int method4(int arg1, int arg2) const volatile { return arg1*5 + arg2; }
 		static int method5(int arg) { return arg*6; }
 	};
 
@@ -99,7 +100,7 @@ void MethodTestSuite::testVMethod()
 
 void MethodTestSuite::testCVMethod()
 {
-	auto method = make_method("method4", &Test1::method4);
+	auto method = make_method<int(Test1::*)(int) const volatile>("method4", &Test1::method4);
 
 	VariantValue v1 = Test1();
 
