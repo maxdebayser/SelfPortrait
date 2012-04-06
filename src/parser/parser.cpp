@@ -1,13 +1,3 @@
-/***   tutorial4_CI.cpp   *****************************************************
- * This code is licensed under the New BSD license.
- * See LICENSE.txt for details.
- *
- * The CI tutorials remake the original tutorials but using the
- * CompilerInstance object which has as one of its purpose to create commonly
- * used Clang types.
- *****************************************************************************/
-#include <iostream>
-
 #include "llvm/Support/Host.h"
 
 #include "clang/Driver/Compilation.h"
@@ -35,11 +25,13 @@
 #include "clang/AST/DeclTemplate.h"
 #include "clang/Basic/LangOptions.h"
 
-#include "clang/AST/Mangle.h"
 
 #include <vector>
 #include <string>
 #include <set>
+#include <iostream>
+#include <sstream>
+
 using namespace std;
 using namespace clang;
 using namespace llvm;
@@ -76,8 +68,30 @@ class MyASTConsumer
 	bool m_inClass = false;
 	list<string> m_namespaces;
 	list<CXXRecordDecl*> m_visitLater;
+	stringstream out;
+	set<string> m_sourceFiles;
+	SourceManager* m_sourceManager;
 
 public:
+
+	MyASTConsumer(SourceManager* sm) : m_sourceManager(sm) {
+
+		FileID mainID = sm->getMainFileID();
+		const FileEntry* entry = sm->getFileEntryForID(mainID);
+		m_sourceFiles.insert(entry->getName());
+	}
+
+	ostream& print(ostream& os) {
+
+		os << "#include \"reflection_impl.h\"" << endl;
+
+		for(const string& filename: m_sourceFiles) {
+			os << "#include \"" << filename << "\"" << endl;
+		}
+
+		os << out.str() << endl;
+		return os;
+	}
 
 	void handleDecl(Decl* decl)
 	{
@@ -97,19 +111,15 @@ public:
 			}
 
 			m_namespaces.push_back(nd->getDeclName().getAsString());
-
 			// recurse
 			for (DeclContext::decl_iterator it = nd->decls_begin(); it != nd->decls_end(); ++it) {
 				clang::Decl* subdecl = *it;
 				handleDecl(subdecl);
 			}
-
 			m_namespaces.pop_back();
-			return;
-
 
 		} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
-			cout << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ")" << endl;
+			out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ")" << endl;
 
 		} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
 
@@ -124,16 +134,13 @@ public:
 
 					m_namespaces.push_back(crd->getDeclName().getAsString());
 
-
-
-
 					m_inClass = true;
 
-					cout << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
+					out << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
 
 					for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
 						QualType t = it->getType();
-						cout << "SUPER_CLASS(" << t.getAsString() << ")" << endl;
+						out << "SUPER_CLASS(" << t.getAsString() << ")" << endl;
 					}
 
 					// recurse
@@ -142,7 +149,7 @@ public:
 						handleDecl(subdecl);
 					}
 					m_inClass = false;
-					cout << "END_CLASS" << endl << endl;
+					out << "END_CLASS" << endl << endl;
 
 					while( !m_visitLater.empty() ) {
 						CXXRecordDecl* nested = m_visitLater.front();
@@ -151,9 +158,6 @@ public:
 					}
 
 					m_namespaces.pop_back();
-
-					return;
-
 				}
 			} /*else {
 				// don't know what to do with this, the only possibility left are unions, right?
@@ -205,23 +209,23 @@ public:
 				string a = string(args.empty() ? "" : ", ") + argstr;
 
 				if (isStatic) {
-					cout << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					out << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
 				} else if (isConst && isVolatile) {
-					cout << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					out << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
 				} else if (isConst) {
-					cout << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					out << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
 				} else if (isVolatile) {
-					cout << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					out << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
 				} else {
-					cout << "METHOD(" << name << ", " << returnType << a << ")" << endl;
+					out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
 				}
 
 
 			} else if (dyn_cast<CXXConstructorDecl>(decl)) {
 				if (args.empty()) {
-					cout << "DEFAULT_CONSTRUCTOR()" << endl;
+					out << "DEFAULT_CONSTRUCTOR()" << endl;
 				} else {
-					cout << "CONSTRUCTOR(" << argstr << ")" << endl;
+					out << "CONSTRUCTOR(" << argstr << ")" << endl;
 				}
 			} /*else if (CXXConversionDecl* cd = dyn_cast<CXXConversionDecl>(decl)) {
 				// ex: operator bool();
@@ -241,9 +245,7 @@ public:
 	}
 };
 
-/******************************************************************************
- *
- *****************************************************************************/
+
 int main(int argc, const char* argv[])
 {
 	vector<const char*> args;
@@ -305,7 +307,7 @@ int main(int argc, const char* argv[])
 	}
 
 	ASTContext& astContext = unit->getASTContext();
-	MyASTConsumer astConsumer;
+	MyASTConsumer astConsumer(&unit->getSourceManager());
 
 
 	for (auto it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
@@ -316,6 +318,8 @@ int main(int argc, const char* argv[])
 			astConsumer.handleDecl(subdecl);
 		}
 	}
+
+	astConsumer.print(cout);
 
 	return 0;
 }
