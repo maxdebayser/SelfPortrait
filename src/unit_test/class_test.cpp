@@ -65,7 +65,7 @@ END_CLASS
 
 
 BEGIN_CLASS(Test::Test1)
-	SUPER_CLASS(Test::TestBase1)
+	SUPER_CLASS(class Test::TestBase1)
 	SUPER_CLASS(Test::TestBase2)
 	CONST_METHOD(method1, std::string)
 	METHOD(method2, double, double)

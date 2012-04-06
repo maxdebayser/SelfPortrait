@@ -42,45 +42,124 @@
 #include <set>
 using namespace std;
 using namespace clang;
+using namespace llvm;
 
 template<class... Args, template<class...> class Associative>
-bool contains(const Associative<Args...>& container, const typename Associative<Args...>::key_type& key) {
-
+bool contains(const Associative<Args...>& container, const typename Associative<Args...>::key_type& key)
+{
 	auto it = container.find(key);
 	return (it != container.end());
 }
 
-/******************************************************************************
- *
- *****************************************************************************/
-class MyASTConsumer : public clang::ASTConsumer
+template<class... Args, template<class...> class Container>
+std::string join(const Container<Args...>& container, const std::string& separator)
 {
-public:
-	MyASTConsumer() : clang::ASTConsumer() { }
-	virtual ~MyASTConsumer() { }
+	if (container.empty()) {
+		return "";
+	} else {
 
-	virtual bool HandleTopLevelDecl( clang::DeclGroupRef d)
-	{
-		static int count = 0;
-		clang::DeclGroupRef::iterator it;
-		for( it = d.begin(); it != d.end(); it++)
-		{
-			count++;
-			handleDecl(*it);
+		auto it = container.begin();
+
+		std::string ret = *it;
+
+		++it;
+		for (; it != container.end(); ++it) {
+			ret += separator + *it;
 		}
-		return true;
+		return ret;
 	}
+}
 
-	void handleDecl(clang::Decl* decl)
+
+class MyASTConsumer
+{
+	bool m_inClass = false;
+	list<string> m_namespaces;
+	list<CXXRecordDecl*> m_visitLater;
+
+public:
+
+	void handleDecl(Decl* decl)
 	{
-		cout << "decl = " << ((void*)decl) << endl;
 		if (decl == nullptr) {
-			std::cout << "checkpoint 1" << std::endl;
 			return;
 		}
 
+		AccessSpecifier as = decl->getAccess();
 
-		if (clang::VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(decl)) {
+		if (as == AS_protected || as == AS_private) {
+			return;
+		}
+
+		if (NamespaceDecl* nd = dyn_cast<NamespaceDecl>(decl)) {
+			if (nd->isAnonymousNamespace()) {
+				return; // no interest in hidden symbols
+			}
+
+			m_namespaces.push_back(nd->getDeclName().getAsString());
+
+			// recurse
+			for (DeclContext::decl_iterator it = nd->decls_begin(); it != nd->decls_end(); ++it) {
+				clang::Decl* subdecl = *it;
+				handleDecl(subdecl);
+			}
+
+			m_namespaces.pop_back();
+			return;
+
+
+		} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
+			cout << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ")" << endl;
+
+		} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
+
+			if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
+				if (crd->hasDefinition()) {
+					crd = crd->getDefinition();
+
+					if (m_inClass) {
+						m_visitLater.push_back(crd);
+						return;
+					}
+
+					m_namespaces.push_back(crd->getDeclName().getAsString());
+
+
+
+
+					m_inClass = true;
+
+					cout << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
+
+					for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
+						QualType t = it->getType();
+						cout << "SUPER_CLASS(" << t.getAsString() << ")" << endl;
+					}
+
+					// recurse
+					for (DeclContext::decl_iterator it = crd->decls_begin(); it != crd->decls_end(); ++it) {
+						clang::Decl* subdecl = *it;
+						handleDecl(subdecl);
+					}
+					m_inClass = false;
+					cout << "END_CLASS" << endl << endl;
+
+					while( !m_visitLater.empty() ) {
+						CXXRecordDecl* nested = m_visitLater.front();
+						m_visitLater.pop_front();
+						handleDecl(nested);
+					}
+
+					m_namespaces.pop_back();
+
+					return;
+
+				}
+			} /*else {
+				// don't know what to do with this, the only possibility left are unions, right?
+			}*/
+
+		} /*else if (VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(decl)) {
 			std::cout << vd << std::endl;
 			if( vd->isFileVarDecl() && vd->hasExternalStorage() )
 			{
@@ -89,66 +168,77 @@ public:
 				std::cerr << std::endl;
 			}
 
-		} else if (clang::FunctionDecl* fd = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
-			std::cerr << "Read top-level func decl: '";
-			std::cerr << fd->getDeclName().getAsString() ;
-			std::cerr << std::endl;
+		}*/ else if (FunctionDecl* fd = llvm::dyn_cast<FunctionDecl>(decl)) {
+
+			const string name = fd->getDeclName().getAsString();
+			QualType qt = fd->getResultType();
+			const string returnType =  qt.getAsString();
+
+			list<string> args;
 
 
-
-			if (!fd->isExternC()) {
-				std::string mangledNameIfNeeded;
-				llvm::raw_string_ostream RawStr(mangledNameIfNeeded);
-				m_mangle->mangleName(fd, RawStr);
-				RawStr.flush();
-				std::cout << "O mangled name eh " << mangledNameIfNeeded << std::endl;
-			} else {
-				std::cout << "o cara é extern C" << std::endl;
+			for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
+				QualType pt = (*it)->getType();
+				// if we should need the names, this is how we get them *it)->getDeclName().getAsString()
+				args.push_back(pt.getAsString());
 			}
 
+			const string argstr = join(args, ", ");
+
+			if (CXXMethodDecl* md = dyn_cast<CXXMethodDecl>(decl)) {
+				QualType mqt = md->getType();
+				// this prints the method type: mqt.getAsString()
+
+				const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
+
+				Qualifiers quals = Qualifiers::fromCVRMask(proto->getTypeQuals());
+
+				const bool isStatic   = md->isStatic();
+				const bool isVirtual  = md->isVirtual();
+				const bool isConst    = quals.hasConst();
+				const bool isVolatile = quals.hasVolatile();
+
+				if (isVirtual && (md->size_overridden_methods() > 0)) {
+					return; // we don't need to repeat this
+				}
+
+				string a = string(args.empty() ? "" : ", ") + argstr;
+
+				if (isStatic) {
+					cout << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
+				} else if (isConst && isVolatile) {
+					cout << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+				} else if (isConst) {
+					cout << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
+				} else if (isVolatile) {
+					cout << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+				} else {
+					cout << "METHOD(" << name << ", " << returnType << a << ")" << endl;
+				}
+
+
+			} else if (dyn_cast<CXXConstructorDecl>(decl)) {
+				if (args.empty()) {
+					cout << "DEFAULT_CONSTRUCTOR()" << endl;
+				} else {
+					cout << "CONSTRUCTOR(" << argstr << ")" << endl;
+				}
+			} /*else if (CXXConversionDecl* cd = dyn_cast<CXXConversionDecl>(decl)) {
+				// ex: operator bool();
+				// dont't know what to do with this yet
+			} else if (CXXDestructorDecl* dd = dyn_cast<CXXDestructorDecl>(decl)) {
+				// this is pretty much expected :)
+			}*/
+
+
 		} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
-			std::cerr << "Read top-level class template decl: '";
-			std::cerr << td->getDeclName().getAsString() ;
-			std::cerr << std::endl;
-
-			std::cerr << "no specs: " << (td->spec_begin() == td->spec_end()) << std::endl;
-
 			for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
-				std::cerr << "achei uma spec, recursing" << std::endl;
+				//specializations are classes too
 				clang::ClassTemplateSpecializationDecl* spec = *it;
 				handleDecl(spec);
 			}
-
-
-		} else if (clang::ClassTemplateSpecializationDecl* sd = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(decl)) {
-			std::cerr << "Read top-level class template spec decl: '";
-			std::cerr << sd->getDeclName().getAsString() ;
-			std::cerr << std::endl;
-
-		} else if (clang::NamedDecl* nd = llvm::dyn_cast<clang::NamedDecl>(decl)) {
-			std::cerr << "Read top-level named decl: '";
-			std::cerr << nd->getDeclName().getAsString() ;
-			std::cerr << std::endl;
-		}
-
-		clang::DeclContext* dc = llvm::dyn_cast<clang::DeclContext>(decl);
-		if (dc) {
-			std::cerr << "found decl context, recursing" << std::endl;
-			for (clang::DeclContext::decl_iterator it = dc->decls_begin(); it != dc->decls_end(); ++it) {
-				clang::Decl* subdecl = *it;
-				std::cerr << "checkpoint" << std::endl;
-				handleDecl(subdecl);
-			}
 		}
 	}
-
-
-	void setMangleContext(clang::MangleContext* mc)
-	{
-		m_mangle.reset(mc);
-	}
-private:
-	llvm::OwningPtr<clang::MangleContext> m_mangle;
 };
 
 /******************************************************************************
@@ -162,7 +252,6 @@ int main(int argc, const char* argv[])
 	bool foundSpellChecking = false;
 
 	for (int i = 1; i < argc; ++i) {
-
 		if (strcmp(argv[i], "-std=c++11") == 0) {
 			foundCpp11 = true;
 		} else if (strcmp(argv[i], "-x") == 0) {
@@ -176,7 +265,6 @@ int main(int argc, const char* argv[])
 		} else if (strcmp(argv[i], "-fspell-checking") == 0) {
 			foundSpellChecking = true;
 		}
-
 	}
 
 	args.push_back(argv[0]);
@@ -200,9 +288,6 @@ int main(int argc, const char* argv[])
 		args.push_back(argv[i]);
 	}
 
-
-	MyASTConsumer astConsumer;
-
 	DiagnosticOptions options;
 	options.ShowCarets = 1;
 	options.ShowColors = 1;
@@ -219,23 +304,18 @@ int main(int argc, const char* argv[])
 		return 1;
 	}
 
-
 	ASTContext& astContext = unit->getASTContext();
+	MyASTConsumer astConsumer;
 
-	astConsumer.setMangleContext(astContext.createMangleContext());
 
-
-	for (clang::DeclContext::decl_iterator it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
-		clang::Decl* subdecl = *it;
+	for (auto it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
+		Decl* subdecl = *it;
 		SourceLocation location = subdecl->getLocation();
 
 		if (unit->isInMainFileID(location)) {
 			astConsumer.handleDecl(subdecl);
 		}
-
-
 	}
-
 
 	return 0;
 }
