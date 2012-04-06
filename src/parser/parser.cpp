@@ -19,6 +19,7 @@
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/Utils.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/FileManager.h"
@@ -155,52 +156,86 @@ private:
  *****************************************************************************/
 int main(int argc, const char* argv[])
 {
-
-	set<string> possiblyFiles;
+	vector<const char*> args;
+	bool foundCpp = false;
+	bool foundCpp11 = false;
+	bool foundSpellChecking = false;
 
 	for (int i = 1; i < argc; ++i) {
-		if (argv[i][0] != '-') {
-			possiblyFiles.insert(argv[i]);
+
+		if (strcmp(argv[i], "-std=c++11") == 0) {
+			foundCpp11 = true;
+		} else if (strcmp(argv[i], "-x") == 0) {
+			if (((i+1) < argc) && (strcmp(argv[i+1], "c++") == 0)) {
+				foundCpp = true;
+			}
+		} else if (strcmp(argv[i], "-xc++") == 0) {
+			foundCpp = true;
+		} else if (strcmp(argv[i], "-fno-spell-checking") == 0) {
+			foundSpellChecking = true;
+		} else if (strcmp(argv[i], "-fspell-checking") == 0) {
+			foundSpellChecking = true;
 		}
+
 	}
+
+	args.push_back(argv[0]);
+
+	if (!foundCpp) {
+		args.push_back("-xc++");
+	}
+
+	if (!foundCpp11) {
+		args.push_back("-std=c++11");
+	}
+
+	if (!foundSpellChecking) {
+		args.push_back("-fno-spell-checking");
+	}
+
+	args.push_back("-I/usr/lib/clang/3.1/include"); // why can't clang find this from the resource path?
+	args.push_back("-Qunused-arguments"); // why do I keep getting warnings about the unused linker if I'm only creating an ASTunit
+
+	for (int i = 1; i < argc; ++i) {
+		args.push_back(argv[i]);
+	}
+
 
 	MyASTConsumer astConsumer;
 
-	TextDiagnosticPrinter *DiagClient =	new TextDiagnosticPrinter(llvm::errs(), DiagnosticOptions());
+	DiagnosticOptions options;
+	options.ShowCarets = 1;
+	options.ShowColors = 1;
+
+	TextDiagnosticPrinter *DiagClient =	new TextDiagnosticPrinter(llvm::errs(), options);
 
 	llvm::IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
 	llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags(new DiagnosticsEngine(DiagID, DiagClient));
 
-	llvm::OwningPtr<ASTUnit> unit(ASTUnit::LoadFromCommandLine(argv, argv+argc, Diags, "/usr/lib/clang/3.1/include", /*OnlyLocalDecls=*/false, /*CaptureDiagnostics=*/true, 0, 0, true, /*PrecompilePreamble=*/false, /*TUKind=*/TU_Complete, /*CacheCodeCompletionResults=*/false, /*AllowPCHWithCompilerErrors=*/false));
+	llvm::OwningPtr<ASTUnit> unit(ASTUnit::LoadFromCommandLine(&args[0], &args[0]+args.size(), Diags, "/usr/lib/clang/3.1/", /*OnlyLocalDecls=*/false, /*CaptureDiagnostics=*/false, 0, 0, true, /*PrecompilePreamble=*/false, /*TUKind=*/TU_Complete, /*CacheCodeCompletionResults=*/false, /*AllowPCHWithCompilerErrors=*/false));
+
+
+	if (DiagClient->getNumErrors() > 0) {
+		return 1;
+	}
+
 
 	ASTContext& astContext = unit->getASTContext();
 
 	astConsumer.setMangleContext(astContext.createMangleContext());
 
-	clang::ParseAST(unit->getPreprocessor(), &astConsumer, astContext, false, clang::TU_Module);
-
-
-
-	std::cerr << "segunda fase--------------------------------------------------------------" << std::cerr;
 
 	for (clang::DeclContext::decl_iterator it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
 		clang::Decl* subdecl = *it;
-
 		SourceLocation location = subdecl->getLocation();
 
-		FileID fileId = unit->getSourceManager().getFileID(location);
-
-		const FileEntry* entry = unit->getSourceManager().getFileEntryForID(fileId);
-
-		if (entry != nullptr && entry->getName() != nullptr && contains(possiblyFiles, entry->getName())) {
-			cout << "filename = " << entry->getName() << endl;
+		if (unit->isInMainFileID(location)) {
 			astConsumer.handleDecl(subdecl);
 		}
 
 
 	}
 
-	//ci.getDiagnosticClient().EndSourceFile();
 
 	return 0;
 }
