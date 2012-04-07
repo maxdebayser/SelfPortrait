@@ -71,11 +71,12 @@ class MyASTConsumer
 	stringstream out;
 	set<string> m_sourceFiles;
 	SourceManager* m_sourceManager;
+	PrintingPolicy m_printPol;
 
 public:
 
-	MyASTConsumer(SourceManager* sm) : m_sourceManager(sm) {
-
+	MyASTConsumer(SourceManager* sm, LangOptions opts) : m_sourceManager(sm), m_printPol(opts) {
+		m_printPol.Bool = 1;
 		FileID mainID = sm->getMainFileID();
 		const FileEntry* entry = sm->getFileEntryForID(mainID);
 		m_sourceFiles.insert(entry->getName());
@@ -140,7 +141,7 @@ public:
 
 					for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
 						QualType t = it->getType();
-						out << "SUPER_CLASS(" << t.getAsString() << ")" << endl;
+						out << "SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
 					}
 
 					// recurse
@@ -168,7 +169,7 @@ public:
 			if( vd->isFileVarDecl() && vd->hasExternalStorage() )
 			{
 				std::cerr << "Read top-level variable decl: '";
-				std::cerr << vd->getDeclName().getAsString() ;
+				std::cerr << vd->getDeclName().getAsString(m_printPol) ;
 				std::cerr << std::endl;
 			}
 
@@ -176,15 +177,15 @@ public:
 
 			const string name = fd->getDeclName().getAsString();
 			QualType qt = fd->getResultType();
-			const string returnType =  qt.getAsString();
+			const string returnType =  qt.getAsString(m_printPol);
 
 			list<string> args;
 
 
 			for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
 				QualType pt = (*it)->getType();
-				// if we should need the names, this is how we get them *it)->getDeclName().getAsString()
-				args.push_back(pt.getAsString());
+				// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
+				args.push_back(pt.getAsString(m_printPol));
 			}
 
 			const string argstr = join(args, ", ");
@@ -210,7 +211,7 @@ public:
 				} else {
 
 					QualType mqt = md->getType();
-					// this prints the method type: mqt.getAsString()
+					// this prints the method type: mqt.getAsString(m_printPol)
 
 					const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
 
@@ -317,7 +318,7 @@ int main(int argc, const char* argv[])
 	}
 
 	ASTContext& astContext = unit->getASTContext();
-	MyASTConsumer astConsumer(&unit->getSourceManager());
+	MyASTConsumer astConsumer(&unit->getSourceManager(), astContext.getLangOpts());
 
 
 	for (auto it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
