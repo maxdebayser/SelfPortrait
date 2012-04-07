@@ -2,6 +2,7 @@ set(HEADERS
 	attribute_test.h
 	class_test.h
 	constructor_test.h
+	function_test.h
 	method_test.h
 	utilities_test.h
 	variant_test.h
@@ -11,6 +12,7 @@ set(SOURCES
 	attribute_test.cpp
 	class_test.cpp
 	constructor_test.cpp
+	function_test.cpp
 	method_test.cpp
 	utilities_test.cpp
 	variant_test.cpp
