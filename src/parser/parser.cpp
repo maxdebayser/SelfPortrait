@@ -190,51 +190,51 @@ public:
 			const string argstr = join(args, ", ");
 
 			if (CXXMethodDecl* md = dyn_cast<CXXMethodDecl>(decl)) {
-				QualType mqt = md->getType();
-				// this prints the method type: mqt.getAsString()
 
-				const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
-
-				Qualifiers quals = Qualifiers::fromCVRMask(proto->getTypeQuals());
-
-				const bool isStatic   = md->isStatic();
-				const bool isVirtual  = md->isVirtual();
-				const bool isConst    = quals.hasConst();
-				const bool isVolatile = quals.hasVolatile();
-
-				if (isVirtual && (md->size_overridden_methods() > 0)) {
-					return; // we don't need to repeat this
-				}
-
-				string a = string(args.empty() ? "" : ", ") + argstr;
-
-				if (isStatic) {
-					out << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
-				} else if (isConst && isVolatile) {
-					out << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
-				} else if (isConst) {
-					out << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
-				} else if (isVolatile) {
-					out << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+				if (dyn_cast<CXXConstructorDecl>(decl)) {
+					if (args.empty()) {
+						out << "DEFAULT_CONSTRUCTOR()" << endl;
+					} else {
+						out << "CONSTRUCTOR(" << argstr << ")" << endl;
+					}
+				} else if (dyn_cast<CXXConversionDecl>(decl)) {
+					// ex: operator bool();
+					// dont't know what to do with this yet
+				} else if (dyn_cast<CXXDestructorDecl>(decl)) {
+					// this is pretty much expected :)
 				} else {
-					out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
+
+					QualType mqt = md->getType();
+					// this prints the method type: mqt.getAsString()
+
+					const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
+
+					Qualifiers quals = Qualifiers::fromCVRMask(proto->getTypeQuals());
+
+					const bool isStatic   = md->isStatic();
+					const bool isVirtual  = md->isVirtual();
+					const bool isConst    = quals.hasConst();
+					const bool isVolatile = quals.hasVolatile();
+
+					if (isVirtual && (md->size_overridden_methods() > 0)) {
+						return; // we don't need to repeat this
+					}
+
+					string a = string(args.empty() ? "" : ", ") + argstr;
+
+					if (isStatic) {
+						out << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					} else if (isConst && isVolatile) {
+						out << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					} else if (isConst) {
+						out << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					} else if (isVolatile) {
+						out << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+					} else {
+						out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
+					}
 				}
-
-
-			} else if (dyn_cast<CXXConstructorDecl>(decl)) {
-				if (args.empty()) {
-					out << "DEFAULT_CONSTRUCTOR()" << endl;
-				} else {
-					out << "CONSTRUCTOR(" << argstr << ")" << endl;
-				}
-			} /*else if (CXXConversionDecl* cd = dyn_cast<CXXConversionDecl>(decl)) {
-				// ex: operator bool();
-				// dont't know what to do with this yet
-			} else if (CXXDestructorDecl* dd = dyn_cast<CXXDestructorDecl>(decl)) {
-				// this is pretty much expected :)
-			}*/
-
-
+			}
 		} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 			for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
 				//specializations are classes too
