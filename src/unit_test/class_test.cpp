@@ -46,7 +46,9 @@ namespace Test {
 
 		Test1(int arg1) : attribute1(arg1) {}
 
-		Test1(const Test1&) = delete;
+		Test1(const Test1& rhs) : attribute1(rhs.attribute1) {}
+
+		Test1& operator=(const Test1& rhs) { attribute1 = rhs.attribute1; return *this; }
 	};
 
 
@@ -63,7 +65,6 @@ BEGIN_CLASS(Test::TestBase2)
 	DEFAULT_CONSTRUCTOR()
 END_CLASS
 
-
 BEGIN_CLASS(Test::Test1)
 	SUPER_CLASS(class Test::TestBase1)
 	SUPER_CLASS(Test::TestBase2)
@@ -73,6 +74,8 @@ BEGIN_CLASS(Test::Test1)
 	ATTRIBUTE(attribute1)
 	DEFAULT_CONSTRUCTOR()
 	CONSTRUCTOR(int)
+	CONSTRUCTOR(const Test::Test1&)
+	METHOD(operator=, Test::Test1&, const Test::Test1&)
 END_CLASS
 
 
@@ -149,7 +152,7 @@ void ClassTestSuite::testClass()
 
 	TS_ASSERT(attr.type() == typeid(int));
 
-	TS_ASSERT_EQUALS(testConstructors.size(), 2);
+	TS_ASSERT_EQUALS(testConstructors.size(), 3);
 
 	Constructor defaultConstr;
 	Constructor intConstr;
@@ -180,7 +183,7 @@ void ClassTestSuite::testClass()
 
 	Class::MethodList methods = test.methods();
 
-	TS_ASSERT_EQUALS(methods.size(), 6);
+	TS_ASSERT_EQUALS(methods.size(), 7);
 
 	Method base1Method1;
 	Method method1;
