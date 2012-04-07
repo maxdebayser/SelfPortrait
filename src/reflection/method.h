@@ -175,7 +175,7 @@ struct method_type: public method_type_base<Functor> {
 };
 
 
-class AbstractMethodImpl {
+class AbstractMethodImpl: public Annotated {
 public:
 	AbstractMethodImpl() {}
 	virtual ~AbstractMethodImpl() {}

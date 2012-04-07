@@ -14,7 +14,7 @@
 
 
 // Keep as much type-independent information in the base class
-class AbstractClassImpl {
+class AbstractClassImpl: public Annotated {
 public:
 	typedef Class::MethodList MethodList;
 	typedef Class::ConstructorList ConstructorList;
@@ -34,6 +34,7 @@ public:
 	virtual const ::std::type_info& typeId() const = 0;
 	
 protected:
+
 	
 	virtual ~AbstractClassImpl() {}
 	
@@ -55,7 +56,7 @@ protected:
 		m_attributes.push_back(attr);
 	}
 	
-	void registerSuperClassPriv(Class c){
+	void registerSuperClassPriv(Class c) {
 		m_superclasses.push_back(c);
 		for (const Method& m : c.methods()) {
 			registerMethodPriv(m);
@@ -63,7 +64,6 @@ protected:
 		for (const Attribute& a: c.attributes()) {
 			registerAttributePriv(a);
 		}
-		
 		for(Class s: c.superclasses()) {
 			registerSuperClassPriv(s);
 		}
@@ -95,10 +95,6 @@ public:
 
 	void close() {
 		m_open = false;
-
-		// clean duplicated method declarations
-
-
 	}
 	
 	void registerMethod(Method method) {

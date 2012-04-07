@@ -98,7 +98,7 @@ struct attribute_type<const _Type _Clazz::*> {
 };
 
 
-class AbstractAttributeImpl {
+class AbstractAttributeImpl: public Annotated {
 public:
 	AbstractAttributeImpl() {}
 	virtual ~AbstractAttributeImpl() {}

@@ -34,17 +34,15 @@ public:
 	}
 };
 
-Attribute::Attribute()
-	: m_impl(InvalidAttribute::instance()) {}
+Attribute::Attribute() : Attribute(InvalidAttribute::instance()) {}
 
 Attribute::Attribute(AbstractAttributeImpl* impl)
-	: m_impl(impl) {}
+	: AnnotatedFrontend(*impl)
+	, m_impl(impl) {}
 
-Attribute::Attribute(const Attribute& rhs)
-	: m_impl(rhs.m_impl) {}
+Attribute::Attribute(const Attribute& rhs) : Attribute(rhs.m_impl) {}
 	
-Attribute::Attribute(Attribute&& rhs)
-	: m_impl(rhs.m_impl) {}
+Attribute::Attribute(Attribute&& rhs) : Attribute(rhs.m_impl) {}
 	
 Attribute& Attribute::operator=(const Attribute& rhs) {
 	m_impl = rhs.m_impl; return *this;
@@ -122,13 +120,14 @@ public:
 };
 
 Class::Class()
-	: m_impl(InvalidClass::instance()) {}
+	: Class(InvalidClass::instance()) {}
 	
-Class::Class(const AbstractClassImpl* impl)
-	: m_impl(impl) {}
+Class::Class(AbstractClassImpl* impl)
+	: AnnotatedFrontend(*impl)
+	, m_impl(impl) {}
 
 Class::Class(const Class& rhs)
-	: m_impl(rhs.m_impl) {}
+	: Class(rhs.m_impl) {}
 
 Class& Class::operator=(const Class& rhs) {
 	m_impl = rhs.m_impl;
@@ -136,7 +135,7 @@ Class& Class::operator=(const Class& rhs) {
 }
 
 Class::Class(Class&& rhs)
-	: m_impl(rhs.m_impl) {}
+	: Class(rhs.m_impl) {}
 
 Class& Class::operator=(Class&& rhs) {
 	m_impl = rhs.m_impl;
@@ -225,17 +224,19 @@ public:
 	}
 };
 
-Constructor::Constructor() : m_impl(InvalidConstructor::instance()) {}
+Constructor::Constructor() : Constructor(InvalidConstructor::instance()) {}
 
-Constructor::Constructor(const Constructor& rhs) : m_impl(rhs.m_impl) {}
+Constructor::Constructor(const Constructor& rhs) : Constructor(rhs.m_impl) {}
 
 Constructor& Constructor::operator=(const Constructor& rhs) { m_impl = rhs.m_impl; return *this; }
 
-Constructor::Constructor(Constructor&& rhs) : m_impl(rhs.m_impl) {}
+Constructor::Constructor(Constructor&& rhs) : Constructor(rhs.m_impl) {}
 
 Constructor& Constructor::operator=(Constructor&& rhs) { m_impl = rhs.m_impl; return *this; }
 
-Constructor::Constructor(AbstractConstructorImpl* impl)	: m_impl(impl) {}
+Constructor::Constructor(AbstractConstructorImpl* impl)
+	: AnnotatedFrontend(*impl)
+	, m_impl(impl) {}
 
 ::std::size_t Constructor::numberOfArguments() const {
 	return m_impl->numberOfArguments();
@@ -283,16 +284,17 @@ public:
 };
 
 Method::Method()
-	: m_impl(InvalidMethod::instance()) {}
+	: Method(InvalidMethod::instance()) {}
 
 Method::Method(AbstractMethodImpl* impl)
-	: m_impl(impl) {}
+	: AnnotatedFrontend(*impl)
+	, m_impl(impl) {}
 
 Method::Method(const Method& rhs)
-	: m_impl(rhs.m_impl) {}
+	: Method(rhs.m_impl) {}
 
 Method::Method(Method&& rhs)
-	: m_impl(rhs.m_impl) {}
+	: Method(rhs.m_impl) {}
 	
 
 Method& Method::operator=(const Method& rhs) { 
@@ -375,15 +377,15 @@ public:
 };
 
 Function::Function()
-	: m_impl(InvalidFunction::instance())
+	: Function(InvalidFunction::instance())
 {}
 
 Function::Function(const Function& rhs)
-	: m_impl(rhs.m_impl)
+	: Function(rhs.m_impl)
 {}
 
 Function::Function(Function&& rhs)
-	: m_impl(rhs.m_impl)
+	: Function(rhs.m_impl)
 {}
 
 Function& Function::operator=(const Function& rhs) {
@@ -416,7 +418,8 @@ VariantValue Function::callHelper(::std::vector<VariantValue>& vargs) const
 }
 
 Function::Function(AbstractFunctionImpl* impl)
-	: m_impl(impl)
+	: AnnotatedFrontend(*impl)
+	, m_impl(impl)
 {}
 
 const ::std::list<Function> Function::findFunctions(const ::std::string& name)

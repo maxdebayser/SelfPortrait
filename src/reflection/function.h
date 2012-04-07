@@ -71,7 +71,7 @@ struct function_type<_Result(*)(Args...)> {
 	}
 };
 
-class AbstractFunctionImpl {
+class AbstractFunctionImpl: public Annotated {
 public:
 	AbstractFunctionImpl() {}
 	virtual ~AbstractFunctionImpl() {}

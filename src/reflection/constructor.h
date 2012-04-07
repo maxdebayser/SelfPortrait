@@ -8,7 +8,7 @@
 #include "reflection.h"
 
 
-class AbstractConstructorImpl {
+class AbstractConstructorImpl: public Annotated {
 public:	
 	virtual ::std::size_t numberOfArguments() const = 0;
 	

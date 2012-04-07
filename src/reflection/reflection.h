@@ -3,14 +3,35 @@
 
 #include "variant.h"
 
+#include <set>
 #include <list>
 #include <typeinfo>
 
 // All user front-end classes
 
+typedef ::std::string Annotation;
+typedef ::std::set<Annotation> AnnotationSet;
+
+class Annotated {
+public:
+	const AnnotationSet& annotations() const { return m_annotations; }
+	void addAnnotation(const Annotation& a) { m_annotations.insert(m_annotations.end(), a); }
+private:
+	AnnotationSet m_annotations;
+};
+
+class AnnotatedFrontend {
+public:
+	const AnnotationSet& annotations() const { return m_instance.annotations(); }
+	void addAnnotation(const Annotation& a) { m_instance.addAnnotation(a); }
+	AnnotatedFrontend(Annotated& instance) : m_instance(instance) {}
+private:
+	Annotated& m_instance;
+};
+
 class AbstractAttributeImpl;
 
-class Attribute {
+class Attribute: public AnnotatedFrontend {
 public:
 	
 	Attribute();
@@ -32,6 +53,8 @@ public:
 	VariantValue get(const VariantValue& object) const;
 	void set(VariantValue& object, const VariantValue& value) const;
 	void set(const VariantValue& object, const VariantValue& value) const;
+
+
 	
 	
 private:
@@ -47,7 +70,7 @@ private:
 
 class AbstractConstructorImpl;
 
-class Constructor {
+class Constructor: public AnnotatedFrontend {
 public:
 
 	Constructor();
@@ -83,7 +106,7 @@ private:
 
 class AbstractMethodImpl;
 
-class Method {
+class Method: public AnnotatedFrontend {
 public:
 	
 	Method();
@@ -148,7 +171,7 @@ private:
 
 class AbstractClassImpl;
 
-class Class {
+class Class: public AnnotatedFrontend {
 public:
 	
 	typedef ::std::list<Method> MethodList;
@@ -191,9 +214,9 @@ public:
 	
 private:
 	
-	Class(const AbstractClassImpl* impl);
+	Class(AbstractClassImpl* impl);
 	
-	const AbstractClassImpl* m_impl;
+	AbstractClassImpl* m_impl;
 	
 	template<class T> friend Class ClassOf();
 };
@@ -211,7 +234,7 @@ inline bool operator!=(const Class& c1, const Class& c2)
 
 class AbstractFunctionImpl;
 
-class Function {
+class Function: public AnnotatedFrontend {
 public:
 
 	Function();
