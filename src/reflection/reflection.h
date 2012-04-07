@@ -186,6 +186,8 @@ public:
 	const AttributeList& attributes() const;
 	
 	const ClassList& superclasses() const;
+
+	static Class forName(const ::std::string& name);
 	
 private:
 	
@@ -205,6 +207,43 @@ inline bool operator!=(const Class& c1, const Class& c2)
 {
 	return !(c1 == c2);
 }
+
+
+class AbstractFunctionImpl;
+
+class Function {
+public:
+
+	Function();
+	Function(const Function& rhs);
+	Function(Function&& rhs);
+	Function& operator=(const Function& rhs);
+	Function& operator=(Function&& rhs);
+
+	const ::std::string& name() const;
+
+	const ::std::type_info& returnType() const;
+	::std::size_t numberOfArguments() const;
+	::std::vector<const ::std::type_info*> argumentTypes() const;
+
+	template<class... Args>
+	VariantValue call(const Args&... args) const {
+		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		return callHelper(vargs);
+	}
+
+	static const ::std::list<Function> findFunctions(const ::std::string& name);
+
+private:
+
+	VariantValue callHelper(::std::vector<VariantValue>& vargs) const;
+
+	Function(AbstractFunctionImpl* impl);
+	AbstractFunctionImpl* m_impl;
+
+	template<class FuncPtr>
+	friend Function make_function(const ::std::string& name, FuncPtr ptr);
+};
 
 
 #endif /* REFLECTION_H */

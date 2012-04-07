@@ -89,7 +89,7 @@ public:
 			os << "#include \"" << filename << "\"" << endl;
 		}
 
-		os << out.str() << endl;
+		os << endl << out.str() << endl;
 		return os;
 	}
 
@@ -234,6 +234,11 @@ public:
 						out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
 					}
 				}
+			} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
+				// is not a method
+				string a = string(args.empty() ? "" : ", ") + argstr;
+				out << "FUNCTION(" << name << ", " << returnType << a << ")" << endl;
+
 			}
 		} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 			for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {

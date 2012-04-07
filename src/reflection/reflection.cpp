@@ -1,9 +1,11 @@
 #include "reflection.h"
 
 #include "attribute.h"
+#include "function.h"
 #include "method.h"
 #include "constructor.h"
 #include "class.h"
+#include "reflection_impl.h"
 
 //--------attribute-----------------------------------------------
 
@@ -176,6 +178,32 @@ const Class::ClassList& Class::superclasses() const {
 	return m_impl->superclasses();
 }
 
+Class Class::forName(const ::std::string& name)
+{
+	return ClassRegistry::instance().forName(name);
+}
+
+const Class ClassRegistry::forName(const ::std::string& name) const
+{
+	auto it = m_registry.find(name);
+	if (it != m_registry.end()) {
+		return it->second;
+	} else {
+		return Class();
+	}
+}
+
+void ClassRegistry::registerClass(const ::std::string& name, const Class& c)
+{
+	m_registry[name] = c;
+}
+
+ClassRegistry& ClassRegistry::instance()
+{
+	static ClassRegistry instance;
+	return instance;
+}
+
 
 //--------constructor---------------------------------------------
 
@@ -323,4 +351,100 @@ VariantValue Method::call_helper(volatile VariantValue& object, const ::std::vec
 
 VariantValue Method::call_helper(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
+}
+
+//--------function---------------------------------------------
+
+class InvalidFunction: public AbstractFunctionImpl {
+public:
+
+	const ::std::string& name() const { return doThrow< const ::std::string&>(); }
+	const ::std::type_info& returnType() const { return doThrow< const ::std::type_info&>(); }
+	::std::size_t numberOfArguments() const { return doThrow< ::std::size_t>(); }
+	::std::vector<const ::std::type_info*> argumentTypes() const { return doThrow< ::std::vector<const ::std::type_info*> >(); }
+	VariantValue call(const ::std::vector<VariantValue>& args) const { return doThrow< VariantValue>(); }
+
+	template<class T>
+	T doThrow() const {
+		throw std::runtime_error("Invalid use of uninitialized Function handle");
+	}
+	static InvalidFunction* instance() {
+		static InvalidFunction instance;
+		return &instance;
+	}
+};
+
+Function::Function()
+	: m_impl(InvalidFunction::instance())
+{}
+
+Function::Function(const Function& rhs)
+	: m_impl(rhs.m_impl)
+{}
+
+Function::Function(Function&& rhs)
+	: m_impl(rhs.m_impl)
+{}
+
+Function& Function::operator=(const Function& rhs) {
+	m_impl = rhs.m_impl; return *this;
+}
+
+Function& Function::operator=(Function&& rhs) {
+	m_impl = rhs.m_impl; return *this;
+}
+
+const ::std::string& Function::name() const {
+	return m_impl->name();
+}
+
+const ::std::type_info& Function::returnType() const {
+	return m_impl->returnType();
+}
+
+::std::size_t Function::numberOfArguments() const {
+	return m_impl->numberOfArguments();
+}
+
+::std::vector<const ::std::type_info*> Function::argumentTypes() const {
+	return m_impl->argumentTypes();
+}
+
+VariantValue Function::callHelper(::std::vector<VariantValue>& vargs) const
+{
+	return m_impl->call(vargs);
+}
+
+Function::Function(AbstractFunctionImpl* impl)
+	: m_impl(impl)
+{}
+
+const ::std::list<Function> Function::findFunctions(const ::std::string& name)
+{
+	return FunctionRegistry::instance().findFunction(name);
+}
+
+
+const ::std::list<Function>& FunctionRegistry::findFunction(const ::std::string& name) const
+{
+	auto it = m_registry.find(name);
+	if (it == m_registry.end()) {
+		return emptyList;
+	} else {
+		return it->second;
+	}
+}
+
+void FunctionRegistry::registerFunction(const ::std::string& name, const Function& func)
+{
+	auto it = m_registry.find(name);
+	if (it == m_registry.end()) {
+		it = m_registry.insert(make_pair(name, ::std::list<Function>())).first;
+	}
+	it->second.push_back(func);
+}
+
+FunctionRegistry& FunctionRegistry::instance() {
+	static FunctionRegistry instance;
+	return instance;
 }

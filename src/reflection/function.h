@@ -7,6 +7,8 @@
 #include <tuple>
 #include <typeinfo>
 
+
+#include "reflection.h"
 #include "typelist.h"
 #include "variant.h"
 #include "str_conversion.h"
@@ -76,6 +78,7 @@ public:
 	
 	virtual const ::std::string& name() const = 0;
 	virtual ::std::size_t numberOfArguments() const = 0;
+	virtual const ::std::type_info& returnType() const = 0;
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
 	
@@ -85,17 +88,21 @@ public:
 	AbstractFunctionImpl& operator=(AbstractFunctionImpl&&) = delete;
 };
 
+
 template<class Func>
 class FunctionImpl: public AbstractFunctionImpl {
 public:
 	typedef function_type<Func> FDescr;
 	typedef typename FDescr::ptr_to_function ptr_to_function;
 	typedef typename FDescr::Arguments Arguments;
+	typedef typename FDescr::Result Result;
 	
 	FunctionImpl(::std::string name, ptr_to_function ptr) : m_name(name), m_ptr(ptr) {}
 	
+	virtual const ::std::type_info& returnType() const { return typeid(Result); }
+
 	virtual const ::std::string& name() const { return m_name; }
-	virtual ::std::size_t numberOfArguments() const { return typelist_size<Arguments>::size; }
+	virtual ::std::size_t numberOfArguments() const { return typelist_size<Arguments>::value; }
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename FDescr::Arguments>(); }
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
@@ -108,31 +115,7 @@ private:
 };
 
 
-class Function {
-public:
-	
-	Function(const Function& rhs) : m_impl(rhs.m_impl) {}
-	Function(Function&& rhs) : m_impl(rhs.m_impl) {}
-	Function& operator=(const Function& rhs) { m_impl = rhs.m_impl; return *this; }
-	Function& operator=(Function&& rhs) { m_impl = rhs.m_impl; return *this; }
-	
-	const ::std::string& name() const { return m_impl->name(); }
-	::std::size_t numberOfArguments() const { return m_impl->numberOfArguments(); }
-	::std::vector<const ::std::type_info*> argumentTypes() const { return m_impl->argumentTypes(); }
-	
-	template<class... Args>
-	VariantValue call(const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
-		return m_impl->call(vargs);
-	}
-	
-private:
-	Function(AbstractFunctionImpl* impl) : m_impl(impl) {}
-	AbstractFunctionImpl* m_impl;
-	
-	template<class FuncPtr>
-	friend Function make_function(const ::std::string& name, FuncPtr ptr);
-};
+
 
 template<class FuncPtr>
 Function make_function(const ::std::string& name, FuncPtr ptr)

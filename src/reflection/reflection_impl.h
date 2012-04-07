@@ -7,8 +7,38 @@
 #include "function.h"
 #include "method.h"
 #include "reflection.h"
+#include <map>
+#include <list>
+
+
+#define TOKENPASTE(x, y) x ## y
+#define TOKENPASTE2(x, y) TOKENPASTE(x, y)
+#define UNIQUE TOKENPASTE2(Unique_, __LINE__)
+
+class ClassRegistry {
+public:
+
+	const Class forName(const ::std::string& name) const;
+	void registerClass(const ::std::string& name, const Class& c);
+
+	static ClassRegistry& instance();
+
+private:
+	ClassRegistry() {}
+
+	::std::map< ::std::string, Class > m_registry;
+};
+
+template<class Clazz>
+struct ClassRegHelper {
+	ClassRegHelper( const char* name ) {
+		ClassRegistry::instance().registerClass(name, ClassOf<Clazz>());
+	}
+};
+
 
 #define BEGIN_CLASS(CLASS_NAME) \
+	static ClassRegHelper<CLASS_NAME> UNIQUE(#CLASS_NAME); \
 template<> ClassImpl<CLASS_NAME>* ClassImpl<CLASS_NAME>::instance() {\
 	typedef CLASS_NAME ThisClass;\
 	static ClassImpl instance;\
@@ -48,6 +78,35 @@ instance.registerSuperClassPriv(ClassOf<CLASS_NAME>());
 
 #define CONSTRUCTOR(...) \
 	instance.registerConstructorPriv(make_constructor<ThisClass, __VA_ARGS__>());
+
+
+class FunctionRegistry {
+public:
+
+	const ::std::list<Function>& findFunction(const ::std::string& name) const;
+	void registerFunction(const ::std::string& name, const Function& func);
+
+	static FunctionRegistry& instance();
+
+private:
+	FunctionRegistry() {}
+
+	::std::map< ::std::string, ::std::list<Function> > m_registry;
+	const ::std::list<Function> emptyList;
+};
+
+
+
+template<class FuncType>
+struct FuncRegHelper {
+	FuncRegHelper( const char* name, FuncType f ) {
+		FunctionRegistry::instance().registerFunction(name, make_function<FuncType>(name, f));
+	}
+};
+
+
+#define FUNCTION(NAME, RESULT, ...) \
+	static FuncRegHelper<RESULT (*)(__VA_ARGS__)> UNIQUE(#NAME, &NAME);
 
 
 #endif /* REFLECTION_IMPL_H */
