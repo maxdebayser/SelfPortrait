@@ -191,6 +191,11 @@ public:
 
 			if (CXXMethodDecl* md = dyn_cast<CXXMethodDecl>(decl)) {
 
+				if (!m_inClass) {
+					// out-of-class definitions are of no interest to us
+					return;
+				}
+
 				if (dyn_cast<CXXConstructorDecl>(decl)) {
 					if (args.empty()) {
 						out << "DEFAULT_CONSTRUCTOR()" << endl;
