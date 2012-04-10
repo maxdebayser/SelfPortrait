@@ -273,6 +273,135 @@ private:
 };
 
 
+template <class T>
+class ValueHolder<T&>: public IValueHolder {
+public:
+	typedef T& RefType;
+	typedef typename strip_reference<T&>::type ValueType;
+private:
+
+	template<class Dummy,bool OK>
+	struct CloneHelper {
+		static IValueHolder* clone(const ValueHolder* holder) {
+			return new ValueHolder(holder->m_value);
+		}
+	};
+
+	template<class Dummy>
+	struct CloneHelper<Dummy, false> {
+		static IValueHolder* clone(const ValueHolder*) {
+			throw std::runtime_error("type has no copy constructor");
+		}
+	};
+
+	typedef CloneHelper<ValueType, ::std::is_constructible<ValueType, ValueType>::value> Cloner;
+
+
+	template<class U,bool OK>
+	struct CompareHelper {
+		static bool equal(const U& u1, const U& u2) {
+			return u1 == u2;
+		}
+	};
+
+	template<class U>
+	struct CompareHelper<U, false> {
+		static bool equal(const U& u1, const U& u2) {
+			throw std::runtime_error("no equality operator exists for type");
+		}
+	};
+
+	typedef CompareHelper<ValueType, comparable<ValueType>::value> Compare;
+
+
+public:
+
+	ValueHolder(RefType v) : m_value(v) {	}
+
+	~ValueHolder() noexcept {
+	}
+
+	ValueHolder(const ValueHolder&) = delete;
+	ValueHolder& operator=(ValueHolder) = delete;
+
+	IValueHolder* clone() const override {
+		return Cloner::clone(this);
+	}
+
+	virtual bool equals(const IValueHolder* rhs) const override {
+		if (rhs != nullptr) {
+			try {
+				rhs->throwCast();
+			} catch (const ValueType* ptr) {
+				return Compare::equal(m_value, *ptr);
+			} catch (...) {}
+		}
+		return false;
+	}
+
+	const void * ptrToValue() const override {
+		return reinterpret_cast<const void*>(&m_value);
+	}
+
+	void * ptrToValue() override {
+		return reinterpret_cast<void*>(const_cast<ValueType*>(&m_value));
+	}
+#ifndef NO_RTTI
+	virtual const ::std::type_info& typeId() const override {
+		return typeid(ValueType);
+	}
+#endif
+	virtual ::std::size_t sizeOf() const override {
+		return sizeof(ValueType);
+	}
+
+	virtual ::std::size_t alignOf() const override {
+		return alignof(ValueType);
+	}
+
+	virtual bool isPOD() const {
+		return ::std::is_pod<ValueType>::value;
+	}
+
+	virtual bool isIntegral() const override {
+		return ::std::is_integral<ValueType>::value;
+	}
+
+	virtual bool isFloatingPoint() const override {
+		return ::std::is_floating_point<ValueType>::value;
+	}
+
+	virtual bool isPointer() const override {
+		return ::std::is_pointer<ValueType>::value;
+	}
+
+	virtual bool isStdString() const {
+		return ::std::is_same< ::std::string, ValueType>::value;
+	}
+
+	virtual ::std::string convertToString() const override {
+			return ::std::move(toString(m_value));
+	}
+
+	virtual number_conversion::dst_int_t convertToInteger() const override {
+		return ::convertToInteger(m_value);
+	}
+
+	// convert to largest floating point type
+	virtual number_conversion::dst_float_t convertToFloatingPoint() const override {
+		return ::convertToFloatingPoint(m_value);
+	}
+
+	virtual void throwCast() const {
+		throw &m_value;
+	}
+
+private:
+	RefType m_value;
+};
+
+
+
 
 // A variant value contains a value type by value
 class VariantValue {
@@ -281,7 +410,7 @@ public:
 	explicit VariantValue() : m_impl() {}
 	
 	template<class ValueType>
-	VariantValue(ValueType t) : m_impl(new ValueHolder<ValueType>(t)) {}
+	VariantValue(ValueType t) : m_impl(new ValueHolder<ValueType>(std::move(t))) {}
 
 	template<class ValueType, class... Args>
 	VariantValue& construct(Args&&... args) {
@@ -317,11 +446,11 @@ public:
 private:
 
 	template<class ValueType>
-	typename strip_reference<ValueType>::type* isAPriv() const {
+	typename strip_reference<ValueType>::ptr_type isAPriv() const {
 		if (isValid()) {
 			try {
 				m_impl->throwCast();
-			} catch(typename strip_reference<ValueType>::type* ptr) {
+			} catch(typename strip_reference<ValueType>::ptr_type ptr) {
 				return ptr;
 			} catch (...) {
 				return nullptr;
@@ -402,6 +531,26 @@ public:
 					typename Select< ::std::is_same<ValueType, ::std::string>::value,
 						stringConversion<ValueType>,
 						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl, success);
+	}
+
+	template<class ValueType>
+	ValueType&& moveValue(bool * success = nullptr) const {
+		check_valid();
+
+		auto ptr = isAPriv<ValueType>();
+
+		if (ptr != nullptr) {
+			if (success != nullptr) * success = true;
+			return ::std::forward<ValueType>(*ptr);
+		}
+
+		return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value,
+				integralConversion<ValueType>,
+				typename Select< ::std::is_floating_point<ValueType>::value,
+					floatConversion<ValueType>,
+					typename Select< ::std::is_same<ValueType, ::std::string>::value,
+						stringConversion<ValueType>,
+						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl, success));
 	}
 
 	template<class ValueType>

@@ -9,6 +9,18 @@
 
 // All user front-end classes
 
+inline void emplace(std::vector<VariantValue>& v )
+{
+	// nothing to do
+}
+
+template<class T, class... U>
+inline void emplace(std::vector<VariantValue>& v, T&& t, U&&... u )
+{
+	v.emplace_back(t);
+	emplace(v, u...);
+}
+
 typedef ::std::string Annotation;
 typedef ::std::set<Annotation> AnnotationSet;
 
@@ -87,7 +99,8 @@ public:
 	
 	template<class... Args>
 	VariantValue call(const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return call_helper(vargs);
 	}	
 	
@@ -127,27 +140,32 @@ public:
 
 	template<class... Args>
 	VariantValue call(const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return call_helper(vargs );
 	}
 	template<class... Args>
 	VariantValue call(VariantValue& object, const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return call_helper(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const VariantValue& object, const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return call_helper(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(volatile VariantValue& object, const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return call_helper(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const volatile VariantValue& object, const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return call_helper(object, vargs );
 	}
 		
@@ -250,8 +268,9 @@ public:
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 
 	template<class... Args>
-	VariantValue call(const Args&... args) const {
-		::std::vector<VariantValue> vargs{ VariantValue(args)... };
+	VariantValue call(Args&&... args) const {
+		::std::vector<VariantValue> vargs;
+		emplace(vargs, args...);
 		return callHelper(vargs);
 	}
 
@@ -259,7 +278,7 @@ public:
 
 private:
 
-	VariantValue callHelper(::std::vector<VariantValue>& vargs) const;
+	VariantValue callHelper(const ::std::vector<VariantValue>& vargs) const;
 
 	Function(AbstractFunctionImpl* impl);
 	AbstractFunctionImpl* m_impl;

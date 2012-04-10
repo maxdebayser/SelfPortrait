@@ -9,6 +9,13 @@ public:
 	
 	// test methods must begin with "test", otherwise cxxtestgen ignores them
 	void testFunction();
+
+	void testReturnByValue();
+	void testReturnByReference();
+	void testReturnByConstReference();
+	void testParametersByValue();
+	void testParametersByReference();
+	void testParametersByConstReference();
 };
 
 

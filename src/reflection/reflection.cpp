@@ -412,7 +412,7 @@ const ::std::type_info& Function::returnType() const {
 	return m_impl->argumentTypes();
 }
 
-VariantValue Function::callHelper(::std::vector<VariantValue>& vargs) const
+VariantValue Function::callHelper(const ::std::vector<VariantValue>& vargs) const
 {
 	return m_impl->call(vargs);
 }

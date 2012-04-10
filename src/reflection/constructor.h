@@ -51,7 +51,7 @@ public:
 				throw ::std::runtime_error("constructor called with insufficient number of arguments");
 			}
 			
-			auto t = ::std::make_tuple(args[I].convertTo<Args>(&success[I])...);
+			sink(args[I].moveValue<Args>(&success[I])...);
 			
 			for (::std::size_t i = 0; i < success.size(); ++i) {
 				if (success[i] == false) {
@@ -59,7 +59,7 @@ public:
 				}
 			}
 			VariantValue ret;
-			ret.construct<Clazz>(::std::get<I>(t)...);
+			ret.construct<Clazz>(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
 			return ret;
 		}
 	};

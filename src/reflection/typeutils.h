@@ -44,28 +44,38 @@ struct comparable {
 template<class T>
 struct strip_reference {
 	typedef T type;
+	typedef T* ptr_type;
 };
 
 template<class T>
 struct strip_reference<T&> {
 	typedef T type;
+	typedef T* ptr_type;
 };
 
 
 template<class T>
 struct strip_reference<const T&> {
 	typedef T type;
+	typedef const T* ptr_type;
+
 };
 
 template<class T>
 struct strip_reference<volatile T&> {
 	typedef T type;
+	typedef volatile T* ptr_type;
 };
 
 
 template<class T>
 struct strip_reference<const volatile T&> {
 	typedef T type;
+	typedef const volatile T* ptr_type;
 };
+
+// the /dev/null of arguments
+template<class... T>
+inline void sink(T&&... t) {}
 
 #endif

@@ -6,7 +6,7 @@
 #include <string>
 #include <tuple>
 #include <typeinfo>
-
+#include <utility>
 
 #include "reflection.h"
 #include "typelist.h"
@@ -41,6 +41,9 @@ struct function_type<_Result(*)(Args...)> {
 			}
 		}
 	};
+
+
+
 		
 	template<class R, class Ind>
 	struct call_helper;	
@@ -48,10 +51,12 @@ struct function_type<_Result(*)(Args...)> {
 	template<class R, ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<R, Ind<I...>> {
 		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
+			VariantValue ret;
 			call_verifier<sizeof...(I)> ver(args.size());
-			auto t = ::std::make_tuple(args[I].convertTo<typename type_at<Arguments, I>::type>(&ver.success[I])...);
+			sink(args[I].moveValue<typename type_at<Arguments, I>::type>(&ver.success[I])...);
 			ver.assert_conversion_succeded();
-			return ptr(::std::get<I>(t)...);
+			ret.construct<R>(ptr(args[I].moveValue<typename type_at<Arguments, I>::type>()...));
+			return ret;
 		}
 	};
 	
@@ -59,9 +64,9 @@ struct function_type<_Result(*)(Args...)> {
 	struct call_helper<void, Ind<I...>> {
 		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
 			call_verifier<sizeof...(I)> ver(args.size());
-			auto t = ::std::make_tuple(args[I].convertTo<typename type_at<Arguments, I>::type>(&ver.success[I])...);
+			sink(args[I].moveValue<typename type_at<Arguments, I>::type>(&ver.success[I])...);
 			ver.assert_conversion_succeded();
-			ptr(::std::get<I>(t)...);
+			ptr(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
 			return VariantValue();
 		}
 	};

@@ -59,5 +59,233 @@ void FunctionTestSuite::testFunction()
 	TS_ASSERT(v2.isValid());
 	TS_ASSERT(v2.isA<int>());
 	TS_ASSERT_EQUALS(v2.value<int>(), 5);
+}
 
+namespace {
+
+	class CopyCount {
+	public:
+		CopyCount(int id) : m_id(id), m_moved(false) {}
+		CopyCount() : CopyCount(0) {}
+
+		CopyCount(const CopyCount& rhs) : CopyCount(rhs.m_id) {
+			++s_numCopies;
+		}
+
+		CopyCount(CopyCount&& rhs) : CopyCount(rhs.m_id) {
+			++s_numMoves;
+			rhs.m_moved = true;
+		}
+
+		CopyCount& operator=(const CopyCount& rhs) {
+			m_id = rhs.m_id;
+			++s_numCopies;
+			return *this;
+		}
+
+		CopyCount& operator=(CopyCount&& rhs) {
+			m_id = rhs.m_id;
+			++s_numMoves;
+			rhs.m_moved = true;
+			return *this;
+		}
+
+		int id() const { return m_id; }
+
+		void changeId(int newId) {
+			m_id = newId;
+		}
+
+		static void resetCopyCount() {
+			s_numCopies = 0;
+		}
+		static int numberOfCopies() {
+			return s_numCopies;
+		}
+		static void resetMoveCount() {
+			s_numMoves = 0;
+		}
+		static int numberOfMoves() {
+			return s_numMoves;
+		}
+		static void resetAll() {
+			resetCopyCount();
+			resetMoveCount();
+		}
+
+		bool hasBeenMoved() {
+			return m_moved;
+		}
+
+	private:
+		static int s_numCopies;
+		static int s_numMoves;
+		int m_id;
+		bool m_moved;
+	};
+
+	int CopyCount::s_numCopies = 0;
+	int CopyCount::s_numMoves = 0;
+
+	CopyCount returnObjectByValue() {
+		return CopyCount(33);
+	}
+
+	CopyCount& returnObjectByReference() {
+		static CopyCount instance(777);
+		return instance;
+	}
+
+	const CopyCount& returnObjectByConstReference() {
+		static CopyCount instance(888);
+		return instance;
+	}
+
+
+	int paramByValue(CopyCount c) {
+		return c.id();
+	}
+
+	int paramByReference(CopyCount& c) {
+		c.changeId(c.id()+1);
+		return c.id();
+	}
+
+	int paramByConstReference(const CopyCount& c) {
+		return c.id();
+	}
+}
+
+void FunctionTestSuite::testReturnByValue()
+{
+	auto f = make_function("returnObjectByValue", &returnObjectByValue);
+
+	CopyCount::resetAll();
+
+	CopyCount c = returnObjectByValue();
+
+	TS_ASSERT_EQUALS(c.id(), 33);
+
+	int directCallCopies = CopyCount::numberOfCopies();
+	CopyCount::resetAll();
+
+	VariantValue v = f.call();
+
+	int reflectionCopies = CopyCount::numberOfCopies();
+
+	TS_ASSERT(v.isValid());
+
+	CopyCount& ref = v.convertTo<CopyCount&>();
+
+	TS_ASSERT_EQUALS(ref.id(),33);
+
+	TS_ASSERT_EQUALS(directCallCopies, reflectionCopies);
+}
+
+void FunctionTestSuite::testReturnByReference()
+{
+	auto f = make_function("returnObjectByReference", &returnObjectByReference);
+	CopyCount::resetAll();
+	VariantValue v = f.call();
+	CopyCount& ref = v.convertTo<CopyCount&>();
+
+	TS_ASSERT_EQUALS(ref.id(), 777);
+	ref.changeId(888);
+	TS_ASSERT_EQUALS(returnObjectByReference().id(), 888);
+	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+}
+
+void FunctionTestSuite::testReturnByConstReference()
+{
+	auto f = make_function("returnObjectByConstReference", &returnObjectByConstReference);
+	CopyCount::resetAll();
+	VariantValue v = f.call();
+	TS_ASSERT(v.isValid());
+	bool ok = false;
+	CopyCount& ref = v.convertTo<CopyCount&>(&ok);
+	TS_ASSERT(!ok);
+
+	const CopyCount& cref = v.convertTo<const CopyCount&>(&ok);
+	TS_ASSERT(ok);
+
+	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+
+	TS_ASSERT_EQUALS(cref.id(), 888);
+	TS_ASSERT_EQUALS(&cref, &returnObjectByConstReference());
+}
+
+void FunctionTestSuite::testParametersByValue()
+{
+	auto f = make_function("paramByValue", &paramByValue);
+	CopyCount::resetAll();
+
+	CopyCount c(77);
+
+	TS_ASSERT_EQUALS(paramByValue(c), 77);
+
+	int directCallCopies = CopyCount::numberOfCopies();
+	int directCallMoves = CopyCount::numberOfMoves();
+	TS_ASSERT_EQUALS(directCallCopies, 1);
+	TS_ASSERT_EQUALS(directCallMoves,  0);
+
+	CopyCount::resetAll();
+
+	VariantValue v = f.call(c);
+
+	TS_ASSERT(v.isValid());
+	TS_ASSERT_EQUALS(v.value<int>(), 77);
+	int reflectionCopies = CopyCount::numberOfCopies();
+	int reflectionMoves = CopyCount::numberOfMoves();
+
+	TS_ASSERT_EQUALS(reflectionCopies, 1);
+	TS_ASSERT_EQUALS(reflectionMoves,  2);
+	TS_ASSERT(!c.hasBeenMoved());
+}
+
+
+void FunctionTestSuite::testParametersByReference()
+{
+	auto f = make_function("paramByReference", &paramByReference);
+
+	CopyCount::resetAll();
+
+	CopyCount c(44);
+
+	TS_ASSERT_EQUALS(paramByReference(c), 45);
+	TS_ASSERT_EQUALS(c.id(), 45);
+	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+
+	VariantValue param;
+	param.construct<CopyCount&>(c);
+
+	VariantValue r = f.call(param);
+
+	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+	TS_ASSERT(r.isValid());
+	TS_ASSERT_EQUALS(r.value<int>(), 46);
+	TS_ASSERT_EQUALS(c.id(), 46);
+}
+
+
+void FunctionTestSuite::testParametersByConstReference()
+{
+	auto f = make_function("paramByConstReference", &paramByConstReference);
+
+	CopyCount::resetAll();
+
+	CopyCount c(44);
+
+	TS_ASSERT_EQUALS(paramByConstReference(c), 44);
+	TS_ASSERT_EQUALS(c.id(), 44);
+	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+
+	VariantValue param;
+	param.construct<CopyCount&>(c);
+
+	VariantValue r = f.call(param);
+
+	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+	TS_ASSERT(r.isValid());
+	TS_ASSERT_EQUALS(r.value<int>(), 44);
+	TS_ASSERT_EQUALS(c.id(), 44);
 }
