@@ -238,7 +238,7 @@ void FunctionTestSuite::testParametersByValue()
 	int reflectionMoves = CopyCount::numberOfMoves();
 
 	TS_ASSERT_EQUALS(reflectionCopies, 1);
-	TS_ASSERT_EQUALS(reflectionMoves,  2);
+	TS_ASSERT_EQUALS(reflectionMoves,  1);
 	TS_ASSERT(!c.hasBeenMoved());
 }
 

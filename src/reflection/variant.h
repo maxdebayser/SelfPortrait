@@ -16,6 +16,9 @@
 #include "typeutils.h"
 
 
+#include <iostream>
+using namespace std;
+
 namespace number_conversion {
 	
 	typedef long long int dst_int_t; // largest integer type
@@ -316,7 +319,9 @@ private:
 
 public:
 
-	ValueHolder(RefType v) : m_value(v) {	}
+	ValueHolder(RefType v) : m_value(v) {
+		cout << "is rvalue ref = " << std::is_rvalue_reference<RefType>::value << endl;
+	}
 
 	~ValueHolder() noexcept {
 	}
@@ -410,7 +415,11 @@ public:
 	explicit VariantValue() : m_impl() {}
 	
 	template<class ValueType>
-	VariantValue(ValueType t) : m_impl(new ValueHolder<ValueType>(std::move(t))) {}
+	VariantValue(const ValueType& t) : m_impl(new ValueHolder<ValueType>(t)) {}
+
+	template<class ValueType>
+	VariantValue(ValueType* t) : m_impl(new ValueHolder<ValueType*>(t)) {}
+
 
 	template<class ValueType, class... Args>
 	VariantValue& construct(Args&&... args) {
