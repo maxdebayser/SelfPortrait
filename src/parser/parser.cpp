@@ -30,6 +30,7 @@
 #include <string>
 #include <set>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 using namespace std;
@@ -263,6 +264,8 @@ int main(int argc, const char* argv[])
 	bool foundCpp = false;
 	bool foundCpp11 = false;
 	bool foundSpellChecking = false;
+	string output;
+
 
 	for (int i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "-std=c++11") == 0) {
@@ -277,7 +280,23 @@ int main(int argc, const char* argv[])
 			foundSpellChecking = true;
 		} else if (strcmp(argv[i], "-fspell-checking") == 0) {
 			foundSpellChecking = true;
+		} else if (strncmp(argv[i], "-o", 2) == 0) {
+
+			if (argv[i][2] != '\0') {
+				output = &argv[i][2];
+			} else {
+				if ((i+1) == argc) {
+					cerr << "No argument given to -o option" << endl;
+					exit(1);
+				}
+				output = argv[i+1];
+			}
 		}
+	}
+
+	if (output.empty()) {
+		cerr << "No output given" << endl;
+		exit(1);
 	}
 
 	args.push_back(argv[0]);
@@ -330,7 +349,21 @@ int main(int argc, const char* argv[])
 		}
 	}
 
-	astConsumer.print(cout);
+
+	std::ofstream out;
+	if (output != "-") {
+		out.open(output);
+		if (!out.is_open()) {
+			cerr << "cannot open output file " << output << endl;
+			exit(1);
+		}
+	} else {
+		out.copyfmt(std::cout);
+		out.clear(std::cout.rdstate());
+		out.basic_ios<char>::rdbuf(std::cout.rdbuf());
+	}
+
+	astConsumer.print(out);
 
 	return 0;
 }
