@@ -250,7 +250,7 @@ bool Constructor::isDefaultConstructor() const {
 	return m_impl->argumentTypes();
 }
 
-VariantValue Constructor::call_helper(const ::std::vector<VariantValue>& vargs) const {
+VariantValue Constructor::callArgArray(const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(vargs);
 }
 
@@ -335,23 +335,23 @@ bool Method::isStatic() const {
 	return m_impl->isStatic();
 }
 
-VariantValue Method::call_helper(const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(vargs );	
 }
 
-VariantValue Method::call_helper(VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );
 }
 
-VariantValue Method::call_helper(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
 }
 
-VariantValue Method::call_helper(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
 }
 
-VariantValue Method::call_helper(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	return m_impl->call(object, vargs );	
 }
 
@@ -412,7 +412,7 @@ const ::std::type_info& Function::returnType() const {
 	return m_impl->argumentTypes();
 }
 
-VariantValue Function::callHelper(const ::std::vector<VariantValue>& vargs) const
+VariantValue Function::callArgArray(const ::std::vector<VariantValue>& vargs) const
 {
 	return m_impl->call(vargs);
 }
@@ -422,7 +422,7 @@ Function::Function(AbstractFunctionImpl* impl)
 	, m_impl(impl)
 {}
 
-const ::std::list<Function> Function::findFunctions(const ::std::string& name)
+const ::std::list<Function>& Function::findFunctions(const ::std::string& name)
 {
 	return FunctionRegistry::instance().findFunction(name);
 }

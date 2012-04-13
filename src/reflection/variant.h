@@ -16,9 +16,6 @@
 #include "typeutils.h"
 
 
-#include <iostream>
-using namespace std;
-
 namespace number_conversion {
 	
 	typedef long long int dst_int_t; // largest integer type
@@ -319,9 +316,7 @@ private:
 
 public:
 
-	ValueHolder(RefType v) : m_value(v) {
-		cout << "is rvalue ref = " << std::is_rvalue_reference<RefType>::value << endl;
-	}
+	ValueHolder(RefType v) : m_value(v) {}
 
 	~ValueHolder() noexcept {
 	}
@@ -446,6 +441,12 @@ public:
 		m_impl.reset(new ValueHolder<ValueType>(value));
 		return *this;
 	}
+
+	VariantValue createReference() {
+		VariantValue ret;
+		ret.m_impl = m_impl;
+		return ::std::move(ret);
+	}
 	
 	template<class ValueType>
 	bool isA() const {
@@ -470,7 +471,7 @@ private:
 
 	template<class ValueType>
 	struct integralConversion {
-		static ValueType value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			return static_cast<ValueType>(holder->convertToInteger());
 		}
@@ -478,7 +479,7 @@ private:
 		
 	template<class ValueType>
 	struct floatConversion {
-		static ValueType value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			return static_cast<ValueType>(holder->convertToFloatingPoint());
 		}
@@ -486,7 +487,7 @@ private:
 		
 	template<class ValueType>
 	struct stringConversion {
-		static ValueType value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			return holder->convertToString();
 		}
@@ -494,7 +495,7 @@ private:
 	
 	template<class ValueType>
 	struct impossibleConversion {
-		static ValueType value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
 			return ValueType();
 		}
@@ -502,7 +503,7 @@ private:
 	
 	template<class ValueType>
 	struct impossibleConversion<ValueType&> {
-		static ValueType& value(const ::std::unique_ptr<IValueHolder>& holder, bool * success) {
+		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
 			ValueType* ptr = nullptr;
 			return *ptr;
@@ -639,7 +640,7 @@ public:
 	
 	
 private:
-	std::unique_ptr<IValueHolder> m_impl;
+	std::shared_ptr<IValueHolder> m_impl;
 	
 	void check_valid() const {
 		if (!isValid()) {

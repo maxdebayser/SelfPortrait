@@ -65,9 +65,6 @@ public:
 	VariantValue get(const VariantValue& object) const;
 	void set(VariantValue& object, const VariantValue& value) const;
 	void set(const VariantValue& object, const VariantValue& value) const;
-
-
-	
 	
 private:
 	Attribute(AbstractAttributeImpl* impl);
@@ -101,13 +98,13 @@ public:
 	VariantValue call(const Args&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return call_helper(vargs);
-	}	
+		return callArgArray(vargs);
+	}
+
+	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const ;
 	
 private:
 	Constructor(AbstractConstructorImpl* impl);
-	
-	VariantValue call_helper(const ::std::vector<VariantValue>& vargs) const ;
 	
 	AbstractConstructorImpl* m_impl;
 	
@@ -142,42 +139,44 @@ public:
 	VariantValue call(const Args&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return call_helper(vargs );
+		return callArgArray(vargs );
 	}
 	template<class... Args>
 	VariantValue call(VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return call_helper(object, vargs );
+		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return call_helper(object, vargs );
+		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(volatile VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return call_helper(object, vargs );
+		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const volatile VariantValue& object, const Args&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return call_helper(object, vargs );
+		return callArgArray(object, vargs );
 	}
-		
+
+	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const;
+	VariantValue callArgArray(VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue callArgArray(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue callArgArray(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+	VariantValue callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+
 private:
 	
 	Method(AbstractMethodImpl* impl);
 	
-	VariantValue call_helper(const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue call_helper(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+
 	
 	AbstractMethodImpl* m_impl;
 	
@@ -255,6 +254,8 @@ class AbstractFunctionImpl;
 class Function: public AnnotatedFrontend {
 public:
 
+	typedef ::std::list<Function> FunctionList;
+
 	Function();
 	Function(const Function& rhs);
 	Function(Function&& rhs);
@@ -271,14 +272,16 @@ public:
 	VariantValue call(Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
-		return callHelper(vargs);
+		return callArgArray(vargs);
 	}
 
-	static const ::std::list<Function> findFunctions(const ::std::string& name);
+	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const;
+
+	static const FunctionList& findFunctions(const ::std::string& name);
 
 private:
 
-	VariantValue callHelper(const ::std::vector<VariantValue>& vargs) const;
+
 
 	Function(AbstractFunctionImpl* impl);
 	AbstractFunctionImpl* m_impl;
