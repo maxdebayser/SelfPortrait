@@ -74,6 +74,11 @@ class MyASTConsumer
 	SourceManager* m_sourceManager;
 	PrintingPolicy m_printPol;
 
+	struct IncompleteType {
+		QualType type;
+		SourceRange range;
+	};
+
 public:
 
 	MyASTConsumer(SourceManager* sm, LangOptions opts) : m_sourceManager(sm), m_printPol(opts) {
@@ -95,77 +100,89 @@ public:
 		return os;
 	}
 
+	QualType treatType(QualType&& t, SourceRange&& range) {
+
+		const Type* type = t.getTypePtr();
+
+		if (type->isIncompleteType() && !type->isSpecificBuiltinType(BuiltinType::Void)) {
+			throw IncompleteType{t, range};
+		}
+
+		return t.getCanonicalType();
+	}
+
 	void handleDecl(Decl* decl)
 	{
-		if (decl == nullptr) {
-			return;
-		}
-
-		AccessSpecifier as = decl->getAccess();
-
-		if (as == AS_protected || as == AS_private) {
-			return;
-		}
-
-		if (NamespaceDecl* nd = dyn_cast<NamespaceDecl>(decl)) {
-			if (nd->isAnonymousNamespace()) {
-				return; // no interest in hidden symbols
+		try {
+			if (decl == nullptr) {
+				return;
 			}
 
-			m_namespaces.push_back(nd->getDeclName().getAsString());
-			// recurse
-			for (DeclContext::decl_iterator it = nd->decls_begin(); it != nd->decls_end(); ++it) {
-				clang::Decl* subdecl = *it;
-				handleDecl(subdecl);
+			AccessSpecifier as = decl->getAccess();
+
+			if (as == AS_protected || as == AS_private) {
+				return;
 			}
-			m_namespaces.pop_back();
 
-		} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
-			QualType t = fd->getType().getCanonicalType();
-			out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
-		} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
-
-			if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
-				if (crd->hasDefinition()) {
-					crd = crd->getDefinition();
-
-					if (m_inClass) {
-						m_visitLater.push_back(crd);
-						return;
-					}
-
-					m_namespaces.push_back(crd->getDeclName().getAsString());
-
-					m_inClass = true;
-
-					out << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
-
-					for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
-						QualType t = it->getType().getCanonicalType();
-						out << "SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
-					}
-
-					// recurse
-					for (DeclContext::decl_iterator it = crd->decls_begin(); it != crd->decls_end(); ++it) {
-						clang::Decl* subdecl = *it;
-						handleDecl(subdecl);
-					}
-					m_inClass = false;
-					out << "END_CLASS" << endl << endl;
-
-					while( !m_visitLater.empty() ) {
-						CXXRecordDecl* nested = m_visitLater.front();
-						m_visitLater.pop_front();
-						handleDecl(nested);
-					}
-
-					m_namespaces.pop_back();
+			if (NamespaceDecl* nd = dyn_cast<NamespaceDecl>(decl)) {
+				if (nd->isAnonymousNamespace()) {
+					return; // no interest in hidden symbols
 				}
-			} /*else {
+
+				m_namespaces.push_back(nd->getDeclName().getAsString());
+				// recurse
+				for (DeclContext::decl_iterator it = nd->decls_begin(); it != nd->decls_end(); ++it) {
+					clang::Decl* subdecl = *it;
+					handleDecl(subdecl);
+				}
+				m_namespaces.pop_back();
+
+			} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
+				QualType t = treatType(fd->getType(), fd->getSourceRange());
+				out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
+			} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
+
+				if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
+					if (crd->hasDefinition()) {
+						crd = crd->getDefinition();
+
+						if (m_inClass) {
+							m_visitLater.push_back(crd);
+							return;
+						}
+
+						m_namespaces.push_back(crd->getDeclName().getAsString());
+
+						m_inClass = true;
+
+						out << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
+
+						for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
+							QualType t = treatType(it->getType(), it->getSourceRange());
+							out << "SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
+						}
+
+						// recurse
+						for (DeclContext::decl_iterator it = crd->decls_begin(); it != crd->decls_end(); ++it) {
+							clang::Decl* subdecl = *it;
+							handleDecl(subdecl);
+						}
+						m_inClass = false;
+						out << "END_CLASS" << endl << endl;
+
+						while( !m_visitLater.empty() ) {
+							CXXRecordDecl* nested = m_visitLater.front();
+							m_visitLater.pop_front();
+							handleDecl(nested);
+						}
+
+						m_namespaces.pop_back();
+					}
+				} /*else {
 				// don't know what to do with this, the only possibility left are unions, right?
 			}*/
 
-		} /*else if (VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(decl)) {
+			} /*else if (VarDecl *vd = llvm::dyn_cast<clang::VarDecl>(decl)) {
 			std::cout << vd << std::endl;
 			if( vd->isFileVarDecl() && vd->hasExternalStorage() )
 			{
@@ -176,81 +193,103 @@ public:
 
 		}*/ else if (FunctionDecl* fd = llvm::dyn_cast<FunctionDecl>(decl)) {
 
-			const string name = fd->getDeclName().getAsString();
-			QualType qt = fd->getResultType().getCanonicalType();
-			const string returnType =  qt.getAsString(m_printPol);
+				const string name = fd->getDeclName().getAsString();
+				QualType qt = treatType(fd->getResultType(), fd->getSourceRange());
+				const string returnType =  qt.getAsString(m_printPol);
 
-			list<string> args;
+				list<string> args;
 
 
-			for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
-				QualType pt = (*it)->getType().getCanonicalType();
-				// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
-				args.push_back(pt.getAsString(m_printPol));
-			}
-
-			const string argstr = join(args, ", ");
-
-			if (CXXMethodDecl* md = dyn_cast<CXXMethodDecl>(decl)) {
-
-				if (!m_inClass) {
-					// out-of-class definitions are of no interest to us
-					return;
+				for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
+					QualType pt = treatType((*it)->getType(), (*it)->getSourceRange());
+					// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
+					args.push_back(pt.getAsString(m_printPol));
 				}
 
-				if (dyn_cast<CXXConstructorDecl>(decl)) {
-					if (args.empty()) {
-						out << "DEFAULT_CONSTRUCTOR()" << endl;
+				const string argstr = join(args, ", ");
+
+				if (CXXMethodDecl* md = dyn_cast<CXXMethodDecl>(decl)) {
+
+					if (!m_inClass) {
+						// out-of-class definitions are of no interest to us
+						return;
+					}
+
+					if (dyn_cast<CXXConstructorDecl>(decl)) {
+						if (args.empty()) {
+							out << "DEFAULT_CONSTRUCTOR()" << endl;
+						} else {
+							out << "CONSTRUCTOR(" << argstr << ")" << endl;
+						}
+					} else if (dyn_cast<CXXConversionDecl>(decl)) {
+						// ex: operator bool();
+						// dont't know what to do with this yet
+					} else if (dyn_cast<CXXDestructorDecl>(decl)) {
+						// this is pretty much expected :)
 					} else {
-						out << "CONSTRUCTOR(" << argstr << ")" << endl;
+
+						QualType mqt = treatType(md->getType(), md->getSourceRange());
+						// this prints the method type: mqt.getAsString(m_printPol)
+
+						const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
+
+						Qualifiers quals = Qualifiers::fromCVRMask(proto->getTypeQuals());
+
+						const bool isStatic   = md->isStatic();
+						const bool isVirtual  = md->isVirtual();
+						const bool isConst    = quals.hasConst();
+						const bool isVolatile = quals.hasVolatile();
+
+						if (isVirtual && (md->size_overridden_methods() > 0)) {
+							return; // we don't need to repeat this
+						}
+
+						string a = string(args.empty() ? "" : ", ") + argstr;
+
+						if (isStatic) {
+							out << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
+						} else if (isConst && isVolatile) {
+							out << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+						} else if (isConst) {
+							out << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
+						} else if (isVolatile) {
+							out << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+						} else {
+							out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
+						}
 					}
-				} else if (dyn_cast<CXXConversionDecl>(decl)) {
-					// ex: operator bool();
-					// dont't know what to do with this yet
-				} else if (dyn_cast<CXXDestructorDecl>(decl)) {
-					// this is pretty much expected :)
-				} else {
-
-					QualType mqt = md->getType().getCanonicalType();
-					// this prints the method type: mqt.getAsString(m_printPol)
-
-					const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
-
-					Qualifiers quals = Qualifiers::fromCVRMask(proto->getTypeQuals());
-
-					const bool isStatic   = md->isStatic();
-					const bool isVirtual  = md->isVirtual();
-					const bool isConst    = quals.hasConst();
-					const bool isVolatile = quals.hasVolatile();
-
-					if (isVirtual && (md->size_overridden_methods() > 0)) {
-						return; // we don't need to repeat this
-					}
-
+				} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
+					// is not a method
 					string a = string(args.empty() ? "" : ", ") + argstr;
-
-					if (isStatic) {
-						out << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
-					} else if (isConst && isVolatile) {
-						out << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
-					} else if (isConst) {
-						out << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
-					} else if (isVolatile) {
-						out << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
-					} else {
-						out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
-					}
+					out << "FUNCTION(" << name << ", " << returnType << a << ")" << endl;
 				}
-			} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
-				// is not a method
-				string a = string(args.empty() ? "" : ", ") + argstr;
-				out << "FUNCTION(" << name << ", " << returnType << a << ")" << endl;
+			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
+				for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
+					//specializations are classes too
+					clang::ClassTemplateSpecializationDecl* spec = *it;
+					handleDecl(spec);
+				}
 			}
-		} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
-			for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
-				//specializations are classes too
-				clang::ClassTemplateSpecializationDecl* spec = *it;
-				handleDecl(spec);
+		} catch (const IncompleteType& t) {
+
+			SourceLocation start = t.range.getBegin();
+			const FileEntry* entry = m_sourceManager->getFileEntryForID(m_sourceManager->getFileID(start));
+			int line = m_sourceManager->getSpellingLineNumber(start);
+			int column = m_sourceManager->getSpellingColumnNumber(start);
+
+
+
+			cerr << entry->getName() << ":" <<
+					line << ":" << column <<
+					": warning: Incomplete type\n" <<
+					t.type.getAsString(m_printPol) <<
+
+					", meta data will not be emitted for ";
+
+			if (NamedDecl* nd = dyn_cast<NamedDecl>(decl)) {
+				cerr << nd->getNameAsString() << endl;
+			} else {
+				cerr << "the current declaration" << endl;
 			}
 		}
 	}
