@@ -281,10 +281,10 @@ public:
 
 			cerr << entry->getName() << ":" <<
 					line << ":" << column <<
-					": warning: Incomplete type\n" <<
+					": warning: Incomplete type " <<
 					t.type.getAsString(m_printPol) <<
 
-					", meta data will not be emitted for ";
+					",\nmeta data will not be emitted for ";
 
 			if (NamedDecl* nd = dyn_cast<NamedDecl>(decl)) {
 				cerr << nd->getNameAsString() << endl;
