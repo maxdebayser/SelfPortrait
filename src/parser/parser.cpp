@@ -121,7 +121,7 @@ public:
 			m_namespaces.pop_back();
 
 		} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
-			QualType t = fd->getType();
+			QualType t = fd->getType().getCanonicalType();
 			out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
 		} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
 
@@ -141,7 +141,7 @@ public:
 					out << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
 
 					for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
-						QualType t = it->getType();
+						QualType t = it->getType().getCanonicalType();
 						out << "SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
 					}
 
@@ -177,14 +177,14 @@ public:
 		}*/ else if (FunctionDecl* fd = llvm::dyn_cast<FunctionDecl>(decl)) {
 
 			const string name = fd->getDeclName().getAsString();
-			QualType qt = fd->getResultType();
+			QualType qt = fd->getResultType().getCanonicalType();
 			const string returnType =  qt.getAsString(m_printPol);
 
 			list<string> args;
 
 
 			for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
-				QualType pt = (*it)->getType();
+				QualType pt = (*it)->getType().getCanonicalType();
 				// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
 				args.push_back(pt.getAsString(m_printPol));
 			}
@@ -211,7 +211,7 @@ public:
 					// this is pretty much expected :)
 				} else {
 
-					QualType mqt = md->getType();
+					QualType mqt = md->getType().getCanonicalType();
 					// this prints the method type: mqt.getAsString(m_printPol)
 
 					const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
