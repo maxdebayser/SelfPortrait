@@ -73,11 +73,45 @@ class MyASTConsumer
 	set<string> m_sourceFiles;
 	SourceManager* m_sourceManager;
 	PrintingPolicy m_printPol;
+	set<Decl*> m_visited;
 
 	struct IncompleteType {
 		QualType type;
 		SourceRange range;
 	};
+
+	void treatIncompleteType (IncompleteType t, Decl* decl) {
+		SourceLocation start = t.range.getBegin();
+		const FileEntry* entry = m_sourceManager->getFileEntryForID(m_sourceManager->getFileID(start));
+		int line = m_sourceManager->getSpellingLineNumber(start);
+		int column = m_sourceManager->getSpellingColumnNumber(start);
+
+
+
+		cerr << entry->getName() << ":" <<
+				line << ":" << column <<
+				": warning: Incomplete type " <<
+				t.type.getAsString(m_printPol) <<
+
+				",\nmeta data will not be emitted for ";
+
+		if (NamedDecl* nd = dyn_cast<NamedDecl>(decl)) {
+			cerr << nd->getNameAsString() << endl;
+		} else {
+			cerr << "the current declaration" << endl;
+		}
+	}
+
+	QualType treatType(QualType&& t, SourceRange&& range) {
+
+		const Type* type = t.getTypePtr();
+
+		if (type->isIncompleteType() && !type->isSpecificBuiltinType(BuiltinType::Void)) {
+			throw IncompleteType{t, range};
+		}
+
+		return t.getCanonicalType();
+	}
 
 public:
 
@@ -100,20 +134,17 @@ public:
 		return os;
 	}
 
-	QualType treatType(QualType&& t, SourceRange&& range) {
-
-		const Type* type = t.getTypePtr();
-
-		if (type->isIncompleteType() && !type->isSpecificBuiltinType(BuiltinType::Void)) {
-			throw IncompleteType{t, range};
-		}
-
-		return t.getCanonicalType();
-	}
 
 	void handleDecl(Decl* decl)
 	{
 		try {
+
+			if (contains(m_visited, decl)) {
+				return;
+			} else {
+				m_visited.insert(decl);
+			}
+
 			if (decl == nullptr) {
 				return;
 			}
@@ -151,7 +182,13 @@ public:
 							return;
 						}
 
-						m_namespaces.push_back(crd->getDeclName().getAsString());
+						if  (ClassTemplateSpecializationDecl* t = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
+							string name;
+							t->getNameForDiagnostic(name, m_printPol, true);
+							m_namespaces.push_back(name);
+						} else {
+							m_namespaces.push_back(crd->getNameAsString());
+						}
 
 						m_inClass = true;
 
@@ -167,6 +204,7 @@ public:
 							clang::Decl* subdecl = *it;
 							handleDecl(subdecl);
 						}
+
 						m_inClass = false;
 						out << "END_CLASS" << endl << endl;
 
@@ -271,26 +309,7 @@ public:
 				}
 			}
 		} catch (const IncompleteType& t) {
-
-			SourceLocation start = t.range.getBegin();
-			const FileEntry* entry = m_sourceManager->getFileEntryForID(m_sourceManager->getFileID(start));
-			int line = m_sourceManager->getSpellingLineNumber(start);
-			int column = m_sourceManager->getSpellingColumnNumber(start);
-
-
-
-			cerr << entry->getName() << ":" <<
-					line << ":" << column <<
-					": warning: Incomplete type " <<
-					t.type.getAsString(m_printPol) <<
-
-					",\nmeta data will not be emitted for ";
-
-			if (NamedDecl* nd = dyn_cast<NamedDecl>(decl)) {
-				cerr << nd->getNameAsString() << endl;
-			} else {
-				cerr << "the current declaration" << endl;
-			}
+			treatIncompleteType(t, decl);
 		}
 	}
 };

@@ -193,6 +193,7 @@ void FunctionTestSuite::testReturnByReference()
 	ref.changeId(888);
 	TS_ASSERT_EQUALS(returnObjectByReference().id(), 888);
 	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+	TS_ASSERT(!returnObjectByReference().hasBeenMoved())
 }
 
 void FunctionTestSuite::testReturnByConstReference()
