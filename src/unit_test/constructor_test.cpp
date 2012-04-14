@@ -38,10 +38,10 @@ namespace {
 
 void ConstructorTestSuite::testConstruction()
 {
-	auto defaultConstructor = make_constructor<Test>();
-	auto constructor1Args = make_constructor<Test, int>();
-	auto constructor2Args = make_constructor<Test, int, int>();
-	auto copyConstructor = make_constructor<Test, const Test&>();
+	auto defaultConstructor = make_constructor<Test>("");
+	auto constructor1Args = make_constructor<Test, int>("int");
+	auto constructor2Args = make_constructor<Test, int, int>("int,int");
+	auto copyConstructor = make_constructor<Test, const Test&>("const Test&");
 
 	bool success = false;
 

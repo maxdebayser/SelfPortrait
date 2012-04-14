@@ -12,6 +12,7 @@
 #include "typelist.h"
 #include "variant.h"
 #include "str_conversion.h"
+#include "str_utils.h"
 
 template<class _Function>
 struct function_type;
@@ -84,7 +85,9 @@ public:
 	virtual const ::std::string& name() const = 0;
 	virtual ::std::size_t numberOfArguments() const = 0;
 	virtual const ::std::type_info& returnType() const = 0;
+	virtual const ::std::string& returnTypeSpelling() const = 0;
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const = 0;
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
 	
 	AbstractFunctionImpl(const AbstractFunctionImpl&) = delete;
@@ -102,13 +105,19 @@ public:
 	typedef typename FDescr::Arguments Arguments;
 	typedef typename FDescr::Result Result;
 	
-	FunctionImpl(::std::string name, ptr_to_function ptr) : m_name(name), m_ptr(ptr) {}
+	FunctionImpl(::std::string name, ptr_to_function ptr, ::std::string returnSpelling, ::std::vector< ::std::string>&& argSpellings)
+		: m_name(name)
+		, m_ptr(ptr)
+		, m_returnSpelling(returnSpelling)
+		, m_argSpellings(argSpellings) {}
 	
 	virtual const ::std::type_info& returnType() const { return typeid(Result); }
+	virtual const ::std::string& returnTypeSpelling() const { return m_returnSpelling; }
 
 	virtual const ::std::string& name() const { return m_name; }
 	virtual ::std::size_t numberOfArguments() const { return typelist_size<Arguments>::value; }
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename FDescr::Arguments>(); }
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
 		return FDescr::call(m_ptr, args);
@@ -117,15 +126,17 @@ public:
 private:
 	::std::string m_name;
 	ptr_to_function m_ptr;
+	::std::string m_returnSpelling;
+	::std::vector< ::std::string> m_argSpellings;
 };
 
 
 
 
 template<class FuncPtr>
-Function make_function(const ::std::string& name, FuncPtr ptr)
+Function make_function(const ::std::string& name, FuncPtr ptr, const char* resultString, const char* argString)
 {
-	static FunctionImpl<FuncPtr> impl(name, ptr);
+	static FunctionImpl<FuncPtr> impl(name, ptr, normalizedTypeName(resultString), splitArgs(argString));
 	return &impl;
 }
 

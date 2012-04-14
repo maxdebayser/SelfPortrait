@@ -7,6 +7,7 @@ set(HEADERS
 	reflection.h
 	reflection_impl.h
 	str_conversion.h
+	str_utils.h
 	typelist.h
 	typeutils.h
 	variant.h
@@ -14,6 +15,7 @@ set(HEADERS
 
 set(SOURCES
 	reflection.cpp
+	str_utils.cpp
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")

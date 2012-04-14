@@ -55,29 +55,29 @@ return &instance;\
 instance.registerSuperClassPriv(ClassOf<CLASS_NAME>());
 
 #define METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define CONST_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 
 #define STATIC_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME));
+	instance.registerMethodPriv(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
-#define ATTRIBUTE(ATTRIBUTE_NAME) \
-	instance.registerAttributePriv(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME));
+#define ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
+	instance.registerAttributePriv(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING));
 
 #define DEFAULT_CONSTRUCTOR(...) \
-	instance.registerConstructorPriv(make_constructor<ThisClass>());
+	instance.registerConstructorPriv(make_constructor<ThisClass>(""));
 
 #define CONSTRUCTOR(...) \
-	instance.registerConstructorPriv(make_constructor<ThisClass, __VA_ARGS__>());
+	instance.registerConstructorPriv(make_constructor<ThisClass, __VA_ARGS__>(#__VA_ARGS__));
 
 
 class FunctionRegistry {
@@ -99,14 +99,14 @@ private:
 
 template<class FuncType>
 struct FuncRegHelper {
-	FuncRegHelper( const char* name, FuncType f ) {
-		FunctionRegistry::instance().registerFunction(name, make_function<FuncType>(name, f));
+	FuncRegHelper( const char* name, FuncType f, const char* rString, const char* args ) {
+		FunctionRegistry::instance().registerFunction(name, make_function<FuncType>(name, f, rString, args));
 	}
 };
 
 
 #define FUNCTION(NAME, RESULT, ...) \
-	static FuncRegHelper<RESULT (*)(__VA_ARGS__)> UNIQUE(#NAME, &NAME);
+	static FuncRegHelper<RESULT (*)(__VA_ARGS__)> UNIQUE(#NAME, &NAME, #RESULT, #__VA_ARGS__);
 
 
 #endif /* REFLECTION_IMPL_H */

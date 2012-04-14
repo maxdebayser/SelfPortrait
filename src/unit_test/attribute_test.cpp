@@ -30,7 +30,7 @@ namespace {
 
 void AttributeTestSuite::testVanillaAttribute()
 {
-	auto attr1 = make_attribute("attr1", &Test::attr1);
+	auto attr1 = make_attribute("attr1", &Test::attr1, "int");
 
 	VariantValue v1 = Test();
 	VariantValue r1 = attr1.get(v1);
@@ -58,7 +58,7 @@ void AttributeTestSuite::testVanillaAttribute()
 
 void AttributeTestSuite::testConstAttribute()
 {
-	auto attr2 = make_attribute("attr2", &Test::attr2);
+	auto attr2 = make_attribute("attr2", &Test::attr2, "const int");
 
 	VariantValue v1 = Test();
 	VariantValue r1 = attr2.get(v1);
@@ -78,7 +78,7 @@ void AttributeTestSuite::testConstAttribute()
 
 void AttributeTestSuite::testStaticAttribute()
 {
-	auto attr3 = make_static_attribute<Test>("attr3", &Test::attr3);
+	auto attr3 = make_static_attribute<Test>("attr3", &Test::attr3, "int");
 
 	VariantValue r1 = attr3.get();
 
@@ -91,7 +91,7 @@ void AttributeTestSuite::testStaticAttribute()
 	TS_ASSERT_EQUALS(r1.value<int>(), 201);
 
 
-	auto attr4 = make_static_attribute<Test>("attr4", &Test::attr4);
+	auto attr4 = make_static_attribute<Test>("attr4", &Test::attr4, "const int");
 	VariantValue r2 = attr4.get();
 
 	TS_ASSERT(r2.isA<int>());

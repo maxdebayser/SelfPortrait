@@ -53,7 +53,7 @@ double function2(double i, double s) {
 
 BEGIN_CLASS(Foo)
 CONSTRUCTOR(int)
-ATTRIBUTE(attr)
+ATTRIBUTE(attr, int)
 METHOD(print, void)
 METHOD(printArg, void, int)
 STATIC_METHOD(staticPrint, void)

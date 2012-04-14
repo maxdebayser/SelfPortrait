@@ -158,7 +158,7 @@ namespace {
 
 void FunctionTestSuite::testReturnByValue()
 {
-	auto f = make_function("returnObjectByValue", &returnObjectByValue);
+	auto f = make_function("returnObjectByValue", &returnObjectByValue, "CopyCount", "");
 
 	CopyCount::resetAll();
 
@@ -184,7 +184,7 @@ void FunctionTestSuite::testReturnByValue()
 
 void FunctionTestSuite::testReturnByReference()
 {
-	auto f = make_function("returnObjectByReference", &returnObjectByReference);
+	auto f = make_function("returnObjectByReference", &returnObjectByReference, "CopyCount &", "");
 	CopyCount::resetAll();
 	VariantValue v = f.call();
 	CopyCount& ref = v.convertTo<CopyCount&>();
@@ -197,7 +197,7 @@ void FunctionTestSuite::testReturnByReference()
 
 void FunctionTestSuite::testReturnByConstReference()
 {
-	auto f = make_function("returnObjectByConstReference", &returnObjectByConstReference);
+	auto f = make_function("returnObjectByConstReference", &returnObjectByConstReference, "const CopyCount &", "");
 	CopyCount::resetAll();
 	VariantValue v = f.call();
 	TS_ASSERT(v.isValid());
@@ -216,7 +216,7 @@ void FunctionTestSuite::testReturnByConstReference()
 
 void FunctionTestSuite::testParametersByValue()
 {
-	auto f = make_function("paramByValue", &paramByValue);
+	auto f = make_function("paramByValue", &paramByValue, "int", "CopyCount");
 	CopyCount::resetAll();
 
 	CopyCount c(77);
@@ -245,7 +245,7 @@ void FunctionTestSuite::testParametersByValue()
 
 void FunctionTestSuite::testParametersByReference()
 {
-	auto f = make_function("paramByReference", &paramByReference);
+	auto f = make_function("paramByReference", &paramByReference, "int", "CopyCount&");
 
 	CopyCount::resetAll();
 
@@ -269,7 +269,7 @@ void FunctionTestSuite::testParametersByReference()
 
 void FunctionTestSuite::testParametersByConstReference()
 {
-	auto f = make_function("paramByConstReference", &paramByConstReference);
+	auto f = make_function("paramByConstReference", &paramByConstReference, "int", "const CopyCount&");
 
 	CopyCount::resetAll();
 

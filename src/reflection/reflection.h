@@ -53,6 +53,7 @@ public:
 	Attribute& operator=(Attribute&& rhs);
 	
 	const ::std::string& name() const;
+	const ::std::string& typeSpelling() const;
 	
 	const ::std::type_info& type() const;
 	bool isConst() const;
@@ -72,9 +73,9 @@ private:
 	AbstractAttributeImpl* m_impl;
 	
 	template<class A>
-	friend Attribute make_attribute(::std::string name, A ptr);
+	friend Attribute make_attribute(::std::string name, A ptr, const char* arg);
 	template<class C, class A>
-	friend Attribute make_static_attribute(::std::string name, A ptr);
+	friend Attribute make_static_attribute(::std::string name, A ptr, const char* arg);
 };
 
 class AbstractConstructorImpl;
@@ -89,6 +90,7 @@ public:
 	Constructor& operator=(Constructor&& rhs);
 
 	::std::size_t numberOfArguments() const;
+	const ::std::vector< ::std::string>& argumentSpellings() const;
 	
 	bool isDefaultConstructor() const;
 	
@@ -111,7 +113,7 @@ private:
 	friend class Class;
 	
 	template<class C, class... A>
-	friend Constructor make_constructor();
+	friend Constructor make_constructor(const char* argString);
 };
 
 class AbstractMethodImpl;
@@ -127,8 +129,10 @@ public:
 	
 	const ::std::string& name() const;
 	::std::size_t numberOfArguments() const;
-	::std::vector<const ::std::type_info*> argumentTypes() const;
+	const ::std::string& returnSpelling() const;
+	const ::std::vector< ::std::string>& argumentSpellings() const;
 
+	::std::vector<const ::std::type_info*> argumentTypes() const;
 	const ::std::type_info& returnType() const;
 
 	bool isConst() const;
@@ -180,8 +184,8 @@ private:
 	
 	AbstractMethodImpl* m_impl;
 	
-	template<class M> friend Method make_method(const ::std::string& name, M ptr);
-	template<class C, class M> friend Method make_static_method(const ::std::string& name, M ptr);
+	template<class M> friend Method make_method(const ::std::string& name, M ptr, const char* rString, const char* argString);
+	template<class C, class M> friend Method make_static_method(const ::std::string& name, M ptr, const char* rString, const char* argString);
 };
 
 
@@ -264,8 +268,12 @@ public:
 
 	const ::std::string& name() const;
 
-	const ::std::type_info& returnType() const;
+
 	::std::size_t numberOfArguments() const;
+	const ::std::string& returnSpelling() const;
+	const ::std::vector< ::std::string>& argumentSpellings() const;
+
+	const ::std::type_info& returnType() const;
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 
 	template<class... Args>
@@ -287,7 +295,7 @@ private:
 	AbstractFunctionImpl* m_impl;
 
 	template<class FuncPtr>
-	friend Function make_function(const ::std::string& name, FuncPtr ptr);
+	friend Function make_function(const ::std::string& name, FuncPtr ptr, const char* rString, const char* argString);
 };
 
 

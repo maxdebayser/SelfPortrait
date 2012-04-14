@@ -6,6 +6,7 @@
 #include <tuple>
 #include <array>
 #include "reflection.h"
+#include "str_utils.h"
 
 
 class AbstractConstructorImpl: public Annotated {
@@ -13,6 +14,8 @@ public:
 	virtual ::std::size_t numberOfArguments() const = 0;
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
+
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const = 0;
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
 };
@@ -26,6 +29,9 @@ public:
 	virtual ::std::size_t numberOfArguments() const { return size<Arguments>(); }
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<Arguments>(); }
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
+
+	ConstructorImpl(::std::vector< ::std::string>&& argSpellings) : m_argSpellings(argSpellings) {}
 	
 	
 	template<bool Abstract, class Ind>
@@ -68,18 +74,17 @@ public:
 		call_helper< ::std::is_abstract<Clazz>::value, typename make_indices<sizeof...(Args)>::type> helper;
 		return helper.call(args);
 	}
-	
+private:
+	::std::vector< ::std::string> m_argSpellings;
 };
 
 
 
 
 template<class Clazz, class... Args>
-Constructor make_constructor() {
-	static ConstructorImpl<Clazz, Args...> impl;
+Constructor make_constructor(const char* argString) {
+	static ConstructorImpl<Clazz, Args...> impl(splitArgs(argString));
 	return Constructor(&impl);
 }
-
-
 
 #endif /* CONSTRUCTOR_H */

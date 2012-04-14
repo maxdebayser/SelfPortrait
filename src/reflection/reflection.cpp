@@ -15,6 +15,7 @@ public:
 	virtual const ::std::type_info& type() const { return doThrow< ::std::type_info&>(); }
 	virtual bool isConst() const { return doThrow<bool>(); }
 	virtual bool isStatic() const { return doThrow<bool>(); }
+	virtual const ::std::string& typeSpelling() const { return doThrow<const ::std::string&>(); }
 
 	virtual VariantValue get() const  { return doThrow<VariantValue>(); }
 	virtual void set(const VariantValue& value) const  { return doThrow<void>(); }
@@ -54,6 +55,11 @@ Attribute& Attribute::operator=(Attribute&& rhs) {
 
 const ::std::string& Attribute::name() const { 
 	return m_impl->name();
+}
+
+const ::std::string& Attribute::typeSpelling() const
+{
+	return m_impl->typeSpelling();
 }
 
 const ::std::type_info& Attribute::type() const {
@@ -213,6 +219,8 @@ public:
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return doThrow< ::std::vector<const ::std::type_info*> >(); }
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const { return doThrow<VariantValue>(); }
 
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return doThrow<const ::std::vector< ::std::string>&>(); }
+
 	template<class T>
 	T doThrow() const {
 		throw std::runtime_error("Invalid use of uninitialized Constructor handle");
@@ -242,6 +250,11 @@ Constructor::Constructor(AbstractConstructorImpl* impl)
 	return m_impl->numberOfArguments();
 }
 
+const ::std::vector< ::std::string>& Constructor::argumentSpellings() const
+{
+	return m_impl->argumentSpellings();
+}
+
 bool Constructor::isDefaultConstructor() const {
 	return numberOfArguments() == 0;
 }
@@ -263,6 +276,8 @@ public:
 	::std::size_t numberOfArguments() const { return doThrow< ::std::size_t>(); }
 	::std::vector<const ::std::type_info*> argumentTypes() const { return doThrow< ::std::vector<const ::std::type_info*> >(); }
 	const ::std::type_info& returnType() const  { return doThrow< ::std::type_info&>(); }
+	virtual const ::std::string& returnTypeSpelling() const { return doThrow< ::std::string&>(); }
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return doThrow<const ::std::vector< ::std::string>&>(); }
 	bool isConst() const { return doThrow< bool>(); }
 	bool isVolatile() const { return doThrow< bool>(); }
 	bool isStatic() const { return doThrow< bool>(); }
@@ -315,6 +330,15 @@ const ::std::string& Method::name() const {
 	return m_impl->numberOfArguments();
 }
 
+
+const ::std::string& Method::returnSpelling() const {
+	return m_impl->returnTypeSpelling();
+}
+
+const ::std::vector< ::std::string>& Method::argumentSpellings() const {
+	return m_impl->argumentSpellings();
+}
+
 ::std::vector<const ::std::type_info*> Method::argumentTypes() const {
 	return m_impl->argumentTypes();	
 }
@@ -365,6 +389,9 @@ public:
 	::std::size_t numberOfArguments() const { return doThrow< ::std::size_t>(); }
 	::std::vector<const ::std::type_info*> argumentTypes() const { return doThrow< ::std::vector<const ::std::type_info*> >(); }
 	VariantValue call(const ::std::vector<VariantValue>& args) const { return doThrow< VariantValue>(); }
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return doThrow<const ::std::vector< ::std::string>&>(); }
+
+	virtual const ::std::string& returnTypeSpelling() const { return doThrow< ::std::string&>(); }
 
 	template<class T>
 	T doThrow() const {
@@ -406,6 +433,14 @@ const ::std::type_info& Function::returnType() const {
 
 ::std::size_t Function::numberOfArguments() const {
 	return m_impl->numberOfArguments();
+}
+
+const ::std::string& Function::returnSpelling() const {
+	return m_impl->returnTypeSpelling();
+}
+
+const ::std::vector< ::std::string>& Function::argumentSpellings() const {
+	return m_impl->argumentSpellings();
 }
 
 ::std::vector<const ::std::type_info*> Function::argumentTypes() const {

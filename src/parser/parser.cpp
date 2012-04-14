@@ -121,8 +121,8 @@ public:
 			m_namespaces.pop_back();
 
 		} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
-			out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ")" << endl;
-
+			QualType t = fd->getType();
+			out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
 		} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
 
 			if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
@@ -245,7 +245,6 @@ public:
 				// is not a method
 				string a = string(args.empty() ? "" : ", ") + argstr;
 				out << "FUNCTION(" << name << ", " << returnType << a << ")" << endl;
-
 			}
 		} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 			for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {

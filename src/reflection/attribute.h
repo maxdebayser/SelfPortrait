@@ -8,6 +8,7 @@
 
 #include "variant.h"
 #include "reflection.h"
+#include "str_utils.h"
 
 template<class Attr>
 struct attribute_type;
@@ -107,6 +108,7 @@ public:
 	virtual const ::std::type_info& type() const = 0;
 	virtual bool isConst() const = 0;
 	virtual bool isStatic() const = 0;
+	virtual const ::std::string& typeSpelling() const = 0;
 	
 	virtual VariantValue get() const = 0;
 	virtual void set(const VariantValue& value) const = 0;
@@ -133,12 +135,13 @@ public:
 	typedef typename ADescr::Type Type;
 	typedef typename ADescr::ptr_to_attr ptr_to_attr;
 	
-	AttributeImpl(::std::string name, ptr_to_attr ptr) : m_name(name), m_ptr(ptr) {}
+	AttributeImpl(::std::string name, ptr_to_attr ptr, ::std::string typeSpelling) : m_name(name), m_ptr(ptr), m_typeSpelling(typeSpelling) {}
 	
 	virtual const ::std::string& name() const override { return m_name; }
 	virtual const ::std::type_info& type() const override { return typeid(Type); }
 	virtual bool isConst() const override { return ADescr::is_const; }
 	virtual bool isStatic() const override { return false; }
+	virtual const ::std::string& typeSpelling() const { return m_typeSpelling; }
 	
 	virtual VariantValue get() const override {
 		throw ::std::runtime_error("cannot get value of non-static property without an object");
@@ -180,6 +183,7 @@ public:
 private:
 	::std::string m_name;
 	ptr_to_attr m_ptr;
+	::std::string m_typeSpelling;
 	
 };
 
@@ -191,12 +195,13 @@ public:
 	typedef typename ADescr::Type Type;
 	typedef typename ADescr::ptr_to_variable ptr_to_attr;
 	
-	StaticAttributeImpl(::std::string name, ptr_to_attr ptr) : m_name(name), m_ptr(ptr) {}
+	StaticAttributeImpl(::std::string name, ptr_to_attr ptr, ::std::string typeSpelling) : m_name(name), m_ptr(ptr), m_typeSpelling(typeSpelling) {}
 	
 	virtual const ::std::string& name() const override { return m_name; }
 	virtual const ::std::type_info& type() const override { return typeid(Type); }
 	virtual bool isConst() const override { return ADescr::is_const; }
 	virtual bool isStatic() const override { return true; }
+	virtual const ::std::string& typeSpelling() const { return m_typeSpelling; }
 	
 	virtual VariantValue get() const override { return ADescr::get(m_ptr); }
 	virtual void set(const VariantValue& value) const override { ADescr::set(m_ptr, value); }
@@ -210,20 +215,23 @@ public:
 private:
 	::std::string m_name;
 	ptr_to_attr m_ptr;
+	::std::string m_typeSpelling;
 	
 };
 
 
 
 template<class Attr>
-Attribute make_attribute(::std::string name, Attr ptr) {
-	static AttributeImpl<Attr> impl(name, ptr);
+Attribute make_attribute(::std::string name, Attr ptr, const char* arg) {
+	// call split to canonicalize the type spelling
+	static AttributeImpl<Attr> impl(name, ptr, normalizedTypeName(arg));
 	return Attribute(&impl);
 }
 
 template<class Clazz, class Attr>
-Attribute make_static_attribute(::std::string name, Attr ptr) {
-	static StaticAttributeImpl<Clazz,Attr> impl(name, ptr);
+Attribute make_static_attribute(::std::string name, Attr ptr, const char* arg) {
+	// call split to canonicalize the type spelling
+	static StaticAttributeImpl<Clazz,Attr> impl(name, ptr, normalizedTypeName(arg));
 	return Attribute(&impl);
 }
 

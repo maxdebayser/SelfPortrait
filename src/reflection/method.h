@@ -5,6 +5,7 @@
 #include "variant.h"
 #include "function.h"
 #include "reflection.h"
+#include "str_utils.h"
 
 #include <vector>
 #include <tuple>
@@ -182,7 +183,9 @@ public:
 	virtual const ::std::string& name() const = 0;
 	virtual ::std::size_t numberOfArguments() const = 0;
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const = 0;
 	virtual const ::std::type_info& returnType() const = 0;
+	virtual const ::std::string& returnTypeSpelling() const = 0;
 	virtual bool isConst() const = 0;
 	virtual bool isVolatile() const = 0;
 	virtual bool isStatic() const = 0;	
@@ -207,7 +210,12 @@ public:
 	typedef typename MDescr::ptr_to_method ptr_to_method;
 	typedef typename MDescr::Result Result;
 	
-	constexpr MethodImpl(const ::std::string& name, ptr_to_method ptr) : m_name(name), m_ptr(ptr) {}
+	constexpr MethodImpl(const ::std::string& name, ptr_to_method ptr, ::std::string&& returnSpelling, ::std::vector< ::std::string>&& argSpellings)
+		: m_name(name)
+		, m_ptr(ptr)
+		, m_returnSpelling(returnSpelling)
+		, m_argSpellings(argSpellings)
+	{}
 	
 	virtual const ::std::string& name() const { return m_name; }
 	
@@ -215,7 +223,11 @@ public:
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
 
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
+
 	virtual const ::std::type_info& returnType() const { return typeid(Result); }
+
+	virtual const ::std::string& returnTypeSpelling() const { return m_returnSpelling; }
 	
 	virtual bool isConst() const { return MDescr::is_const; }
 	
@@ -272,6 +284,8 @@ private:
 	
 	::std::string m_name;
 	ptr_to_method m_ptr;
+	::std::string m_returnSpelling;
+	::std::vector< ::std::string> m_argSpellings;
 };
 
 
@@ -284,15 +298,24 @@ public:
 	typedef typename MDescr::ptr_to_function ptr_to_method;
 	typedef typename MDescr::Result Result;
 	
-	constexpr StaticMethodImpl(const ::std::string& name, ptr_to_method ptr) : m_name(name), m_ptr(ptr) {}
+	constexpr StaticMethodImpl(const ::std::string& name, ptr_to_method ptr, ::std::string&& returnSpelling, ::std::vector< ::std::string>&& argSpellings)
+		: m_name(name)
+		, m_ptr(ptr)
+		, m_returnSpelling(returnSpelling)
+		, m_argSpellings(argSpellings)
+	{}
 	
 	virtual const ::std::string& name() const { return m_name; }
 	
 	virtual ::std::size_t numberOfArguments() const { return size<typename MDescr::Arguments>(); }
 
 	virtual const ::std::type_info& returnType() const { return typeid(Result); }
+
+	virtual const ::std::string& returnTypeSpelling() const { return m_returnSpelling; }
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
+
+	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
 	
 	virtual bool isConst() const { return false; }
 	
@@ -323,21 +346,23 @@ private:
 	
 	::std::string m_name;
 	ptr_to_method m_ptr;
+	::std::string m_returnSpelling;
+	::std::vector< ::std::string> m_argSpellings;
 };
 
 
 
 
 template<class _Method>
-Method make_method(const ::std::string& name, _Method ptr) {
-	static MethodImpl<_Method> impl(name, ptr);
+Method make_method(const ::std::string& name, _Method ptr, const char* rString, const char* argString) {
+	static MethodImpl<_Method> impl(name, ptr, normalizedTypeName(rString), splitArgs(argString));
 	return Method(&impl);
 }
 
 
 template<class C, class _Method>
-Method make_static_method(const ::std::string& name, _Method ptr) {
-	static StaticMethodImpl<C, _Method> impl(name, ptr);
+Method make_static_method(const ::std::string& name, _Method ptr, const char* rString, const char* argString) {
+	static StaticMethodImpl<C, _Method> impl(name, ptr, normalizedTypeName(rString), splitArgs(argString));
 	return Method(&impl);
 }
 
