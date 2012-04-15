@@ -473,7 +473,7 @@ private:
 
 			try {
 				holder->throwCast();
-			} catch (ValueType ptr) {
+			} catch (ValueType& ptr) {
 				if (success != nullptr) *success = true;
 				return ptr;
 			} catch(...) { }
