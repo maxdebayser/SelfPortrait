@@ -84,6 +84,23 @@ class MyASTConsumer
 
 	struct PrivateType {};
 
+	string printType(string orig) {
+		string ret;
+
+		for (auto c: orig) {
+			if (c == ',') {
+				ret += " COMMA ";
+			} else {
+				ret += c;
+			}
+		}
+		return ret;
+	}
+
+	string printType(QualType t) {
+		return printType(t.getAsString(m_printPol));
+	}
+
 	void treatIncompleteType (IncompleteType t, Decl* decl) {
 		SourceLocation start = t.range.getBegin();
 		const FileEntry* entry = m_sourceManager->getFileEntryForID(m_sourceManager->getFileID(start));
@@ -236,7 +253,7 @@ public:
 
 			} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
 				QualType t = treatType(fd->getType(), fd->getSourceRange());
-				out << "REFL_ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
+				out << "REFL_ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  printType(t) << ")" << endl;
 			} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
 
 				if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
@@ -259,11 +276,11 @@ public:
 
 						m_inClass = true;
 
-						out << "REFL_BEGIN_CLASS(" << name << ")" << endl;
+						out << "REFL_BEGIN_CLASS(" << printType(name) << ")" << endl;
 
 						for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
 							QualType t = treatType(it->getType(), it->getSourceRange());
-							out << "REFL_SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
+							out << "REFL_SUPER_CLASS(" << printType(t) << ")" << endl;
 						}
 
 						// recurse
@@ -321,7 +338,7 @@ public:
 
 				string name = fd->getNameAsString();
 				QualType qt = treatType(fd->getResultType(), fd->getSourceRange());
-				const string returnType =  qt.getAsString(m_printPol);
+				const string returnType =  printType(qt);
 
 				list<string> args;
 
@@ -330,7 +347,7 @@ public:
 					ParmVarDecl* param = *it;
 					QualType pt = treatType(param->getType(), param->getSourceRange());
 					// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
-					args.push_back(pt.getAsString(m_printPol));
+					args.push_back(printType(pt));
 				}
 
 				const string argstr = join(args, ", ");
@@ -393,7 +410,6 @@ public:
 					out << "REFL_FUNCTION(" << nameWithNamespace << ", " << returnType << a << ")" << endl << endl;
 				}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
-				std::cout << "checkpoint 2" << std::endl;
 				for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
 					//specializations are classes too
 					clang::ClassTemplateSpecializationDecl* spec = *it;
