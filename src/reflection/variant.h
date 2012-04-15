@@ -401,8 +401,6 @@ private:
 };
 
 
-
-
 // A variant value contains a value type by value
 class VariantValue {
 public:
@@ -470,6 +468,21 @@ private:
 	}
 
 	template<class ValueType>
+	struct pointerConversion {
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+
+			try {
+				holder->throwCast();
+			} catch (ValueType ptr) {
+				if (success != nullptr) *success = true;
+				return ptr;
+			} catch(...) { }
+			if (success != nullptr) *success = false;
+			return ValueType();
+		}
+	};
+
+	template<class ValueType>
 	struct integralConversion {
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
@@ -510,12 +523,13 @@ private:
 		}
 	};
 	
+
 public:
 	
 	template<class ValueType>
 	ValueType value() const {
 
-		auto ptr = isAPriv<ValueType>();
+		auto ptr = isAPriv< ValueType >();
 
 		if (ptr == nullptr) {
 			throw ::std::runtime_error("variant value is not of the requested type");
@@ -540,7 +554,9 @@ public:
 					floatConversion<ValueType>,
 					typename Select< ::std::is_same<ValueType, ::std::string>::value,
 						stringConversion<ValueType>,
-						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl, success);
+						typename Select< ::std::is_pointer<ValueType>::value,
+								pointerConversion<ValueType>,
+								impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl, success);
 	}
 
 	template<class ValueType>

@@ -56,6 +56,23 @@ void VariantTestSuite::testConversions() {
 	TS_ASSERT_EQUALS(v2.convertTo<char>(), 1);
 	TS_ASSERT_DELTA(v2.convertTo<float>(), 1.23, 0.0001);	
 
+	VariantValue v3(3);
+
+	TS_ASSERT(v3.isA<int>());
+	TS_ASSERT_EQUALS(v3.value<int>(), 3);
+
+	bool ok = false;
+
+	int* ptr = v3.convertTo<int*>(&ok);
+	TS_ASSERT(ok);
+	TS_ASSERT_EQUALS(*ptr, 3);
+	*ptr = 4;
+	TS_ASSERT_EQUALS(*ptr, 4);
+	TS_ASSERT_EQUALS(v3.value<int>(), 4);
+
+	const int* cptr = v3.convertTo<const int*>(&ok);
+	TS_ASSERT(ok);
+	TS_ASSERT_EQUALS(*cptr, 4);
 }
 
 struct NonCopyable {
