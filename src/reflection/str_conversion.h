@@ -38,7 +38,7 @@ namespace string_conversion_impl {
 		static T const &t;
 		// Ambiguous conversions have ruined it all
 		//static bool const value = sizeof( test_ostream(s << t) ) == sizeof( yes );
-		static bool const value = ::std::is_integral<T>::value || ::std::is_same<T, const char*>::value || ::std::is_same<T, ::std::string>::value;
+		static bool const value = ::std::is_arithmetic<T>::value || ::std::is_same<T, const char*>::value || ::std::is_same<T, ::std::string>::value;
 	};
 		
 	template<typename T>
