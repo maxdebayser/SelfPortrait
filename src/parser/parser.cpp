@@ -82,6 +82,8 @@ class MyASTConsumer
 		SourceRange range;
 	};
 
+	struct PrivateType {};
+
 	void treatIncompleteType (IncompleteType t, Decl* decl) {
 		SourceLocation start = t.range.getBegin();
 		const FileEntry* entry = m_sourceManager->getFileEntryForID(m_sourceManager->getFileID(start));
@@ -106,9 +108,41 @@ class MyASTConsumer
 
 	QualType treatType(QualType&& t, SourceRange&& range) {
 
-		const Type* type = t.getTypePtr();
+		const Type* orig = t.getTypePtr();
+		const Type* type = nullptr;
 
-		if (type->isIncompleteType() && !type->isSpecificBuiltinType(BuiltinType::Void)) {
+
+		QualType qt = t;
+
+		begin_access:
+
+		type = qt.getTypePtr();
+
+		AccessSpecifier as = AS_public;
+
+		if (const TypedefType* tt = dyn_cast<TypedefType>(type)) {
+			// If it is a privately defined typedef, we ignore it
+			if (TypedefNameDecl* tnd = tt->getDecl()) {
+				as = tnd->getAccess();
+			}
+		} else if (const TagType* tt = dyn_cast<TagType>(type)) {
+			as = tt->getDecl()->getAccess();
+		} else if (const TemplateSpecializationType* tt = dyn_cast<TemplateSpecializationType>(type)) {
+			as = tt->getTemplateName().getAsTemplateDecl()->getAccess();
+		} else if (const PointerType* pt = dyn_cast<PointerType>(type)) {
+			qt = pt->getPointeeType();
+			goto begin_access;
+		} else if (const ReferenceType* rt = dyn_cast<ReferenceType>(type)) {
+			qt = rt->getPointeeType();
+			goto begin_access;
+		}
+
+		if (as == AS_protected || as == AS_private) {
+			throw PrivateType();
+		}
+
+
+		if (!dyn_cast<PointerType>(orig) && type->isIncompleteType() && !type->isSpecificBuiltinType(BuiltinType::Void)) {
 
 			if (const TypedefType* tt = dyn_cast<TypedefType>(type)) {
 				if (TypedefNameDecl* tnd = tt->getDecl()) {
@@ -126,7 +160,9 @@ class MyASTConsumer
 							}
 						}
 					}
-					return t.getCanonicalType();
+					if (!type->isIncompleteType()) {
+						return t.getCanonicalType();
+					}
 				}
 			}
 
@@ -200,7 +236,7 @@ public:
 
 			} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
 				QualType t = treatType(fd->getType(), fd->getSourceRange());
-				out << "ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
+				out << "REFL_ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  t.getAsString(m_printPol) << ")" << endl;
 			} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
 
 				if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
@@ -223,11 +259,11 @@ public:
 
 						m_inClass = true;
 
-						out << "BEGIN_CLASS(" << name << ")" << endl;
+						out << "REFL_BEGIN_CLASS(" << name << ")" << endl;
 
 						for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
 							QualType t = treatType(it->getType(), it->getSourceRange());
-							out << "SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
+							out << "REFL_SUPER_CLASS(" << t.getAsString(m_printPol) << ")" << endl;
 						}
 
 						// recurse
@@ -237,7 +273,7 @@ public:
 						}
 
 						m_inClass = false;
-						out << "END_CLASS" << endl << endl;
+						out << "REFL_END_CLASS" << endl << endl;
 
 
 					} else {
@@ -279,6 +315,10 @@ public:
 
 		}*/ else if (FunctionDecl* fd = llvm::dyn_cast<FunctionDecl>(decl)) {
 
+				if (fd->isDeleted()) {
+					return;
+				}
+
 				string name = fd->getNameAsString();
 				QualType qt = treatType(fd->getResultType(), fd->getSourceRange());
 				const string returnType =  qt.getAsString(m_printPol);
@@ -287,7 +327,8 @@ public:
 
 
 				for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
-					QualType pt = treatType((*it)->getType(), (*it)->getSourceRange());
+					ParmVarDecl* param = *it;
+					QualType pt = treatType(param->getType(), param->getSourceRange());
 					// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
 					args.push_back(pt.getAsString(m_printPol));
 				}
@@ -303,9 +344,9 @@ public:
 
 					if (dyn_cast<CXXConstructorDecl>(decl)) {
 						if (args.empty()) {
-							out << "DEFAULT_CONSTRUCTOR()" << endl;
+							out << "REFL_DEFAULT_CONSTRUCTOR()" << endl;
 						} else {
-							out << "CONSTRUCTOR(" << argstr << ")" << endl;
+							out << "REFL_CONSTRUCTOR(" << argstr << ")" << endl;
 						}
 					} else if (dyn_cast<CXXConversionDecl>(decl)) {
 						// ex: operator bool();
@@ -333,15 +374,15 @@ public:
 						string a = string(args.empty() ? "" : ", ") + argstr;
 
 						if (isStatic) {
-							out << "STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							out << "REFL_STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
 						} else if (isConst && isVolatile) {
-							out << "CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							out << "REFL_CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
 						} else if (isConst) {
-							out << "CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							out << "REFL_CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
 						} else if (isVolatile) {
-							out << "VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							out << "REFL_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
 						} else {
-							out << "METHOD(" << name << ", " << returnType << a << ")" << endl;
+							out << "REFL_METHOD(" << name << ", " << returnType << a << ")" << endl;
 						}
 					}
 				} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
@@ -349,7 +390,7 @@ public:
 					string nameWithNamespace;
 					fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
 					string a = string(args.empty() ? "" : ", ") + argstr;
-					out << "FUNCTION(" << nameWithNamespace << ", " << returnType << a << ")" << endl << endl;
+					out << "REFL_FUNCTION(" << nameWithNamespace << ", " << returnType << a << ")" << endl << endl;
 				}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 				std::cout << "checkpoint 2" << std::endl;
@@ -361,6 +402,7 @@ public:
 			}
 		} catch (const IncompleteType& t) {
 			treatIncompleteType(t, decl);
+		} catch (const PrivateType& t) {
 		}
 	}
 };

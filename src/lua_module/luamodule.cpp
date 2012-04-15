@@ -51,18 +51,18 @@ double function2(double i, double s) {
 	return i + s;
 }
 
-BEGIN_CLASS(Foo)
-CONSTRUCTOR(int)
-ATTRIBUTE(attr, int)
-METHOD(print, void)
-METHOD(printArg, void, int)
-STATIC_METHOD(staticPrint, void)
-STATIC_METHOD(staticPrintArg, void, int)
-END_CLASS
+REFL_BEGIN_CLASS(Foo)
+REFL_CONSTRUCTOR(int)
+REFL_ATTRIBUTE(attr, int)
+REFL_METHOD(print, void)
+REFL_METHOD(printArg, void, int)
+REFL_STATIC_METHOD(staticPrint, void)
+REFL_STATIC_METHOD(staticPrintArg, void, int)
+REFL_END_CLASS
 
-FUNCTION(function1, int, int)
-FUNCTION(function2, double, double)
-FUNCTION(function2, double, double, double)
+REFL_FUNCTION(function1, int, int)
+REFL_FUNCTION(function2, double, double)
+REFL_FUNCTION(function2, double, double, double)
 
 //=====================Declarations=============================================
 

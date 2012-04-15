@@ -3,10 +3,8 @@
 using namespace std;
 
 
-template class std::list<int>;
-template class std::list<double>;
-
-list<int> foo1();
+//list<int> foo1();
+//list<double> foo2();
 
 
-list<double> foo2();
+void foo3(list<float>);

@@ -20,8 +20,8 @@ namespace Test {
 
 }
 
-FUNCTION(Test::globalFunction, double, double, double)
-FUNCTION(Test::globalFunction, int, int, int)
+REFL_FUNCTION(Test::globalFunction, double, double, double)
+REFL_FUNCTION(Test::globalFunction, int, int, int)
 
 
 void FunctionTestSuite::testFunction()

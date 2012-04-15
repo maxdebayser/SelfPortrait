@@ -37,7 +37,7 @@ struct ClassRegHelper {
 };
 
 
-#define BEGIN_CLASS(CLASS_NAME) \
+#define REFL_BEGIN_CLASS(CLASS_NAME) \
 	static ClassRegHelper<CLASS_NAME> UNIQUE(#CLASS_NAME); \
 template<> ClassImpl<CLASS_NAME>* ClassImpl<CLASS_NAME>::instance() {\
 	typedef CLASS_NAME ThisClass;\
@@ -45,38 +45,38 @@ template<> ClassImpl<CLASS_NAME>* ClassImpl<CLASS_NAME>::instance() {\
 	if (instance.open()) {\
 		instance.setFqn(#CLASS_NAME);
 
-#define END_CLASS \
+#define REFL_END_CLASS \
 	instance.close();\
 }\
 return &instance;\
 }
 
-#define SUPER_CLASS(CLASS_NAME) \
+#define REFL_SUPER_CLASS(CLASS_NAME) \
 instance.registerSuperClassPriv(ClassOf<CLASS_NAME>());
 
-#define METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_METHOD(METHOD_NAME, RESULT, ...) \
 	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
-#define CONST_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_CONST_METHOD(METHOD_NAME, RESULT, ...) \
 	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
-#define VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
 	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
-#define CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
 	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 
-#define STATIC_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_STATIC_METHOD(METHOD_NAME, RESULT, ...) \
 	instance.registerMethodPriv(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
-#define ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
+#define REFL_ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
 	instance.registerAttributePriv(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING));
 
-#define DEFAULT_CONSTRUCTOR(...) \
+#define REFL_DEFAULT_CONSTRUCTOR(...) \
 	instance.registerConstructorPriv(make_constructor<ThisClass>(""));
 
-#define CONSTRUCTOR(...) \
+#define REFL_CONSTRUCTOR(...) \
 	instance.registerConstructorPriv(make_constructor<ThisClass, __VA_ARGS__>(#__VA_ARGS__));
 
 
@@ -105,7 +105,7 @@ struct FuncRegHelper {
 };
 
 
-#define FUNCTION(NAME, RESULT, ...) \
+#define REFL_FUNCTION(NAME, RESULT, ...) \
 	static FuncRegHelper<RESULT (*)(__VA_ARGS__)> UNIQUE(#NAME, &NAME, #RESULT, #__VA_ARGS__);
 
 

@@ -54,29 +54,29 @@ namespace Test {
 
 }
 
-BEGIN_CLASS(Test::TestBase1)
-	METHOD(method2, double, double)
-	METHOD(base1Method1, int)
-	DEFAULT_CONSTRUCTOR()
-END_CLASS
+REFL_BEGIN_CLASS(Test::TestBase1)
+	REFL_METHOD(method2, double, double)
+	REFL_METHOD(base1Method1, int)
+	REFL_DEFAULT_CONSTRUCTOR()
+REFL_END_CLASS
 
-BEGIN_CLASS(Test::TestBase2)
-	CONST_METHOD(base2Method1, int)
-	DEFAULT_CONSTRUCTOR()
-END_CLASS
+REFL_BEGIN_CLASS(Test::TestBase2)
+	REFL_CONST_METHOD(base2Method1, int)
+	REFL_DEFAULT_CONSTRUCTOR()
+REFL_END_CLASS
 
-BEGIN_CLASS(Test::Test1)
-	SUPER_CLASS(class Test::TestBase1)
-	SUPER_CLASS(Test::TestBase2)
-	CONST_METHOD(method1, std::string)
-	METHOD(method2, double, double)
-	STATIC_METHOD(staticMethod, double)
-	ATTRIBUTE(attribute1, int)
-	DEFAULT_CONSTRUCTOR()
-	CONSTRUCTOR(int)
-	CONSTRUCTOR(const Test::Test1&)
-	METHOD(operator=, Test::Test1&, const Test::Test1&)
-END_CLASS
+REFL_BEGIN_CLASS(Test::Test1)
+	REFL_SUPER_CLASS(class Test::TestBase1)
+	REFL_SUPER_CLASS(Test::TestBase2)
+	REFL_CONST_METHOD(method1, std::string)
+	REFL_METHOD(method2, double, double)
+	REFL_STATIC_METHOD(staticMethod, double)
+	REFL_ATTRIBUTE(attribute1, int)
+	REFL_DEFAULT_CONSTRUCTOR()
+	REFL_CONSTRUCTOR(int)
+	REFL_CONSTRUCTOR(const Test::Test1&)
+	REFL_METHOD(operator=, Test::Test1&, const Test::Test1&)
+REFL_END_CLASS
 
 
 
@@ -262,14 +262,14 @@ namespace {
 
 }
 
-BEGIN_CLASS(OTest)
-	METHOD(overload, int, int)
-	METHOD(overload, double, double)
-	METHOD(constOverload, int&)
-	CONST_METHOD(constOverload, const int&)
-	STATIC_METHOD(staticOverload, double, double)
-	STATIC_METHOD(staticOverload, int, int)
-END_CLASS
+REFL_BEGIN_CLASS(OTest)
+	REFL_METHOD(overload, int, int)
+	REFL_METHOD(overload, double, double)
+	REFL_METHOD(constOverload, int&)
+	REFL_CONST_METHOD(constOverload, const int&)
+	REFL_STATIC_METHOD(staticOverload, double, double)
+	REFL_STATIC_METHOD(staticOverload, int, int)
+REFL_END_CLASS
 
 void ClassTestSuite::testOverload()
 {

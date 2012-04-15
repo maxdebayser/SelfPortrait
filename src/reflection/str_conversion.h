@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cctype>
 #include <vector>
+#include <type_traits>
 
 namespace string_conversion_impl {
 	typedef char no;
@@ -13,7 +14,16 @@ namespace string_conversion_impl {
 		template<typename T> any_t( T const& );
 	};
 
+
+	struct stream {
+		stream(const std::ostream&);
+	};
+
 	no operator<<( std::ostream const&, any_t const& );
+
+	//no operator<<( stream const&, any_t const& );
+
+
 	no operator>>( std::istream &, const any_t & );
 
 	yes& test_ostream( std::ostream& );
@@ -26,7 +36,9 @@ namespace string_conversion_impl {
 	struct printable {
 		static std::ostream &s;
 		static T const &t;
-		static bool const value = sizeof( test_ostream(s << t) ) == sizeof( yes );
+		// Ambiguous conversions have ruined it all
+		//static bool const value = sizeof( test_ostream(s << t) ) == sizeof( yes );
+		static bool const value = ::std::is_integral<T>::value || ::std::is_same<T, const char*>::value || ::std::is_same<T, ::std::string>::value;
 	};
 		
 	template<typename T>
