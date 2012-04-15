@@ -24,6 +24,8 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Sema/Sema.h"
+#include "clang/Sema/Template.h"
 
 
 #include <vector>
@@ -67,13 +69,13 @@ std::string join(const Container<Args...>& container, const std::string& separat
 class MyASTConsumer
 {
 	bool m_inClass = false;
-	list<string> m_namespaces;
 	list<CXXRecordDecl*> m_visitLater;
 	stringstream out;
 	set<string> m_sourceFiles;
 	SourceManager* m_sourceManager;
 	PrintingPolicy m_printPol;
 	set<Decl*> m_visited;
+
 
 	struct IncompleteType {
 		QualType type;
@@ -107,15 +109,39 @@ class MyASTConsumer
 		const Type* type = t.getTypePtr();
 
 		if (type->isIncompleteType() && !type->isSpecificBuiltinType(BuiltinType::Void)) {
+
+			if (const TypedefType* tt = dyn_cast<TypedefType>(type)) {
+				if (TypedefNameDecl* tnd = tt->getDecl()) {
+					return treatType(tnd->getUnderlyingType(), ::std::move(range));
+				}
+			} else if (const TemplateSpecializationType* tt = dyn_cast<TemplateSpecializationType>(type)) {
+
+				if (ClassTemplateDecl* td = dyn_cast<ClassTemplateDecl>(tt->getTemplateName().getAsTemplateDecl())) {
+					for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
+						clang::ClassTemplateSpecializationDecl* spec = *it;
+						if (!spec->hasDefinition()) {
+							m_sema.InstantiateClassTemplateSpecialization(range.getBegin(), spec, TSK_ImplicitInstantiation, false);
+							if (spec->hasDefinition()) {
+								m_visitLater.push_back(spec->getDefinition());
+							}
+						}
+					}
+					return t.getCanonicalType();
+				}
+			}
+
 			throw IncompleteType{t, range};
 		}
 
 		return t.getCanonicalType();
 	}
 
+	ASTContext* m_context;
+	Sema& m_sema;
+
 public:
 
-	MyASTConsumer(SourceManager* sm, LangOptions opts) : m_sourceManager(sm), m_printPol(opts) {
+	MyASTConsumer(SourceManager* sm, ASTContext& astContext, Sema& sema) : m_sourceManager(sm), m_printPol(astContext.getLangOpts()), m_context(&astContext), m_sema(sema) {
 		m_printPol.Bool = 1;
 		FileID mainID = sm->getMainFileID();
 		const FileEntry* entry = sm->getFileEntryForID(mainID);
@@ -134,6 +160,13 @@ public:
 		return os;
 	}
 
+	void handleDelayed() {
+		while( !m_visitLater.empty() ) {
+			CXXRecordDecl* nested = m_visitLater.front();
+			m_visitLater.pop_front();
+			handleDecl(nested);
+		}
+	}
 
 	void handleDecl(Decl* decl)
 	{
@@ -159,14 +192,11 @@ public:
 				if (nd->isAnonymousNamespace()) {
 					return; // no interest in hidden symbols
 				}
-
-				m_namespaces.push_back(nd->getDeclName().getAsString());
 				// recurse
 				for (DeclContext::decl_iterator it = nd->decls_begin(); it != nd->decls_end(); ++it) {
 					clang::Decl* subdecl = *it;
 					handleDecl(subdecl);
 				}
-				m_namespaces.pop_back();
 
 			} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
 				QualType t = treatType(fd->getType(), fd->getSourceRange());
@@ -175,24 +205,25 @@ public:
 
 				if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
 					if (crd->hasDefinition()) {
-						crd = crd->getDefinition();
+
+						CXXRecordDecl* definition = crd->getDefinition();
 
 						if (m_inClass) {
-							m_visitLater.push_back(crd);
+							m_visited.erase(crd);
+							m_visitLater.push_back(definition);
 							return;
 						}
 
-						if  (ClassTemplateSpecializationDecl* t = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
-							string name;
-							t->getNameForDiagnostic(name, m_printPol, true);
-							m_namespaces.push_back(name);
-						} else {
-							m_namespaces.push_back(crd->getNameAsString());
-						}
+						crd = definition;
+						m_visited.insert(crd);
+
+						string name;
+						crd->getNameForDiagnostic(name, m_printPol, true);
+
 
 						m_inClass = true;
 
-						out << "BEGIN_CLASS(" << join(m_namespaces, "::") << ")" << endl;
+						out << "BEGIN_CLASS(" << name << ")" << endl;
 
 						for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
 							QualType t = treatType(it->getType(), it->getSourceRange());
@@ -208,13 +239,30 @@ public:
 						m_inClass = false;
 						out << "END_CLASS" << endl << endl;
 
-						while( !m_visitLater.empty() ) {
-							CXXRecordDecl* nested = m_visitLater.front();
-							m_visitLater.pop_front();
-							handleDecl(nested);
+
+					} else {
+						// maybe we can force the definition to exist
+						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
+							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
+							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
+							if (crd->hasDefinition()) {
+								m_visited.erase(crd->getDefinition());
+								handleDecl(crd->getDefinition());
+							}
 						}
 
-						m_namespaces.pop_back();
+						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd->getDeclContext())) {
+							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
+
+
+							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
+
+							if (crd->hasDefinition()) {
+								m_visited.erase(crd->getDefinition());
+								handleDecl(crd->getDefinition());
+							}
+						}
+
 					}
 				} /*else {
 				// don't know what to do with this, the only possibility left are unions, right?
@@ -231,7 +279,7 @@ public:
 
 		}*/ else if (FunctionDecl* fd = llvm::dyn_cast<FunctionDecl>(decl)) {
 
-				const string name = fd->getDeclName().getAsString();
+				string name = fd->getNameAsString();
 				QualType qt = treatType(fd->getResultType(), fd->getSourceRange());
 				const string returnType =  qt.getAsString(m_printPol);
 
@@ -298,10 +346,13 @@ public:
 					}
 				} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
 					// is not a method
+					string nameWithNamespace;
+					fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
 					string a = string(args.empty() ? "" : ", ") + argstr;
-					out << "FUNCTION(" << name << ", " << returnType << a << ")" << endl;
+					out << "FUNCTION(" << nameWithNamespace << ", " << returnType << a << ")" << endl << endl;
 				}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
+				std::cout << "checkpoint 2" << std::endl;
 				for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
 					//specializations are classes too
 					clang::ClassTemplateSpecializationDecl* spec = *it;
@@ -394,7 +445,7 @@ int main(int argc, const char* argv[])
 	}
 
 	ASTContext& astContext = unit->getASTContext();
-	MyASTConsumer astConsumer(&unit->getSourceManager(), astContext.getLangOpts());
+	MyASTConsumer astConsumer(&unit->getSourceManager(), astContext, unit->getSema());
 
 
 	for (auto it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
@@ -405,6 +456,7 @@ int main(int argc, const char* argv[])
 			astConsumer.handleDecl(subdecl);
 		}
 	}
+	astConsumer.handleDelayed();
 
 
 	std::ofstream out;
