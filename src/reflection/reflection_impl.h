@@ -30,21 +30,39 @@ private:
 	::std::map< ::std::string, Class > m_registry;
 };
 
-template<class Clazz>
-struct ClassRegHelper {
-	ClassRegHelper( const char* name ) {
-		ClassRegistry::instance().registerClass(name, ClassOf<Clazz>());
-	}
-};
+namespace {
 
+	template<class Clazz>
+	struct ClassRegHelper {
+		ClassRegHelper( const char* name ) {
+			ClassRegistry::instance().registerClass(name, ClassOf<Clazz>());
+		}
+	};
+
+}
+
+#ifndef NO_RTTI
 
 #define REFL_BEGIN_CLASS(CLASS_NAME) \
 	static ClassRegHelper<CLASS_NAME> UNIQUE(#CLASS_NAME); \
-template<> ClassImpl<CLASS_NAME>* ClassImpl<CLASS_NAME>::instance() {\
+template<> ClassImpl* ClassImpl::inst<CLASS_NAME>() {\
 	typedef CLASS_NAME ThisClass;\
 	static ClassImpl instance;\
 	if (instance.open()) {\
-		instance.setFqn(#CLASS_NAME);
+	instance.setTypeInfo(typeid(ThisClass)); \
+		instance.setFullyQualifiedName(#CLASS_NAME);
+
+#else
+
+#define REFL_BEGIN_CLASS(CLASS_NAME) \
+	static ClassRegHelper<CLASS_NAME> UNIQUE(#CLASS_NAME); \
+template<> ClassImpl* ClassImpl::inst<CLASS_NAME>() {\
+	typedef CLASS_NAME ThisClass;\
+	static ClassImpl instance;\
+	if (instance.open()) {\
+		instance.setFullyQualifiedName(#CLASS_NAME);
+
+#endif
 
 #define REFL_END_CLASS \
 	instance.close();\
@@ -53,32 +71,31 @@ return &instance;\
 }
 
 #define REFL_SUPER_CLASS(CLASS_NAME) \
-instance.registerSuperClassPriv(ClassOf<CLASS_NAME>());
+instance.registerSuperClass(ClassOf<CLASS_NAME>());
 
 #define REFL_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
+	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define REFL_CONST_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
+	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define REFL_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
+	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define REFL_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
-
+	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define REFL_STATIC_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethodPriv(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
+	instance.registerMethod(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(#METHOD_NAME, &ThisClass::METHOD_NAME, #RESULT, #__VA_ARGS__));
 
 #define REFL_ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
-	instance.registerAttributePriv(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING));
+	instance.registerAttribute(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING));
 
 #define REFL_DEFAULT_CONSTRUCTOR(...) \
-	instance.registerConstructorPriv(make_constructor<ThisClass>(""));
+	instance.registerConstructor(make_constructor<ThisClass>(""));
 
 #define REFL_CONSTRUCTOR(...) \
-	instance.registerConstructorPriv(make_constructor<ThisClass, __VA_ARGS__>(#__VA_ARGS__));
+	instance.registerConstructor(make_constructor<ThisClass, __VA_ARGS__>(#__VA_ARGS__));
 
 
 class FunctionRegistry {

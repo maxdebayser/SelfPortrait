@@ -6,14 +6,15 @@
 #include "function.h"
 #include "reflection.h"
 #include "str_utils.h"
+#include "call_utils.h"
 
 #include <vector>
 #include <tuple>
 #include <array>
 #include <algorithm>
 
-#include <iostream>
-using namespace std;
+
+namespace {
 
 template<class _Method>
 struct method_type_base;
@@ -76,7 +77,6 @@ struct method_type_base<_Result(_Clazz::*)(Args...) const volatile> {
 };
 
 
-
 template<class Functor>
 struct method_type: public method_type_base<Functor> {
 		
@@ -86,24 +86,6 @@ struct method_type: public method_type_base<Functor> {
 	typedef typename Base::Result Result;
 	typedef typename Base::Arguments Arguments;
 	typedef typename Base::ClazzRef ClazzRef;	
-
-	template< ::size_t N>
-	struct call_verifier {
-		::std::array<bool,N> success;
-		call_verifier(::std::size_t actual) {
-			if (static_cast<int>(actual) < static_cast<int>(N)) {
-				throw ::std::runtime_error("method called with insufficient number of arguments");
-			}
-			success.fill(false);
-		}
-		void assert_conversion_succeded() const {
-			for (::std::size_t i = 0; i < success.size(); ++i) {
-				if (success[i] == false) {
-					throw ::std::runtime_error(::fmt_str("method called with incompatible argument at position %1", i) );
-				}
-			}
-		}
-	};
 	
 	template<class Ind, class RType, bool CRestriction, bool VRestriction>
 	struct call_helper;
@@ -114,10 +96,8 @@ struct method_type: public method_type_base<Functor> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 		
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			call_verifier<sizeof...(I)> ver(args.size());
-			auto t = ::std::make_tuple(args[I].convertTo<typename type_at<Arguments, I>::type>(&ver.success[I])...);
-			ver.assert_conversion_succeded();
-			return (object.*ptr)(::std::get<I>(t)...);
+			verify_call<Arguments, I...>(args);
+			return (object.*ptr)(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
 		}
 	};
 	
@@ -125,14 +105,12 @@ struct method_type: public method_type_base<Functor> {
 	struct call_helper<Ind<I...>, void, false, false> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			call_verifier<sizeof...(I)> ver(args.size());
-			auto t = ::std::make_tuple(args[I].convertTo<typename type_at<Arguments, I>::type>(&ver.success[I])...);
-			ver.assert_conversion_succeded();
-			(object.*ptr)(::std::get<I>(t)...);
+			verify_call<Arguments, I...>(args);
+			(object.*ptr)(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
 			return VariantValue();
 		}
 	};
-	
+
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind, class RType>
 	struct call_helper<Ind<I...>, RType, true, false> {
 		static VariantValue call(const volatile Clazz&, ptr_to_method, const ::std::vector<VariantValue>& args) {
@@ -147,59 +125,86 @@ struct method_type: public method_type_base<Functor> {
 		}
 	};
 	
-		template< ::std::size_t... I, template< ::std::size_t...> class Ind, class RType>
+	template< ::std::size_t... I, template< ::std::size_t...> class Ind, class RType>
 	struct call_helper<Ind<I...>, RType, true, true> {
 		static VariantValue call(const volatile Clazz&, ptr_to_method, const ::std::vector<VariantValue>& args) {
-			throw ::std::runtime_error("Called non-const, non-voltile method of const volatile object");
+			throw ::std::runtime_error("Called non-const, non-volatile method of const volatile object");
 		}
 	};
-	
-	static VariantValue call(Clazz& object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-		// plain reference, no restriction
-		return call_helper<typename make_indices<size<Arguments>()>::type, Result, false, false>::call(object, ptr, args);
-	}
-	
-	static VariantValue call(const Clazz& object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-		// const reference, restrict if method is not const
-		return call_helper<typename make_indices<size<Arguments>()>::type, Result, !Base::is_const, false>::call(object, ptr, args);
-	}
-	
-	static VariantValue call(volatile Clazz& object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-		// const reference, restrict if method is not const
-		return call_helper<typename make_indices<size<Arguments>()>::type, Result, false, !Base::is_volatile>::call(object, ptr, args);
-	}
-	
-	static VariantValue call(const volatile Clazz& object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-		// const reference, restrict if method is not const
-		return call_helper<typename make_indices<size<Arguments>()>::type, Result, !Base::is_const, !Base::is_volatile>::call(object, ptr, args);
-	}
 };
 
+}
 
 class AbstractMethodImpl: public Annotated {
 public:
-	AbstractMethodImpl() {}
+
+	AbstractMethodImpl(const char* name, const char* returnSpelling, int numArguments, const char* argSpellings, bool isConst, bool isVolatile, bool isStatic)
+		: m_name(name)
+		, m_returnSpelling(returnSpelling)
+		, m_argSpellings(argSpellings)
+		, m_numArgs(numArguments)
+		, m_isConst(isConst)
+		, m_isVolatile(isVolatile)
+		, m_isStatic(isStatic)
+	{}
+
 	virtual ~AbstractMethodImpl() {}
-	virtual const ::std::string& name() const = 0;
-	virtual ::std::size_t numberOfArguments() const = 0;
+
+	const char* name() const { return m_name; }
+	::std::size_t numberOfArguments() const { return m_numArgs; }
+	::std::vector< ::std::string> argumentSpellings() const { return splitArgs(m_argSpellings); }
+
+	::std::string returnTypeSpelling() const { return normalizedTypeName(m_returnSpelling); }
+
+	bool isConst() const { return m_isConst; }
+	bool isVolatile() const { return m_isVolatile; }
+	bool isStatic() const { return m_isStatic; }
+
+#ifndef NO_RTTI
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const = 0;
 	virtual const ::std::type_info& returnType() const = 0;
-	virtual const ::std::string& returnTypeSpelling() const = 0;
-	virtual bool isConst() const = 0;
-	virtual bool isVolatile() const = 0;
-	virtual bool isStatic() const = 0;	
-	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(const VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
-	virtual VariantValue call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
+#endif
+
+
+	VariantValue call(const ::std::vector<VariantValue>& args) const {
+		if (!m_isStatic) {
+			throw ::std::runtime_error("cannnot call non-static method withtout object");
+		}
+		return this->call(VariantValue(), args);
+	}
+
+	VariantValue call(VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		return call(false, false, object, args);
+	}
+	VariantValue call(const VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		return call(true, false, object, args);
+	}
+	VariantValue call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		return call(false, true, object, args);
+	}
+	VariantValue call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		return call(true, true, object, args);
+	}
 	
 	AbstractMethodImpl(const AbstractMethodImpl&) = delete;
 	AbstractMethodImpl(AbstractMethodImpl&&) = delete;
 	AbstractMethodImpl& operator=(const AbstractMethodImpl&) = delete;
 	AbstractMethodImpl& operator=(AbstractMethodImpl&&) = delete;
+
+private:
+
+	virtual VariantValue call(bool isConst, bool isVolatile, const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const = 0;
+
+	const char* m_name;
+	const char* m_returnSpelling;
+	const char* m_argSpellings;
+	const unsigned int m_numArgs : 5; // up to 32 parameters are supported
+	const unsigned int m_isConst : 1;
+	const unsigned int m_isVolatile : 1;
+	const unsigned int m_isStatic : 1;
 };
+
+namespace {
 
 template<class _Method>
 class MethodImpl: public AbstractMethodImpl {
@@ -210,82 +215,37 @@ public:
 	typedef typename MDescr::ptr_to_method ptr_to_method;
 	typedef typename MDescr::Result Result;
 	
-	constexpr MethodImpl(const ::std::string& name, ptr_to_method ptr, ::std::string&& returnSpelling, ::std::vector< ::std::string>&& argSpellings)
-		: m_name(name)
+	 MethodImpl(const char* name, ptr_to_method ptr, const char* returnSpelling, const char* argSpellings)
+		: AbstractMethodImpl(name, returnSpelling, size<typename MDescr::Arguments>(), argSpellings, MDescr::is_const, MDescr::is_volatile, false)
 		, m_ptr(ptr)
-		, m_returnSpelling(returnSpelling)
-		, m_argSpellings(argSpellings)
-	{}
+	{ }
 	
-	virtual const ::std::string& name() const { return m_name; }
-	
-	virtual ::std::size_t numberOfArguments() const { return size<typename MDescr::Arguments>(); }
-	
+#ifndef NO_RTTI
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
 
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
-
 	virtual const ::std::type_info& returnType() const { return typeid(Result); }
-
-	virtual const ::std::string& returnTypeSpelling() const { return m_returnSpelling; }
+#endif
 	
-	virtual bool isConst() const { return MDescr::is_const; }
-	
-	virtual bool isVolatile() const { return MDescr::is_volatile; }
-	
-	virtual bool isStatic() const { return false; }
-
-	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
-		throw ::std::runtime_error("cannnot call non-static method withtout object");
-	}
-	
-	virtual VariantValue call(VariantValue& object, const ::std::vector<VariantValue>& args) const {
-		bool success = false;
-		Clazz& ref = object.convertTo<Clazz&>(&success);
-		
-		if (!success) {
-			throw ::std::runtime_error("method called with wrong type of object");
-		}
-		return MDescr::call(ref, m_ptr, args);
-	}
-		
-	virtual VariantValue call(const VariantValue& object, const ::std::vector<VariantValue>& args) const {
-		bool success = false;
-		const Clazz& ref = object.convertTo<const Clazz&>(&success);
-
-		if (!success) {
-			throw ::std::runtime_error("method called with wrong type of object");
-		}
-		return MDescr::call(ref, m_ptr, args);
-	}
-	
-
-	virtual VariantValue call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
-		bool success = false;
-		volatile Clazz& ref = object.convertTo<volatile Clazz&>(&success);
-
-		if (!success) {
-			throw ::std::runtime_error("method called with wrong type of object");
-		}
-		return MDescr::call(ref, m_ptr, args);
-	}
-	
-	virtual VariantValue call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
-		bool success = false;
-		const volatile Clazz& ref = object.convertTo<const volatile Clazz&>(&success);
-
-		if (!success) {
-			throw ::std::runtime_error("method called with wrong type of object");
-		}
-		return MDescr::call(ref, m_ptr, args);
-	}
-	
-private:		
-	
-	::std::string m_name;
+	 virtual VariantValue call(const bool isConst, const bool isVolatile, const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
+		 if (!object.isA<Clazz>()) {
+			 throw ::std::runtime_error("method called with wrong type of object");
+		 }
+		 if (!isConst && !isVolatile) {
+			 Clazz& ref = object.convertTo<Clazz&>();
+			 return MDescr::template call_helper<typename make_indices<size<typename MDescr::Arguments>()>::type, Result, false, false>::call(ref, m_ptr, args);
+		 } else if (isConst && !isVolatile) {
+			 const Clazz& ref = object.convertTo<const Clazz&>();
+			 return MDescr::template call_helper<typename make_indices<size<typename MDescr::Arguments>()>::type, Result, !MDescr::is_const, false>::call(ref, m_ptr, args);
+		 } else if (!isConst && isVolatile) {
+			 volatile Clazz& ref = object.convertTo<volatile Clazz&>();
+			 return MDescr::template call_helper<typename make_indices<size<typename MDescr::Arguments>()>::type, Result, false, !MDescr::is_volatile>::call(ref, m_ptr, args);
+		 } else /*(isConst && isVolatile) */{
+			 const volatile Clazz& ref = object.convertTo<const volatile Clazz&>();
+			 return MDescr::template call_helper<typename make_indices<size<typename MDescr::Arguments>()>::type, Result, !MDescr::is_const, !MDescr::is_volatile>::call(ref, m_ptr, args);
+		 }
+	 }
+private:
 	ptr_to_method m_ptr;
-	::std::string m_returnSpelling;
-	::std::vector< ::std::string> m_argSpellings;
 };
 
 
@@ -298,72 +258,41 @@ public:
 	typedef typename MDescr::ptr_to_function ptr_to_method;
 	typedef typename MDescr::Result Result;
 	
-	constexpr StaticMethodImpl(const ::std::string& name, ptr_to_method ptr, ::std::string&& returnSpelling, ::std::vector< ::std::string>&& argSpellings)
-		: m_name(name)
+
+	StaticMethodImpl(const char* name, ptr_to_method ptr, const char* returnSpelling, const char* argSpellings)
+		: AbstractMethodImpl(name, ::std::move(returnSpelling), size<typename MDescr::Arguments>(), argSpellings, false, false, true)
 		, m_ptr(ptr)
-		, m_returnSpelling(returnSpelling)
-		, m_argSpellings(argSpellings)
 	{}
-	
-	virtual const ::std::string& name() const { return m_name; }
-	
-	virtual ::std::size_t numberOfArguments() const { return size<typename MDescr::Arguments>(); }
 
+#ifndef NO_RTTI
 	virtual const ::std::type_info& returnType() const { return typeid(Result); }
-
-	virtual const ::std::string& returnTypeSpelling() const { return m_returnSpelling; }
 	
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
+#endif
 
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
-	
-	virtual bool isConst() const { return false; }
-	
-	virtual bool isVolatile() const { return false; }
-	
-	virtual bool isStatic() const { return true; }
-
-	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
+	virtual VariantValue call(bool isConst, bool isVolatile, const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
 		return MDescr::call(m_ptr, args);
 	}
-	
-	virtual VariantValue call(VariantValue&, const ::std::vector<VariantValue>& args) const {
-		return MDescr::call(m_ptr, args);
-	}
-		
-	virtual VariantValue call(const VariantValue&, const ::std::vector<VariantValue>& args) const {
-		return MDescr::call(m_ptr, args);
-	}	
 
-	virtual VariantValue call(volatile VariantValue&, const ::std::vector<VariantValue>& args) const {
-		return MDescr::call(m_ptr, args);
-	}
-	
-	virtual VariantValue call(const volatile VariantValue&, const ::std::vector<VariantValue>& args) const {
-		return MDescr::call(m_ptr, args);
-	}	
-private:		
-	
-	::std::string m_name;
+private:
 	ptr_to_method m_ptr;
-	::std::string m_returnSpelling;
-	::std::vector< ::std::string> m_argSpellings;
 };
 
-
-
+}
 
 template<class _Method>
-Method make_method(const ::std::string& name, _Method ptr, const char* rString, const char* argString) {
-	static MethodImpl<_Method> impl(name, ptr, normalizedTypeName(rString), splitArgs(argString));
+Method make_method(const char* name, _Method ptr, const char* rString, const char* argString) {
+	static MethodImpl<_Method> impl(name, ptr, rString, argString);
 	return Method(&impl);
 }
 
 
 template<class C, class _Method>
-Method make_static_method(const ::std::string& name, _Method ptr, const char* rString, const char* argString) {
-	static StaticMethodImpl<C, _Method> impl(name, ptr, normalizedTypeName(rString), splitArgs(argString));
+Method make_static_method(const char* name, _Method ptr, const char* rString, const char* argString) {
+	static StaticMethodImpl<C, _Method> impl(name, ptr, rString, argString);
 	return Method(&impl);
 }
+
+
 
 #endif /* METHOD_H */

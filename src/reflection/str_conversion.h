@@ -6,6 +6,8 @@
 #include <vector>
 #include <type_traits>
 
+namespace {
+
 namespace string_conversion_impl {
 	typedef char no;
 	typedef char yes[2];
@@ -198,5 +200,6 @@ template<class... T>
 	return ss.str();
 }
 
+}
 
 #endif /* STRING_CONVERSION_H */

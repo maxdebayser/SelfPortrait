@@ -2,6 +2,7 @@
 #include "function.h"
 #include "reflection.h"
 #include "reflection_impl.h"
+#include "test_utils.h"
 
 #include <iostream>
 #include <string>
@@ -33,17 +34,17 @@ void FunctionTestSuite::testFunction()
 
 	for (const Function& f: functions) {
 
-		if (f.returnType() == typeid(double)) {
+		if (f.returnSpelling() == "double") {
 			overload1 = f;
-		} else if (f.returnType() == typeid(int)) {
+		} else if (f.returnSpelling() == "int") {
 			overload2 = f;
 		}
-
 	}
 
 	TS_ASSERT_EQUALS(overload1.name(), "Test::globalFunction" );
 
-	TS_ASSERT( overload1.returnType() == typeid(double) );
+	TS_ASSERT( overload1.returnSpelling() == "double");
+	WITH_RTTI(TS_ASSERT( overload1.returnType() == typeid(double) ));
 	TS_ASSERT_EQUALS( overload1.numberOfArguments(), 2);
 
 	VariantValue v1 = overload1.call(2.1,3.2);
@@ -53,7 +54,8 @@ void FunctionTestSuite::testFunction()
 
 
 	TS_ASSERT_EQUALS(overload2.name(), "Test::globalFunction" );
-	TS_ASSERT( overload2.returnType() == typeid(int) );
+	TS_ASSERT( overload2.returnSpelling() == "int" );
+	WITH_RTTI(TS_ASSERT( overload2.returnType() == typeid(int) ));
 
 	VariantValue v2 = overload2.call(2.1, 3.2);
 	TS_ASSERT(v2.isValid());

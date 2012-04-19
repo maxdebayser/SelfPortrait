@@ -5,7 +5,9 @@
 
 #include <set>
 #include <list>
+#ifndef NO_RTTI
 #include <typeinfo>
+#endif
 
 // All user front-end classes
 
@@ -52,10 +54,12 @@ public:
 	Attribute& operator=(const Attribute& rhs);
 	Attribute& operator=(Attribute&& rhs);
 	
-	const ::std::string& name() const;
-	const ::std::string& typeSpelling() const;
+	::std::string name() const;
+	::std::string typeSpelling() const;
 	
+#ifndef NO_RTTI
 	const ::std::type_info& type() const;
+#endif
 	bool isConst() const;
 	bool isStatic() const;
 	
@@ -68,14 +72,17 @@ public:
 	void set(const VariantValue& object, const VariantValue& value) const;
 	
 private:
+
+	void check_valid() const;
+
 	Attribute(AbstractAttributeImpl* impl);
 	
 	AbstractAttributeImpl* m_impl;
 	
 	template<class A>
-	friend Attribute make_attribute(::std::string name, A ptr, const char* arg);
+	friend Attribute make_attribute(const char* name, A ptr, const char* arg);
 	template<class C, class A>
-	friend Attribute make_static_attribute(::std::string name, A ptr, const char* arg);
+	friend Attribute make_static_attribute(const char* name, A ptr, const char* arg);
 };
 
 class AbstractConstructorImpl;
@@ -90,11 +97,13 @@ public:
 	Constructor& operator=(Constructor&& rhs);
 
 	::std::size_t numberOfArguments() const;
-	const ::std::vector< ::std::string>& argumentSpellings() const;
+	::std::vector< ::std::string> argumentSpellings() const;
 	
 	bool isDefaultConstructor() const;
 	
+#ifndef NO_RTTI
 	::std::vector<const ::std::type_info*> argumentTypes() const;
+#endif
 	
 	template<class... Args>
 	VariantValue call(const Args&... args) const {
@@ -106,6 +115,9 @@ public:
 	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const ;
 	
 private:
+
+	void check_valid() const;
+
 	Constructor(AbstractConstructorImpl* impl);
 	
 	AbstractConstructorImpl* m_impl;
@@ -127,13 +139,15 @@ public:
 	Method(Method&& rhs);
 	Method& operator=(Method&& rhs);
 	
-	const ::std::string& name() const;
+	::std::string name() const;
 	::std::size_t numberOfArguments() const;
-	const ::std::string& returnSpelling() const;
-	const ::std::vector< ::std::string>& argumentSpellings() const;
+	::std::string returnSpelling() const;
+	::std::vector< ::std::string> argumentSpellings() const;
 
+#ifndef NO_RTTI
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 	const ::std::type_info& returnType() const;
+#endif
 
 	bool isConst() const;
 	bool isVolatile() const;
@@ -177,20 +191,20 @@ public:
 	VariantValue callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
 
 private:
+
+	void check_valid() const;
 	
 	Method(AbstractMethodImpl* impl);
-	
-
-	
+		
 	AbstractMethodImpl* m_impl;
 	
-	template<class M> friend Method make_method(const ::std::string& name, M ptr, const char* rString, const char* argString);
-	template<class C, class M> friend Method make_static_method(const ::std::string& name, M ptr, const char* rString, const char* argString);
+	template<class M> friend Method make_method(const char* name, M ptr, const char* rString, const char* argString);
+	template<class C, class M> friend Method make_static_method(const char* name, M ptr, const char* rString, const char* argString);
 };
 
 
 
-class AbstractClassImpl;
+class ClassImpl;
 
 class Class: public AnnotatedFrontend {
 public:
@@ -214,12 +228,14 @@ public:
 	
 	const std::string& fullyQualifiedName() const;
 	
+#ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
 	
 	template<class C>
 	bool describes() const {
 		return typeId() == typeid(C);
 	}
+#endif
 	
 	bool isSubClassOf(const Class& rhs) const;
 		
@@ -234,17 +250,21 @@ public:
 	static Class forName(const ::std::string& name);
 	
 private:
+
+	void check_valid() const;
 	
-	Class(AbstractClassImpl* impl);
+	Class(ClassImpl* impl);
 	
-	AbstractClassImpl* m_impl;
+	ClassImpl* m_impl;
 	
 	template<class T> friend Class ClassOf();
+	friend bool operator==(const Class& c1, const Class& c2);
 };
 
 inline bool operator==(const Class& c1, const Class& c2)
 {
-	return c1.typeId() == c2.typeId();
+	// The address should be equal
+	return c1.m_impl == c2.m_impl;
 }
 
 inline bool operator!=(const Class& c1, const Class& c2)
@@ -266,15 +286,17 @@ public:
 	Function& operator=(const Function& rhs);
 	Function& operator=(Function&& rhs);
 
-	const ::std::string& name() const;
+	::std::string name() const;
 
 
 	::std::size_t numberOfArguments() const;
-	const ::std::string& returnSpelling() const;
-	const ::std::vector< ::std::string>& argumentSpellings() const;
+	::std::string returnSpelling() const;
+	::std::vector< ::std::string> argumentSpellings() const;
 
+#ifndef NO_RTTI
 	const ::std::type_info& returnType() const;
 	::std::vector<const ::std::type_info*> argumentTypes() const;
+#endif
 
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
@@ -289,13 +311,13 @@ public:
 
 private:
 
-
+	void check_valid() const;
 
 	Function(AbstractFunctionImpl* impl);
 	AbstractFunctionImpl* m_impl;
 
 	template<class FuncPtr>
-	friend Function make_function(const ::std::string& name, FuncPtr ptr, const char* rString, const char* argString);
+	friend Function make_function(const char* name, FuncPtr ptr, const char* rString, const char* argString);
 };
 
 

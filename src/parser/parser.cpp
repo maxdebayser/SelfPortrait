@@ -75,6 +75,9 @@ class MyASTConsumer
 	SourceManager* m_sourceManager;
 	PrintingPolicy m_printPol;
 	set<Decl*> m_visited;
+	ASTContext* m_context;
+	Sema& m_sema;
+	bool m_instantiateTemplates;
 
 
 	struct IncompleteType {
@@ -166,19 +169,20 @@ class MyASTConsumer
 					return treatType(tnd->getUnderlyingType(), ::std::move(range));
 				}
 			} else if (const TemplateSpecializationType* tt = dyn_cast<TemplateSpecializationType>(type)) {
-
-				if (ClassTemplateDecl* td = dyn_cast<ClassTemplateDecl>(tt->getTemplateName().getAsTemplateDecl())) {
-					for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
-						clang::ClassTemplateSpecializationDecl* spec = *it;
-						if (!spec->hasDefinition()) {
-							m_sema.InstantiateClassTemplateSpecialization(range.getBegin(), spec, TSK_ImplicitInstantiation, false);
-							if (spec->hasDefinition()) {
-								m_visitLater.push_back(spec->getDefinition());
+				if (m_instantiateTemplates) {
+					if (ClassTemplateDecl* td = dyn_cast<ClassTemplateDecl>(tt->getTemplateName().getAsTemplateDecl())) {
+						for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
+							clang::ClassTemplateSpecializationDecl* spec = *it;
+							if (!spec->hasDefinition()) {
+								m_sema.InstantiateClassTemplateSpecialization(range.getBegin(), spec, TSK_ImplicitInstantiation, false);
+								if (spec->hasDefinition()) {
+									m_visitLater.push_back(spec->getDefinition());
+								}
 							}
 						}
-					}
-					if (!type->isIncompleteType()) {
-						return t.getCanonicalType();
+						if (!type->isIncompleteType()) {
+							return t.getCanonicalType();
+						}
 					}
 				}
 			}
@@ -189,12 +193,15 @@ class MyASTConsumer
 		return t.getCanonicalType();
 	}
 
-	ASTContext* m_context;
-	Sema& m_sema;
-
 public:
 
-	MyASTConsumer(SourceManager* sm, ASTContext& astContext, Sema& sema) : m_sourceManager(sm), m_printPol(astContext.getLangOpts()), m_context(&astContext), m_sema(sema) {
+	MyASTConsumer(SourceManager* sm, ASTContext& astContext, Sema& sema, bool instantiateTemplates = true)
+		: m_sourceManager(sm)
+		, m_printPol(astContext.getLangOpts())
+		, m_context(&astContext)
+		, m_sema(sema)
+		, m_instantiateTemplates(instantiateTemplates)
+	{
 		m_printPol.Bool = 1;
 		FileID mainID = sm->getMainFileID();
 		const FileEntry* entry = sm->getFileEntryForID(mainID);
@@ -293,7 +300,7 @@ public:
 						out << "REFL_END_CLASS" << endl << endl;
 
 
-					} else {
+					} else if (m_instantiateTemplates) {
 						// maybe we can force the definition to exist
 						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
 							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
@@ -410,10 +417,12 @@ public:
 					out << "REFL_FUNCTION(" << nameWithNamespace << ", " << returnType << a << ")" << endl << endl;
 				}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
-				for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
-					//specializations are classes too
-					clang::ClassTemplateSpecializationDecl* spec = *it;
-					handleDecl(spec);
+				if (m_instantiateTemplates) {
+					for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
+						//specializations are classes too
+						clang::ClassTemplateSpecializationDecl* spec = *it;
+						handleDecl(spec);
+					}
 				}
 			}
 		} catch (const IncompleteType& t) {

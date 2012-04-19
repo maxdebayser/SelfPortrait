@@ -7,31 +7,46 @@
 #include <array>
 #include "reflection.h"
 #include "str_utils.h"
-
+#include "call_utils.h"
 
 class AbstractConstructorImpl: public Annotated {
 public:	
-	virtual ::std::size_t numberOfArguments() const = 0;
-	
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
 
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const = 0;
+	AbstractConstructorImpl(int numArgs, const char* argSpellings)
+		: m_numArgs(numArgs)
+		, m_argSpellings(argSpellings)
+	{}
+
+	::std::size_t numberOfArguments() const { return m_numArgs; }
+	
+#ifndef NO_RTTI
+	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
+#endif
+
+	::std::vector< ::std::string> argumentSpellings() const { return splitArgs(m_argSpellings); }
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
+
+
+private:
+	const char* m_argSpellings;
+	unsigned int m_numArgs : 5;
 };
+
+namespace {
 
 template<class _Clazz, class... Args>
 class ConstructorImpl: public AbstractConstructorImpl {
 public:
 	typedef _Clazz Clazz;
 	typedef TypeList<Args...> Arguments;
-	
-	virtual ::std::size_t numberOfArguments() const { return size<Arguments>(); }
-	
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<Arguments>(); }
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
 
-	ConstructorImpl(::std::vector< ::std::string>&& argSpellings) : m_argSpellings(argSpellings) {}
+#ifndef NO_RTTI
+	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<Arguments>(); }
+#endif
+
+	ConstructorImpl(const char* argSpellings)
+		: AbstractConstructorImpl(size<Arguments>(), argSpellings) {}
 	
 	
 	template<bool Abstract, class Ind>
@@ -47,23 +62,9 @@ public:
 	template<::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<false, Ind<I...>> {
 
-		::std::array<bool,sizeof...(I)> success;
-				
-		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
-		
+
 		VariantValue call(const ::std::vector<VariantValue>& args) {
-			success.fill(false);
-			if (static_cast<int>(args.size()) < static_cast<int>(sizeof...(I))) {
-				throw ::std::runtime_error("constructor called with insufficient number of arguments");
-			}
-			
-			sink(args[I].moveValue<Args>(&success[I])...);
-			
-			for (::std::size_t i = 0; i < success.size(); ++i) {
-				if (success[i] == false) {
-					throw ::std::runtime_error(::fmt_str("constructor called with incompatible argument at position %1", i) );
-				}
-			}
+			verify_call<Arguments, I...>(args);
 			VariantValue ret;
 			ret.construct<Clazz>(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
 			return ret;
@@ -74,16 +75,13 @@ public:
 		call_helper< ::std::is_abstract<Clazz>::value, typename make_indices<sizeof...(Args)>::type> helper;
 		return helper.call(args);
 	}
-private:
-	::std::vector< ::std::string> m_argSpellings;
 };
 
-
-
+}
 
 template<class Clazz, class... Args>
 Constructor make_constructor(const char* argString) {
-	static ConstructorImpl<Clazz, Args...> impl(splitArgs(argString));
+	static ConstructorImpl<Clazz, Args...> impl(argString);
 	return Constructor(&impl);
 }
 

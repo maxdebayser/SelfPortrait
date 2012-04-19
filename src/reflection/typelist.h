@@ -1,11 +1,15 @@
 #ifndef TYPELIST_H
 #define TYPELIST_H
 
+#ifndef NO_RTTI
 #include <typeinfo>
+#endif
 #include <typeindex>
 #include <initializer_list>
 #include <vector>
 #include "typeutils.h"
+
+namespace {
 
 template<typename... T>
 struct TypeList;
@@ -45,7 +49,7 @@ struct make_indices {
 	typedef typename make_indices_impl<N, Indices<>>::type type;
 };
 
-
+#ifndef NO_RTTI
 template<class TL>
 struct get_typeinfo_impl;
 
@@ -62,7 +66,7 @@ template<class TL>
 static typename get_typeinfo_impl<TL>::tlist get_typeinfo() {
 		return get_typeinfo_impl<TL>::list();
 }
-
+#endif
 
 template<typename NewHead, class TL>
 struct prepend;
@@ -158,7 +162,6 @@ struct success_t
 		enum { value = true };
 };
 
-
 template<class TL, class T>
 struct search_type
 {
@@ -178,5 +181,6 @@ constexpr bool contains()
 		return search_type<TL,T>::value;
 }
 
+}
 
 #endif

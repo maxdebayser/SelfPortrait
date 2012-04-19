@@ -1,6 +1,7 @@
 #include "constructor_test.h"
 #include "constructor.h"
 #include "reflection.h"
+#include "test_utils.h"
 
 #include <iostream>
 #include <string>
@@ -46,8 +47,9 @@ void ConstructorTestSuite::testConstruction()
 	bool success = false;
 
 	VariantValue v1 = defaultConstructor.call();
+
 	TS_ASSERT(v1.isValid());
-	TS_ASSERT(v1.typeId() == typeid(Test));
+	WITH_RTTI(TS_ASSERT(v1.typeId() == typeid(Test)));
 
 	Test& t1 = v1.convertTo<Test&>(&success);
 	TS_ASSERT(success);
@@ -59,7 +61,7 @@ void ConstructorTestSuite::testConstruction()
 	VariantValue v2 = constructor1Args.call(13);
 	TS_ASSERT_THROWS(constructor1Args.call(), std::runtime_error);
 	TS_ASSERT(v2.isValid());
-	TS_ASSERT(v2.typeId() == typeid(Test));
+	WITH_RTTI(TS_ASSERT(v2.typeId() == typeid(Test)));
 
 	Test& t2 = v2.convertTo<Test&>(&success);
 	TS_ASSERT(success);
@@ -69,7 +71,7 @@ void ConstructorTestSuite::testConstruction()
 
 	VariantValue v3 = constructor2Args.call(13,17);
 	TS_ASSERT(v3.isValid());
-	TS_ASSERT(v3.typeId() == typeid(Test));
+	WITH_RTTI(TS_ASSERT(v3.typeId() == typeid(Test)));
 
 	Test& t3 = v3.convertTo<Test&>(&success);
 	TS_ASSERT(success);
@@ -78,7 +80,7 @@ void ConstructorTestSuite::testConstruction()
 
 	VariantValue v4 = copyConstructor.call(v3);
 	TS_ASSERT(v4.isValid());
-	TS_ASSERT(v4.typeId() == typeid(Test));
+	WITH_RTTI(TS_ASSERT(v4.typeId() == typeid(Test)));
 
 	Test& t4 = v4.convertTo<Test&>(&success);
 	TS_ASSERT(success);

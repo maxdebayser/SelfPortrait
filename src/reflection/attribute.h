@@ -2,13 +2,17 @@
 #define ATTRIBUTE_H
 
 #include <stdexcept>
+#ifndef NO_RTTI
 #include <typeinfo>
+#endif
 #include <memory>
 #include <string>
 
 #include "variant.h"
 #include "reflection.h"
 #include "str_utils.h"
+
+namespace {
 
 template<class Attr>
 struct attribute_type;
@@ -98,33 +102,67 @@ struct attribute_type<const _Type _Clazz::*> {
 	}
 };
 
+}
 
 class AbstractAttributeImpl: public Annotated {
 public:
-	AbstractAttributeImpl() {}
+	AbstractAttributeImpl(const char* name, const char* typeSpelling, bool isConst, bool isStatic)
+		: m_name(name)
+		, m_typeSpelling(typeSpelling)
+		, m_isConst(isConst)
+		, m_isStatic(isStatic)
+	{}
 	virtual ~AbstractAttributeImpl() {}
-	
-	virtual const ::std::string& name() const = 0;
+
+#ifndef NO_RTTI
 	virtual const ::std::type_info& type() const = 0;
-	virtual bool isConst() const = 0;
-	virtual bool isStatic() const = 0;
-	virtual const ::std::string& typeSpelling() const = 0;
-	
-	virtual VariantValue get() const = 0;
-	virtual void set(const VariantValue& value) const = 0;
+#endif
+
+	bool isConst() const { return m_isConst; }
+	bool isStatic() const { return m_isStatic; }
+
+	const char* name() const { return m_name; }
+	::std::string typeSpelling() const { return normalizedTypeName(m_typeSpelling); }
+
+	VariantValue get() const {
+		if (!m_isStatic) {
+			throw ::std::runtime_error("cannot get value of non-static property without an object");
+		}
+		return this->get(VariantValue());
+	}
+
+	void set(const VariantValue& value) const {
+		if (m_isStatic) {
+			this->set(VariantValue(), value);
+		} else {
+			throw ::std::runtime_error("cannot set value of non-static property without an object");
+		}
+	}
 	
 	virtual VariantValue get(const VariantValue& object) const = 0;
-	virtual void set(VariantValue& object, const VariantValue& value) const = 0;
-	virtual void set(const VariantValue& object, const VariantValue& value) const = 0;
+
+	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const = 0;
+
+	void set(VariantValue& object, const VariantValue& value) const {
+		set(false, object, value);
+	}
+	void set(const VariantValue& object, const VariantValue& value) const {
+		set(true, object, value);
+	}
 	
 	AbstractAttributeImpl(const AbstractAttributeImpl&) = delete;
 	AbstractAttributeImpl(AbstractAttributeImpl&&) = delete;
 	AbstractAttributeImpl& operator=(const AbstractAttributeImpl&) = delete;
 	AbstractAttributeImpl& operator=(AbstractAttributeImpl&&) = delete;
-	
+
+private:
+	const char* m_name;
+	const char* m_typeSpelling;
+	const unsigned int m_isConst : 1;
+	const unsigned int m_isStatic : 1;
 };
 
-
+namespace {
 
 template<class Attr>
 class AttributeImpl: public AbstractAttributeImpl {
@@ -135,21 +173,14 @@ public:
 	typedef typename ADescr::Type Type;
 	typedef typename ADescr::ptr_to_attr ptr_to_attr;
 	
-	AttributeImpl(::std::string name, ptr_to_attr ptr, ::std::string typeSpelling) : m_name(name), m_ptr(ptr), m_typeSpelling(typeSpelling) {}
+	AttributeImpl(const char* name, ptr_to_attr ptr, const char* typeSpelling)
+		: AbstractAttributeImpl(name, typeSpelling, ADescr::is_const, false)
+		, m_ptr(ptr) {}
 	
-	virtual const ::std::string& name() const override { return m_name; }
+#ifndef NO_RTTI
 	virtual const ::std::type_info& type() const override { return typeid(Type); }
-	virtual bool isConst() const override { return ADescr::is_const; }
-	virtual bool isStatic() const override { return false; }
-	virtual const ::std::string& typeSpelling() const { return m_typeSpelling; }
-	
-	virtual VariantValue get() const override {
-		throw ::std::runtime_error("cannot get value of non-static property without an object");
-	}
-	virtual void set(const VariantValue& value) const  override {
-		throw ::std::runtime_error("cannot set value of non-static property without an object");
-	}
-	
+#endif
+
 	virtual VariantValue get(const VariantValue& object) const override {
 		bool success = false;
 		const Clazz& ref = object.convertTo<const Clazz&>(&success);
@@ -159,32 +190,22 @@ public:
 		}
 		return ADescr::get(ref, m_ptr);
 	}
-	
-	virtual void set(VariantValue& object, const VariantValue& value) const override {
-		bool success = false;
-		Clazz& ref = object.convertTo<Clazz&>(&success);
 
-		if (!success) {
+	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const override {
+		if (!object.isA<Clazz>()) {
 			throw ::std::runtime_error("accessing attribute of an object of a different class");
 		}
-		return ADescr::set(ref, m_ptr, value);
-	}
-	
-	virtual void set(const VariantValue& object, const VariantValue& value) const override {
-		bool success = false;
-		const Clazz& ref = object.convertTo<const Clazz&>(&success);
-
-		if (!success) {
-			throw ::std::runtime_error("accessing attribute of an object of a different class");
+		if (!isConst) {
+			Clazz& ref = object.convertTo<Clazz&>();
+			return ADescr::set(ref, m_ptr, value);
+		} else {
+			const Clazz& ref = object.convertTo<const Clazz&>();
+			return ADescr::set(ref, m_ptr, value);
 		}
-		return ADescr::set(ref, m_ptr, value);
 	}
 	
 private:
-	::std::string m_name;
 	ptr_to_attr m_ptr;
-	::std::string m_typeSpelling;
-	
 };
 
 template<class _Clazz, class _Type>
@@ -194,44 +215,40 @@ public:
 	typedef ptr_type<_Type> ADescr;
 	typedef typename ADescr::Type Type;
 	typedef typename ADescr::ptr_to_variable ptr_to_attr;
-	
-	StaticAttributeImpl(::std::string name, ptr_to_attr ptr, ::std::string typeSpelling) : m_name(name), m_ptr(ptr), m_typeSpelling(typeSpelling) {}
-	
-	virtual const ::std::string& name() const override { return m_name; }
+
+
+	StaticAttributeImpl(const char* name, ptr_to_attr ptr, const char* typeSpelling)
+		: AbstractAttributeImpl(name, typeSpelling, ADescr::is_const, true)
+		, m_ptr(ptr) {}
+
+#ifndef NO_RTTI
 	virtual const ::std::type_info& type() const override { return typeid(Type); }
-	virtual bool isConst() const override { return ADescr::is_const; }
-	virtual bool isStatic() const override { return true; }
-	virtual const ::std::string& typeSpelling() const { return m_typeSpelling; }
-	
-	virtual VariantValue get() const override { return ADescr::get(m_ptr); }
-	virtual void set(const VariantValue& value) const override { ADescr::set(m_ptr, value); }
-	
-	virtual VariantValue get(const VariantValue&) const override { return get(); }
-	
-	virtual void set(VariantValue&, const VariantValue& value) const  override { set(value); }
-	
-	virtual void set(const VariantValue&, const VariantValue& value) const  override { set(value); }
+#endif
+
+	virtual VariantValue get(const VariantValue&) const override { return ADescr::get(m_ptr); }
+
+	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const override {
+		ADescr::set(m_ptr, value);
+	}
 	
 private:
-	::std::string m_name;
 	ptr_to_attr m_ptr;
-	::std::string m_typeSpelling;
-	
 };
 
 
+}
 
 template<class Attr>
-Attribute make_attribute(::std::string name, Attr ptr, const char* arg) {
+Attribute make_attribute(const char* name, Attr ptr, const char* arg) {
 	// call split to canonicalize the type spelling
-	static AttributeImpl<Attr> impl(name, ptr, normalizedTypeName(arg));
+	static AttributeImpl<Attr> impl(name, ptr, arg);
 	return Attribute(&impl);
 }
 
 template<class Clazz, class Attr>
-Attribute make_static_attribute(::std::string name, Attr ptr, const char* arg) {
+Attribute make_static_attribute(const char* name, Attr ptr, const char* arg) {
 	// call split to canonicalize the type spelling
-	static StaticAttributeImpl<Clazz,Attr> impl(name, ptr, normalizedTypeName(arg));
+	static StaticAttributeImpl<Clazz,Attr> impl(name, ptr, arg);
 	return Attribute(&impl);
 }
 

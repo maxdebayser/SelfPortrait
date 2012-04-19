@@ -4,17 +4,19 @@
 #include <memory>
 #include <stdexcept>
 
+
 #ifndef NO_RTTI
-#include <type_traits>
+#include <typeinfo>
 #endif
 
-#include <typeinfo>
+#include <type_traits>
 #include <string>
 #include <utility>
 
 #include "str_conversion.h"
 #include "typeutils.h"
 
+namespace {
 
 namespace number_conversion {
 	
@@ -90,33 +92,52 @@ constexpr number_conversion::dst_float_t convertToFloatingPoint(const T& t, bool
 	return number_conversion::convert<T, convertibleToFloatingPoint<T>()>::convertToFloat(t, success);
 }
 
+}
+
 class IValueHolder {
 public:
+
+	constexpr IValueHolder(std::size_t sizeOf,
+						   std::size_t alignOf,
+						   bool isPod,
+						   bool isIntegral,
+						   bool isFloatingPoint,
+						   bool isPointer,
+						   bool isStdString)
+		: m_sizeOf(sizeOf)
+		, m_alignOf(alignOf)
+		, m_isPod(isPod)
+		, m_isIntegral(isIntegral)
+		, m_isFloatingPoint(isFloatingPoint)
+		, m_isPointer(isPointer)
+		, m_isStdString(isStdString)
+	{}
+
 	virtual IValueHolder* clone() const = 0;
 	
 	virtual bool equals(const IValueHolder* rhs) const = 0;
 		
 	const virtual void * ptrToValue() const = 0;
 	
-	virtual void * ptrToValue() = 0;
+	void * ptrToValue() { return const_cast<void*>(static_cast<const IValueHolder*>(this)->ptrToValue()); }
 	
 #ifndef NO_RTTI
 	virtual const ::std::type_info& typeId() const = 0;
 #endif
 	
-	virtual ::std::size_t sizeOf() const = 0;
+	::std::size_t sizeOf() const { return m_sizeOf; }
 	
-	virtual ::std::size_t alignOf() const = 0;
+	::std::size_t alignOf() const { return m_alignOf; }
 	
-	virtual bool isPOD() const = 0;
+	bool isPOD() const { return m_isPod; }
 	
-	virtual bool isIntegral() const = 0;
+	bool isIntegral() const { return m_isIntegral; }
 	
-	virtual bool isFloatingPoint() const = 0;
+	bool isFloatingPoint() const { return m_isFloatingPoint; }
 	
-	virtual bool isPointer() const = 0;
+	bool isPointer() const { return m_isPointer; }
 	
-	virtual bool isStdString() const = 0;
+	bool isStdString() const { return m_isStdString; }
 
 	virtual void throwCast() const = 0;
 	
@@ -130,9 +151,20 @@ public:
 	IValueHolder() = default;
 	IValueHolder(const IValueHolder&) = delete;
 	IValueHolder& operator=(const IValueHolder&) = delete;
+
+private:
+	const std::size_t m_sizeOf;
+
+	const std::size_t m_alignOf;
+
+	const unsigned int m_isPod : 1;
+	const unsigned int m_isIntegral : 1;
+	const unsigned int m_isFloatingPoint : 1;
+	const unsigned int m_isPointer : 1;
+	const unsigned int m_isStdString : 1;
 };
 
-
+namespace {
 
 template <class T>
 class ValueHolder: public IValueHolder {
@@ -175,8 +207,16 @@ public:
 	typedef T ValueType;
 
 	template<class... Args>
-	ValueHolder(Args&&... args) : m_value(*reinterpret_cast<ValueType*>(m_buffer)) {
-		new(m_buffer) ValueType( ::std::forward<Args>(args)...);
+	ValueHolder(Args&&... args)
+		: IValueHolder(sizeof(ValueType),
+					 alignof(ValueType),
+					 ::std::is_pod<ValueType>::value,
+					 ::std::is_integral<ValueType>::value,
+					 ::std::is_floating_point<ValueType>::value,
+					 ::std::is_pointer<ValueType>::value,
+					 ::std::is_same< ::std::string, ValueType>::value),
+		m_value(*reinterpret_cast<ValueType*>(m_hack.c)) {
+		new(m_hack.c) ValueType( ::std::forward<Args>(args)...);
 	}
 
 	~ValueHolder() noexcept{
@@ -205,41 +245,11 @@ public:
 		return reinterpret_cast<const void*>(&m_value);
 	}
 
-	void * ptrToValue() override {
-		return reinterpret_cast<void*>(&m_value);
-	}
 #ifndef NO_RTTI
 	virtual const ::std::type_info& typeId() const override {
 		return typeid(ValueType);
 	}
 #endif
-	virtual ::std::size_t sizeOf() const override {
-		return sizeof(ValueType);
-	}
-
-	virtual ::std::size_t alignOf() const override {
-		return alignof(ValueType);
-	}
-
-	virtual bool isPOD() const {
-		return ::std::is_pod<ValueType>::value;
-	}
-
-	virtual bool isIntegral() const override {
-		return ::std::is_integral<ValueType>::value;
-	}
-
-	virtual bool isFloatingPoint() const override {
-		return ::std::is_floating_point<ValueType>::value;
-	}
-
-	virtual bool isPointer() const override {
-		return ::std::is_pointer<ValueType>::value;
-	}
-
-	virtual bool isStdString() const {
-		return ::std::is_same< ::std::string, ValueType>::value;
-	}
 
 	virtual ::std::string convertToString() const override {
 			return ::std::move(toString(m_value));
@@ -266,9 +276,6 @@ private:
 		char c[sizeof(ValueType)];
 		typename ::std::aligned_storage<sizeof(ValueType), alignof(ValueType)>::type placeholder;
 	} m_hack;
-
-	char* m_buffer = m_hack.c;
-
 	ValueType& m_value;
 };
 
@@ -316,7 +323,15 @@ private:
 
 public:
 
-	ValueHolder(RefType v) : m_value(v) {}
+	ValueHolder(RefType v)
+		: IValueHolder(sizeof(ValueType),
+					 alignof(ValueType),
+					 ::std::is_pod<ValueType>::value,
+					 ::std::is_integral<ValueType>::value,
+					 ::std::is_floating_point<ValueType>::value,
+					 ::std::is_pointer<ValueType>::value,
+					 ::std::is_same< ::std::string, ValueType>::value),
+		  m_value(v) {}
 
 	~ValueHolder() noexcept {
 	}
@@ -343,41 +358,11 @@ public:
 		return reinterpret_cast<const void*>(&m_value);
 	}
 
-	void * ptrToValue() override {
-		return reinterpret_cast<void*>(const_cast<ValueType*>(&m_value));
-	}
 #ifndef NO_RTTI
 	virtual const ::std::type_info& typeId() const override {
 		return typeid(ValueType);
 	}
 #endif
-	virtual ::std::size_t sizeOf() const override {
-		return sizeof(ValueType);
-	}
-
-	virtual ::std::size_t alignOf() const override {
-		return alignof(ValueType);
-	}
-
-	virtual bool isPOD() const {
-		return ::std::is_pod<ValueType>::value;
-	}
-
-	virtual bool isIntegral() const override {
-		return ::std::is_integral<ValueType>::value;
-	}
-
-	virtual bool isFloatingPoint() const override {
-		return ::std::is_floating_point<ValueType>::value;
-	}
-
-	virtual bool isPointer() const override {
-		return ::std::is_pointer<ValueType>::value;
-	}
-
-	virtual bool isStdString() const {
-		return ::std::is_same< ::std::string, ValueType>::value;
-	}
 
 	virtual ::std::string convertToString() const override {
 			return ::std::move(toString(m_value));
@@ -400,6 +385,7 @@ private:
 	RefType m_value;
 };
 
+}
 
 // A variant value contains a value type by value
 class VariantValue {
@@ -449,6 +435,11 @@ public:
 	template<class ValueType>
 	bool isA() const {
 		return (isValid() && (isAPriv<ValueType>() != nullptr));
+	}
+
+	template<class ValueType>
+	bool isA() const volatile {
+		return const_cast<const VariantValue*>(this)->template isA<ValueType>();
 	}
 	
 private:
@@ -603,6 +594,7 @@ public:
 	}
 	
 	bool isValid() const { return m_impl.get() != nullptr; }
+
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const {
 		check_valid();

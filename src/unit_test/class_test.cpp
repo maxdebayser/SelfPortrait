@@ -1,6 +1,7 @@
 #include "class_test.h"
 #include "class.h"
 #include "reflection_impl.h"
+#include "test_utils.h"
 
 #include <iostream>
 #include <string>
@@ -28,7 +29,7 @@ namespace Test {
 
 	class Test1: public TestBase1, public TestBase2 {
 	public:
-		std::string method1() const{
+		std::string method1() const {
 			return "this is a test";
 		}
 
@@ -152,22 +153,23 @@ void ClassTestSuite::testClass()
 	TS_ASSERT_EQUALS(attributes.size(), 1);
 	Attribute attr = attributes.front();
 
-	TS_ASSERT(attr.type() == typeid(int));
+	WITH_RTTI(TS_ASSERT(attr.type() == typeid(int)));
 
 	TS_ASSERT_EQUALS(testConstructors.size(), 3);
 
 	Constructor defaultConstr;
 	Constructor intConstr;
 
-	TS_ASSERT_THROWS(defaultConstr.argumentTypes(), std::runtime_error);
+	TS_ASSERT_THROWS(defaultConstr.argumentSpellings(), std::runtime_error);
 
 	for (const Constructor& c: testConstructors) {
 		if (c.numberOfArguments() == 0) {
 			defaultConstr = c;
-		} else if (c.numberOfArguments() == 1  && *c.argumentTypes()[0] == typeid(int)){
+		} else if (c.numberOfArguments() == 1  && c.argumentSpellings()[0] == "int"){
 			intConstr = c;
 		}
 	}
+
 
 	TS_ASSERT_EQUALS(defaultConstr.numberOfArguments(), 0);
 	TS_ASSERT_EQUALS(intConstr.numberOfArguments(), 1);
@@ -180,6 +182,7 @@ void ClassTestSuite::testClass()
 
 
 	VariantValue testInst2 = intConstr.call(77);
+
 	TS_ASSERT(testInst2.isA<Test1>());
 	TS_ASSERT_EQUALS(attr.get(testInst2).value<int>(), 77);
 
@@ -191,6 +194,7 @@ void ClassTestSuite::testClass()
 	Method method1;
 	Method method2;
 	Method staticMethod;
+
 
 	for (const Method& m: methods) {
 		if (m.name() == "base1Method1") {
@@ -210,7 +214,7 @@ void ClassTestSuite::testClass()
 	TS_ASSERT(!base1Method1.isConst());
 	TS_ASSERT(!base1Method1.isStatic());
 	TS_ASSERT(!base1Method1.isVolatile());
-	TS_ASSERT(base1Method1.returnType() == typeid(int));
+	WITH_RTTI(TS_ASSERT(base1Method1.returnType() == typeid(int)));
 	TS_ASSERT_EQUALS(base1Method1.numberOfArguments(), 0);
 	TS_ASSERT_EQUALS(base1Method1.call(testInst2).value<int>(), 5);
 
@@ -218,7 +222,7 @@ void ClassTestSuite::testClass()
 	TS_ASSERT(base2Method1.isConst());
 	TS_ASSERT(!base2Method1.isStatic());
 	TS_ASSERT(!base2Method1.isVolatile());
-	TS_ASSERT(base2Method1.returnType() == typeid(int));
+	WITH_RTTI(TS_ASSERT(base2Method1.returnType() == typeid(int)));
 	TS_ASSERT_EQUALS(base2Method1.numberOfArguments(), 0);
 	TS_ASSERT_EQUALS(base2Method1.call(testInst2).value<int>(), 6);
 
@@ -226,16 +230,16 @@ void ClassTestSuite::testClass()
 	TS_ASSERT(!method2.isConst());
 	TS_ASSERT(!method2.isStatic());
 	TS_ASSERT(!method2.isVolatile());
-	TS_ASSERT(method2.returnType() == typeid(double));
+	WITH_RTTI(TS_ASSERT(method2.returnType() == typeid(double)));
 	TS_ASSERT_EQUALS(method2.numberOfArguments(), 1);
-	TS_ASSERT(*method2.argumentTypes()[0] == typeid(double));
+	WITH_RTTI(TS_ASSERT(*method2.argumentTypes()[0] == typeid(double)));
 	TS_ASSERT_EQUALS(method2.call(testInst2, 2).value<double>(), 6.28);
 
 	TS_ASSERT_EQUALS(staticMethod.name(), "staticMethod");
 	TS_ASSERT(!staticMethod.isConst());
 	TS_ASSERT(staticMethod.isStatic());
 	TS_ASSERT(!staticMethod.isVolatile());
-	TS_ASSERT(staticMethod.returnType() == typeid(double));
+	WITH_RTTI(TS_ASSERT(staticMethod.returnType() == typeid(double)));
 	TS_ASSERT_EQUALS(staticMethod.numberOfArguments(), 0);
 	TS_ASSERT_EQUALS(staticMethod.call().value<double>(), 3.14);
 }

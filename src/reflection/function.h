@@ -5,7 +5,9 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#ifndef NO_RTTI
 #include <typeinfo>
+#endif
 #include <utility>
 
 #include "reflection.h"
@@ -13,6 +15,9 @@
 #include "variant.h"
 #include "str_conversion.h"
 #include "str_utils.h"
+#include "call_utils.h"
+
+namespace {
 
 template<class _Function>
 struct function_type;
@@ -24,38 +29,15 @@ struct function_type<_Result(*)(Args...)> {
 
 	typedef _Result Result;
 	typedef TypeList<Args...> Arguments;
-	
-	template< ::size_t N>
-	struct call_verifier {
-		::std::array<bool,N> success;
-		call_verifier(::std::size_t actual) {
-			if (static_cast<int>(actual) < static_cast<int>(N)) {
-				throw ::std::runtime_error("function called with insufficient number of arguments");
-			}
-			success.fill(false);
-		}
-		void assert_conversion_succeded() const {
-			for (::std::size_t i = 0; i < success.size(); ++i) {
-				if (success[i] == false) {
-					throw ::std::runtime_error(::fmt_str("function called with incompatible argument at position %1", i) );
-				}
-			}
-		}
-	};
 
-
-
-		
 	template<class R, class Ind>
 	struct call_helper;	
-	
+
 	template<class R, ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<R, Ind<I...>> {
 		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			call_verifier<sizeof...(I)> ver(args.size());
-			sink(args[I].moveValue<typename type_at<Arguments, I>::type>(&ver.success[I])...);
-			ver.assert_conversion_succeded();
+			verify_call<Arguments, I...>(args);
 			ret.construct<R>(ptr(args[I].moveValue<typename type_at<Arguments, I>::type>()...));
 			return ret;
 		}
@@ -64,36 +46,51 @@ struct function_type<_Result(*)(Args...)> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<void, Ind<I...>> {
 		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
-			call_verifier<sizeof...(I)> ver(args.size());
-			sink(args[I].moveValue<typename type_at<Arguments, I>::type>(&ver.success[I])...);
-			ver.assert_conversion_succeded();
+			verify_call<Arguments, I...>(args);
 			ptr(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
 			return VariantValue();
 		}
 	};
-	
+
 	static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
 		return call_helper<Result, typename make_indices<sizeof...(Args)>::type>::call(ptr, args);
 	}
 };
 
+}
+
 class AbstractFunctionImpl: public Annotated {
 public:
-	AbstractFunctionImpl() {}
+
+	AbstractFunctionImpl(const char* name, const char* returnSpelling, int numArgs, const char* argSpellings)
+		: m_name(name)
+		, m_returnSpelling(returnSpelling)
+		, m_numArgs(numArgs)
+		, m_argSpellings(argSpellings) {}
+
 	virtual ~AbstractFunctionImpl() {}
 	
-	virtual const ::std::string& name() const = 0;
-	virtual ::std::size_t numberOfArguments() const = 0;
+	::std::string name() const { return m_name; }
+	::std::size_t numberOfArguments() const { return m_numArgs; }
+	::std::string returnTypeSpelling() const { return normalizedTypeName(m_returnSpelling); }
+	::std::vector< ::std::string> argumentSpellings() const { return splitArgs(m_argSpellings); }
+#ifndef NO_RTTI
 	virtual const ::std::type_info& returnType() const = 0;
-	virtual const ::std::string& returnTypeSpelling() const = 0;
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const = 0;
+#endif
+
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
 	
 	AbstractFunctionImpl(const AbstractFunctionImpl&) = delete;
 	AbstractFunctionImpl(AbstractFunctionImpl&&) = delete;
 	AbstractFunctionImpl& operator=(const AbstractFunctionImpl&) = delete;
 	AbstractFunctionImpl& operator=(AbstractFunctionImpl&&) = delete;
+
+private:
+	const char* m_name;
+	const char* m_returnSpelling;
+	unsigned int m_numArgs : 5;
+	const char* m_argSpellings;
 };
 
 
@@ -105,19 +102,14 @@ public:
 	typedef typename FDescr::Arguments Arguments;
 	typedef typename FDescr::Result Result;
 	
-	FunctionImpl(::std::string name, ptr_to_function ptr, ::std::string returnSpelling, ::std::vector< ::std::string>&& argSpellings)
-		: m_name(name)
-		, m_ptr(ptr)
-		, m_returnSpelling(returnSpelling)
-		, m_argSpellings(argSpellings) {}
+	FunctionImpl(const char* name, ptr_to_function ptr, const char* returnSpelling, const char* argSpellings)
+		: AbstractFunctionImpl(name, returnSpelling, typelist_size<Arguments>::value, argSpellings)
+		, m_ptr(ptr) {}
 	
+#ifndef NO_RTTI
 	virtual const ::std::type_info& returnType() const { return typeid(Result); }
-	virtual const ::std::string& returnTypeSpelling() const { return m_returnSpelling; }
-
-	virtual const ::std::string& name() const { return m_name; }
-	virtual ::std::size_t numberOfArguments() const { return typelist_size<Arguments>::value; }
 	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename FDescr::Arguments>(); }
-	virtual const ::std::vector< ::std::string>& argumentSpellings() const { return m_argSpellings; }
+#endif
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
 		return FDescr::call(m_ptr, args);
@@ -134,9 +126,9 @@ private:
 
 
 template<class FuncPtr>
-Function make_function(const ::std::string& name, FuncPtr ptr, const char* resultString, const char* argString)
+Function make_function(const char* name, FuncPtr ptr, const char* resultString, const char* argString)
 {
-	static FunctionImpl<FuncPtr> impl(name, ptr, normalizedTypeName(resultString), splitArgs(argString));
+	static FunctionImpl<FuncPtr> impl(name, ptr, resultString, argString);
 	return &impl;
 }
 

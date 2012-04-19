@@ -4,6 +4,7 @@ set(HEADERS
 	constructor_test.h
 	function_test.h
 	method_test.h
+	test_utils.h
 	utilities_test.h
 	variant_test.h
 )
