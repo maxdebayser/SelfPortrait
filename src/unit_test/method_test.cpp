@@ -37,10 +37,17 @@ void MethodTestSuite::testNonCVMethod() {
 	const VariantValue v2 = Test1();
 	TS_ASSERT_THROWS(method.call(v2, 3), std::runtime_error);
 
-	volatile VariantValue v3 = Test1();
+	Test1 t; // declare a local variable because
+	// 1 - gcc think volatile VariantValue v3(Test()); is a function declaration
+	// 2 - gcc uses the copy constructor in volatile VariantValue v3 = Test();
+	//     and in this case it complains rightfully that it can't construct
+	//     a VariantValue from a volatile Variant temporary
+
+
+	volatile VariantValue v3(t);
 	TS_ASSERT_THROWS(method.call(v3, 3), std::runtime_error);
 
-	const volatile VariantValue v4 = Test1();
+	const volatile VariantValue v4(t);
 	TS_ASSERT_THROWS(method.call(v4, 3), std::runtime_error);
 }
 
@@ -63,10 +70,12 @@ void MethodTestSuite::testCMethod()
 	TS_ASSERT(r2.isA<int>());
 	TS_ASSERT_EQUALS(r2.value<int>(), 9);
 
-	volatile VariantValue v3 = Test1();
+	Test1 t;
+
+	volatile VariantValue v3(t);
 	TS_ASSERT_THROWS(method.call(v3, 3), std::runtime_error);
 
-	const volatile VariantValue v4 = Test1();
+	const volatile VariantValue v4(t);
 	TS_ASSERT_THROWS(method.call(v4, 3), std::runtime_error);
 }
 
@@ -85,15 +94,16 @@ void MethodTestSuite::testVMethod()
 	const VariantValue v2 = Test1();
 	TS_ASSERT_THROWS(method.call(v2, 3), std::runtime_error);
 
+	Test1 t;
 
-	volatile VariantValue v3 = Test1();
+	volatile VariantValue v3(t);
 
 	VariantValue r3 = method.call(v3, 3);
 
 	TS_ASSERT(r3.isA<int>());
 	TS_ASSERT_EQUALS(r3.value<int>(), 12);
 
-	const volatile VariantValue v4 = Test1();
+	const volatile VariantValue v4(t);
 	TS_ASSERT_THROWS(method.call(v4, 3), std::runtime_error);
 }
 
@@ -116,8 +126,9 @@ void MethodTestSuite::testCVMethod()
 	TS_ASSERT(r2.isA<int>());
 	TS_ASSERT_EQUALS(r2.value<int>(), 15);
 
+	Test1 t;
 
-	volatile VariantValue v3 = Test1();
+	volatile VariantValue v3(t);
 
 	VariantValue r3 = method.call(v3, 3);
 
@@ -125,7 +136,7 @@ void MethodTestSuite::testCVMethod()
 	TS_ASSERT_EQUALS(r3.value<int>(), 15);
 
 
-	const volatile VariantValue v4 = Test1();
+	const volatile VariantValue v4(t);
 
 	VariantValue r4 = method.call(v4, 3);
 

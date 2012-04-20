@@ -59,7 +59,7 @@ public:
 		}
 	};
 	
-	template<::std::size_t... I, template< ::std::size_t...> class Ind>
+	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<false, Ind<I...>> {
 
 
