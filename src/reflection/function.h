@@ -140,12 +140,9 @@ public:
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
 		return FDescr::call(m_ptr, args);
 	}
-	
+
 private:
-	::std::string m_name;
 	ptr_to_function m_ptr;
-	::std::string m_returnSpelling;
-	::std::vector< ::std::string> m_argSpellings;
 };
 
 
