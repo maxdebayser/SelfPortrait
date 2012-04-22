@@ -62,11 +62,25 @@ struct function_type<_Result(*)(Args...)> {
 class AbstractFunctionImpl: public Annotated {
 public:
 
-	AbstractFunctionImpl(const char* name, const char* returnSpelling, int numArgs, const char* argSpellings)
+	AbstractFunctionImpl(
+			const char* name
+			, const char* returnSpelling
+			, int numArgs
+			, const char* argSpellings
+#ifndef NO_RTTI
+			, const ::std::type_info& returnType
+			, ::std::vector<const ::std::type_info*> argumentTypes
+#endif
+			)
 		: m_name(name)
 		, m_returnSpelling(returnSpelling)
 		, m_numArgs(numArgs)
-		, m_argSpellings(argSpellings) {}
+		, m_argSpellings(argSpellings)
+#ifndef NO_RTTI
+		, m_returnType(returnType)
+		, m_argumentTypes(argumentTypes)
+#endif
+	{}
 
 	virtual ~AbstractFunctionImpl() {}
 	
@@ -75,8 +89,8 @@ public:
 	::std::string returnTypeSpelling() const { return normalizedTypeName(m_returnSpelling); }
 	::std::vector< ::std::string> argumentSpellings() const { return splitArgs(m_argSpellings); }
 #ifndef NO_RTTI
-	virtual const ::std::type_info& returnType() const = 0;
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
+	const ::std::type_info& returnType() const { return m_returnType; }
+	::std::vector<const ::std::type_info*> argumentTypes() const { return m_argumentTypes; }
 #endif
 
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
@@ -91,6 +105,11 @@ private:
 	const char* m_returnSpelling;
 	unsigned int m_numArgs : 5;
 	const char* m_argSpellings;
+
+#ifndef NO_RTTI
+	const ::std::type_info& m_returnType;
+	::std::vector<const ::std::type_info*> m_argumentTypes;
+#endif
 };
 
 
@@ -102,14 +121,21 @@ public:
 	typedef typename FDescr::Arguments Arguments;
 	typedef typename FDescr::Result Result;
 	
-	FunctionImpl(const char* name, ptr_to_function ptr, const char* returnSpelling, const char* argSpellings)
-		: AbstractFunctionImpl(name, returnSpelling, typelist_size<Arguments>::value, argSpellings)
+	FunctionImpl(
+			const char* name
+			, ptr_to_function ptr
+			, const char* returnSpelling
+			, const char* argSpellings
+			)
+		: AbstractFunctionImpl(name, returnSpelling, typelist_size<Arguments>::value, argSpellings
+#ifndef NO_RTTI
+			  , typeid(Result)
+			  , get_typeinfo<typename FDescr::Arguments>()
+#endif
+			  )
 		, m_ptr(ptr) {}
 	
-#ifndef NO_RTTI
-	virtual const ::std::type_info& returnType() const { return typeid(Result); }
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename FDescr::Arguments>(); }
-#endif
+
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
 		return FDescr::call(m_ptr, args);

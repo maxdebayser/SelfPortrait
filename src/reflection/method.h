@@ -138,7 +138,19 @@ struct method_type: public method_type_base<Functor> {
 class AbstractMethodImpl: public Annotated {
 public:
 
-	AbstractMethodImpl(const char* name, const char* returnSpelling, int numArguments, const char* argSpellings, bool isConst, bool isVolatile, bool isStatic)
+	AbstractMethodImpl(
+			const char* name,
+			const char* returnSpelling,
+			int numArguments,
+			const char* argSpellings,
+			bool isConst,
+			bool isVolatile,
+			bool isStatic
+#ifndef NO_RTTI
+			, const ::std::type_info& returnType
+			, ::std::vector<const ::std::type_info*> argumentTypes
+#endif
+			)
 		: m_name(name)
 		, m_returnSpelling(returnSpelling)
 		, m_argSpellings(argSpellings)
@@ -146,6 +158,10 @@ public:
 		, m_isConst(isConst)
 		, m_isVolatile(isVolatile)
 		, m_isStatic(isStatic)
+#ifndef NO_RTTI
+		, m_returnType(returnType)
+		, m_argumentTypes(argumentTypes)
+#endif
 	{}
 
 	virtual ~AbstractMethodImpl() {}
@@ -161,8 +177,8 @@ public:
 	bool isStatic() const { return m_isStatic; }
 
 #ifndef NO_RTTI
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
-	virtual const ::std::type_info& returnType() const = 0;
+	const ::std::type_info& returnType() const { return m_returnType; }
+	::std::vector<const ::std::type_info*> argumentTypes() const { return m_argumentTypes; }
 #endif
 
 
@@ -202,6 +218,10 @@ private:
 	const unsigned int m_isConst : 1;
 	const unsigned int m_isVolatile : 1;
 	const unsigned int m_isStatic : 1;
+#ifndef NO_RTTI
+	const ::std::type_info& m_returnType;
+	::std::vector<const ::std::type_info*> m_argumentTypes;
+#endif
 };
 
 namespace {
@@ -216,15 +236,22 @@ public:
 	typedef typename MDescr::Result Result;
 	
 	 MethodImpl(const char* name, ptr_to_method ptr, const char* returnSpelling, const char* argSpellings)
-		: AbstractMethodImpl(name, returnSpelling, size<typename MDescr::Arguments>(), argSpellings, MDescr::is_const, MDescr::is_volatile, false)
+		: AbstractMethodImpl(
+			  name,
+			  returnSpelling,
+			  size<typename MDescr::Arguments>(),
+			  argSpellings,
+			  MDescr::is_const,
+			  MDescr::is_volatile,
+			  false
+#ifndef NO_RTTI
+			  , typeid(Result)
+			  , get_typeinfo<typename MDescr::Arguments>()
+#endif
+			  )
 		, m_ptr(ptr)
 	{ }
-	
-#ifndef NO_RTTI
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
 
-	virtual const ::std::type_info& returnType() const { return typeid(Result); }
-#endif
 	
 	 virtual VariantValue call(const bool isConst, const bool isVolatile, const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
 		 if (!object.isA<Clazz>()) {
@@ -260,15 +287,22 @@ public:
 	
 
 	StaticMethodImpl(const char* name, ptr_to_method ptr, const char* returnSpelling, const char* argSpellings)
-		: AbstractMethodImpl(name, ::std::move(returnSpelling), size<typename MDescr::Arguments>(), argSpellings, false, false, true)
+		: AbstractMethodImpl(
+			  name,
+			  ::std::move(returnSpelling),
+			  size<typename MDescr::Arguments>(),
+			  argSpellings,
+			  false,
+			  false,
+			  true
+#ifndef NO_RTTI
+			  , typeid(Result)
+			  , get_typeinfo<typename MDescr::Arguments>()
+#endif
+			  )
 		, m_ptr(ptr)
 	{}
 
-#ifndef NO_RTTI
-	virtual const ::std::type_info& returnType() const { return typeid(Result); }
-	
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<typename MDescr::Arguments>(); }
-#endif
 
 	virtual VariantValue call(bool isConst, bool isVolatile, const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const {
 		return MDescr::call(m_ptr, args);

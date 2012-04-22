@@ -12,25 +12,35 @@
 class AbstractConstructorImpl: public Annotated {
 public:	
 
-	AbstractConstructorImpl(int numArgs, const char* argSpellings)
+	AbstractConstructorImpl(
+			int numArgs
+			, const char* argSpellings
+#ifndef NO_RTTI
+			, ::std::vector<const ::std::type_info*> argumentTypes
+#endif
+			)
 		: m_numArgs(numArgs)
 		, m_argSpellings(argSpellings)
+#ifndef NO_RTTI
+		, m_argumentTypes(argumentTypes)
+#endif
 	{}
 
 	::std::size_t numberOfArguments() const { return m_numArgs; }
-	
-#ifndef NO_RTTI
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const = 0;
-#endif
+
 
 	::std::vector< ::std::string> argumentSpellings() const { return splitArgs(m_argSpellings); }
 	
 	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
-
-
+#ifndef NO_RTTI
+	::std::vector<const ::std::type_info*> argumentTypes() const { return m_argumentTypes; }
+#endif
 private:
 	const char* m_argSpellings;
 	unsigned int m_numArgs : 5;
+#ifndef NO_RTTI
+	::std::vector<const ::std::type_info*> m_argumentTypes;
+#endif
 };
 
 namespace {
@@ -41,12 +51,14 @@ public:
 	typedef _Clazz Clazz;
 	typedef TypeList<Args...> Arguments;
 
-#ifndef NO_RTTI
-	virtual ::std::vector<const ::std::type_info*> argumentTypes() const { return get_typeinfo<Arguments>(); }
-#endif
-
 	ConstructorImpl(const char* argSpellings)
-		: AbstractConstructorImpl(size<Arguments>(), argSpellings) {}
+		: AbstractConstructorImpl(
+			  size<Arguments>()
+			  , argSpellings
+#ifndef NO_RTTI
+			  , get_typeinfo<Arguments>()
+#endif
+			  ) {}
 	
 	
 	template<bool Abstract, class Ind>

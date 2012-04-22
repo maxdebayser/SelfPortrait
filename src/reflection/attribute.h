@@ -106,16 +106,27 @@ struct attribute_type<const _Type _Clazz::*> {
 
 class AbstractAttributeImpl: public Annotated {
 public:
-	AbstractAttributeImpl(const char* name, const char* typeSpelling, bool isConst, bool isStatic)
+	AbstractAttributeImpl(
+			const char* name
+			, const char* typeSpelling
+			, bool isConst
+			, bool isStatic
+#ifndef NO_RTTI
+			, const ::std::type_info& typeId
+#endif
+			)
 		: m_name(name)
 		, m_typeSpelling(typeSpelling)
 		, m_isConst(isConst)
 		, m_isStatic(isStatic)
+#ifndef NO_RTTI
+		, m_typeId(typeId)
+#endif
 	{}
 	virtual ~AbstractAttributeImpl() {}
 
 #ifndef NO_RTTI
-	virtual const ::std::type_info& type() const = 0;
+	const ::std::type_info& type() const { return m_typeId; }
 #endif
 
 	bool isConst() const { return m_isConst; }
@@ -160,6 +171,9 @@ private:
 	const char* m_typeSpelling;
 	const unsigned int m_isConst : 1;
 	const unsigned int m_isStatic : 1;
+#ifndef NO_RTTI
+	const ::std::type_info& m_typeId;
+#endif
 };
 
 namespace {
@@ -174,12 +188,18 @@ public:
 	typedef typename ADescr::ptr_to_attr ptr_to_attr;
 	
 	AttributeImpl(const char* name, ptr_to_attr ptr, const char* typeSpelling)
-		: AbstractAttributeImpl(name, typeSpelling, ADescr::is_const, false)
+		: AbstractAttributeImpl(
+			  name
+			  , typeSpelling
+			  , ADescr::is_const
+			  , false
+#ifndef NO_RTTI
+			  , typeid(Type)
+#endif
+			  )
 		, m_ptr(ptr) {}
 	
-#ifndef NO_RTTI
-	virtual const ::std::type_info& type() const override { return typeid(Type); }
-#endif
+
 
 	virtual VariantValue get(const VariantValue& object) const override {
 		bool success = false;
@@ -218,12 +238,16 @@ public:
 
 
 	StaticAttributeImpl(const char* name, ptr_to_attr ptr, const char* typeSpelling)
-		: AbstractAttributeImpl(name, typeSpelling, ADescr::is_const, true)
-		, m_ptr(ptr) {}
-
+		: AbstractAttributeImpl(
+			  name
+			  , typeSpelling
+			  , ADescr::is_const
+			  , true
 #ifndef NO_RTTI
-	virtual const ::std::type_info& type() const override { return typeid(Type); }
+			  , typeid(Type)
 #endif
+			  )
+		, m_ptr(ptr) {}
 
 	virtual VariantValue get(const VariantValue&) const override { return ADescr::get(m_ptr); }
 
