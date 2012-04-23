@@ -94,17 +94,36 @@ constexpr number_conversion::dst_float_t convertToFloatingPoint(const T& t, bool
 
 }
 
+union number_return {
+	number_conversion::dst_int_t i;
+	number_conversion::dst_float_t f;
+};
+
+enum class NumberType {
+	INTEGER,
+	FLOATING
+};
+
 class IValueHolder {
 public:
 
-	constexpr IValueHolder(std::size_t sizeOf,
-						   std::size_t alignOf,
-						   bool isPod,
-						   bool isIntegral,
-						   bool isFloatingPoint,
-						   bool isPointer,
-						   bool isStdString)
-		: m_sizeOf(sizeOf)
+	constexpr IValueHolder(
+			const void * ptr,
+#ifndef NO_RTTI
+			const ::std::type_info& typeId,
+#endif
+			std::size_t sizeOf,
+			std::size_t alignOf,
+			bool isPod,
+			bool isIntegral,
+			bool isFloatingPoint,
+			bool isPointer,
+			bool isStdString)
+		: m_ptrToValue(ptr)
+#ifndef NO_RTTI
+		, m_typeId(typeId)
+#endif
+		, m_sizeOf(sizeOf)
 		, m_alignOf(alignOf)
 		, m_isPod(isPod)
 		, m_isIntegral(isIntegral)
@@ -116,13 +135,16 @@ public:
 	virtual IValueHolder* clone() const = 0;
 	
 	virtual bool equals(const IValueHolder* rhs) const = 0;
-		
-	const virtual void * ptrToValue() const = 0;
-	
-	void * ptrToValue() { return const_cast<void*>(static_cast<const IValueHolder*>(this)->ptrToValue()); }
+
+	void * ptrToValue() { return const_cast<void*>(m_ptrToValue); }
+
+
+	const void * ptrToValue() const {
+		return m_ptrToValue;
+	}
 	
 #ifndef NO_RTTI
-	virtual const ::std::type_info& typeId() const = 0;
+	const ::std::type_info& typeId() const { return m_typeId; }
 #endif
 	
 	::std::size_t sizeOf() const { return m_sizeOf; }
@@ -142,10 +164,8 @@ public:
 	virtual void throwCast() const = 0;
 	
 	virtual ::std::string convertToString() const = 0;
-	
-	virtual number_conversion::dst_int_t convertToInteger() const = 0;
-	
-	virtual number_conversion::dst_float_t convertToFloatingPoint() const = 0;
+
+	virtual number_return convertToNumber(NumberType t) const = 0;
 
 	virtual ~IValueHolder() noexcept {}
 	IValueHolder() = default;
@@ -153,6 +173,12 @@ public:
 	IValueHolder& operator=(const IValueHolder&) = delete;
 
 private:
+	const void * m_ptrToValue;
+
+#ifndef NO_RTTI
+	const ::std::type_info& m_typeId;
+#endif
+
 	const std::size_t m_sizeOf;
 
 	const std::size_t m_alignOf;
@@ -208,13 +234,17 @@ public:
 
 	template<class... Args>
 	ValueHolder(Args&&... args)
-		: IValueHolder(sizeof(ValueType),
-					 alignof(ValueType),
-					 ::std::is_pod<ValueType>::value,
-					 ::std::is_integral<ValueType>::value,
-					 ::std::is_floating_point<ValueType>::value,
-					 ::std::is_pointer<ValueType>::value,
-					 ::std::is_same< ::std::string, ValueType>::value),
+		: IValueHolder(reinterpret_cast<const void*>(&m_value),
+#ifndef NO_RTTI
+					   typeid(ValueType),
+#endif
+					   sizeof(ValueType),
+					   alignof(ValueType),
+					   ::std::is_pod<ValueType>::value,
+					   ::std::is_integral<ValueType>::value,
+					   ::std::is_floating_point<ValueType>::value,
+					   ::std::is_pointer<ValueType>::value,
+					   ::std::is_same< ::std::string, ValueType>::value),
 		m_value(*reinterpret_cast<ValueType*>(m_hack.c)) {
 		new(m_hack.c) ValueType( ::std::forward<Args>(args)...);
 	}
@@ -241,27 +271,18 @@ public:
 		return false;
 	}
 
-	const void * ptrToValue() const override {
-		return reinterpret_cast<const void*>(&m_value);
-	}
-
-#ifndef NO_RTTI
-	virtual const ::std::type_info& typeId() const override {
-		return typeid(ValueType);
-	}
-#endif
-
 	virtual ::std::string convertToString() const override {
 			return ::std::move(toString(m_value));
 	}
 
-	virtual number_conversion::dst_int_t convertToInteger() const override {
-		return ::convertToInteger(m_value);
-	}
-
-	// convert to largest floating point type
-	virtual number_conversion::dst_float_t convertToFloatingPoint() const override {
-		return ::convertToFloatingPoint(m_value);
+	virtual number_return convertToNumber(NumberType t) const {
+		number_return r;
+		if (t == NumberType::INTEGER) {
+			r.i = ::convertToInteger(m_value);
+		} else {
+			r.f = ::convertToFloatingPoint(m_value);
+		}
+		return r;
 	}
 
 	virtual void throwCast() const {
@@ -324,13 +345,17 @@ private:
 public:
 
 	ValueHolder(RefType v)
-		: IValueHolder(sizeof(ValueType),
-					 alignof(ValueType),
-					 ::std::is_pod<ValueType>::value,
-					 ::std::is_integral<ValueType>::value,
-					 ::std::is_floating_point<ValueType>::value,
-					 ::std::is_pointer<ValueType>::value,
-					 ::std::is_same< ::std::string, ValueType>::value),
+		: IValueHolder(reinterpret_cast<const void*>(&v),
+#ifndef NO_RTTI
+					   typeid(ValueType),
+#endif
+					   sizeof(ValueType),
+					   alignof(ValueType),
+					   ::std::is_pod<ValueType>::value,
+					   ::std::is_integral<ValueType>::value,
+					   ::std::is_floating_point<ValueType>::value,
+					   ::std::is_pointer<ValueType>::value,
+					   ::std::is_same< ::std::string, ValueType>::value),
 		  m_value(v) {}
 
 	~ValueHolder() noexcept {
@@ -354,27 +379,19 @@ public:
 		return false;
 	}
 
-	const void * ptrToValue() const override {
-		return reinterpret_cast<const void*>(&m_value);
-	}
-
-#ifndef NO_RTTI
-	virtual const ::std::type_info& typeId() const override {
-		return typeid(ValueType);
-	}
-#endif
 
 	virtual ::std::string convertToString() const override {
 			return ::std::move(toString(m_value));
 	}
 
-	virtual number_conversion::dst_int_t convertToInteger() const override {
-		return ::convertToInteger(m_value);
-	}
-
-	// convert to largest floating point type
-	virtual number_conversion::dst_float_t convertToFloatingPoint() const override {
-		return ::convertToFloatingPoint(m_value);
+	virtual number_return convertToNumber(NumberType t) const {
+		number_return r;
+		if (t == NumberType::INTEGER) {
+			r.i = ::convertToInteger(m_value);
+		} else {
+			r.f = ::convertToFloatingPoint(m_value);
+		}
+		return r;
 	}
 
 	virtual void throwCast() const {
@@ -391,8 +408,8 @@ private:
 class VariantValue {
 public:
 	//! Creates an empty variant
-	explicit VariantValue() : m_impl() {}
-	
+	explicit VariantValue();
+
 	template<class ValueType>
 	VariantValue(const ValueType& t) : m_impl(new ValueHolder<ValueType>(t)) {}
 
@@ -406,19 +423,13 @@ public:
 		return *this;
 	}
 
-	VariantValue(const VariantValue& rhs) : m_impl(rhs.m_impl->clone()) {}
+	VariantValue(const VariantValue& rhs);
 	
-	VariantValue(VariantValue&& rhs) : m_impl(::std::move(rhs.m_impl)) {}
+	VariantValue(VariantValue&& rhs);
 	
-	VariantValue& operator=(const VariantValue& rhs) {
-		m_impl.reset(rhs.m_impl->clone());
-		return *this;
-	}
+	VariantValue& operator=(const VariantValue& rhs);
 	
-	VariantValue& operator=(VariantValue&& rhs) {
-		m_impl = ::std::move(rhs.m_impl);
-		return *this;
-	}
+	VariantValue& operator=(VariantValue&& rhs);
 	
 	template<class ValueType>
 	VariantValue& operator=(ValueType value) {
@@ -426,11 +437,7 @@ public:
 		return *this;
 	}
 
-	VariantValue createReference() {
-		VariantValue ret;
-		ret.m_impl = m_impl;
-		return ::std::move(ret);
-	}
+	VariantValue createReference();
 	
 	template<class ValueType>
 	bool isA() const {
@@ -477,7 +484,8 @@ private:
 	struct integralConversion {
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
-			return static_cast<ValueType>(holder->convertToInteger());
+			number_return r = holder->convertToNumber(NumberType::INTEGER);
+			return static_cast<ValueType>(r.i);
 		}
 	};
 		
@@ -485,7 +493,8 @@ private:
 	struct floatConversion {
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
-			return static_cast<ValueType>(holder->convertToFloatingPoint());
+			number_return r = holder->convertToNumber(NumberType::FLOATING);
+			return static_cast<ValueType>(r.f);
 		}
 	};
 		
@@ -593,94 +602,45 @@ public:
 		}
 	}
 	
-	bool isValid() const { return m_impl.get() != nullptr; }
+	bool isValid() const;
 
 #ifndef NO_RTTI
-	const ::std::type_info& typeId() const {
-		check_valid();
-		return m_impl->typeId();
-	}
+	const ::std::type_info& typeId() const;
 #endif
 	
 	// Is a Plain-Old-Datatype (can be memcpy'd)
-	bool isStdString() const {
-		check_valid();
-		return m_impl->isStdString();
-	}
+	bool isStdString() const;
 	
 	// Is a Plain-Old-Datatype (can be memcpy'd)
-	bool isIntegral() const {
-		check_valid();
-		return m_impl->isIntegral();
-	}
+	bool isIntegral() const;
 	
-	bool isFloatingPoint() const {
-		check_valid();
-		return m_impl->isFloatingPoint();
-	}
+	bool isFloatingPoint() const;
 	
-	bool isArithmetical() const {
-		return isIntegral() || isFloatingPoint();
-	}
+	bool isArithmetical() const;
 	
 	// Is a Plain-Old-Datatype (can be memcpy'd)
-	bool isPOD() const {
-		check_valid();
-		return m_impl->isPOD();
-	}
+	bool isPOD() const;
 	
-	::std::size_t sizeOf() const {
-		check_valid();
-		return m_impl->sizeOf();
-	}
+	::std::size_t sizeOf() const;
 	
-	::std::size_t alignOf() const {
-		check_valid();
-		return m_impl->alignOf();
-	}
+	::std::size_t alignOf() const;
 	
 	// If the type is a POD and you know what you're doing, you can memcpy it, but beware of the alignment
-	const void * ptrToValue() const {
-		check_valid();
-		return m_impl->ptrToValue();
-	}
+	const void * ptrToValue() const;
 	
 	
 	
 private:
 	std::shared_ptr<IValueHolder> m_impl;
 	
-	void check_valid() const {
-		if (!isValid()) {
-			throw ::std::runtime_error("variant has no value");
-		}
-	}
+	void check_valid() const;
 	
 	friend bool operator==(const VariantValue& v1, const VariantValue& v2);
 };
 
-inline bool operator==(const VariantValue& v1, const VariantValue& v2) {
+bool operator==(const VariantValue& v1, const VariantValue& v2);
 
-	if ((v1.isValid() == false) && (v2.isValid() == false)) {
-		return true;
-	}
-	if ((v1.isValid() == false) || (v2.isValid() == false)) {
-		return false;
-	}
-
-	if (v1.isArithmetical() && v2.isArithmetical()) {
-		if (v1.isIntegral() && v2.isIntegral()) {
-			return v1.m_impl->convertToInteger() == v2.m_impl->convertToInteger();
-		}
-		return v1.m_impl->convertToInteger() == v2.m_impl->convertToFloatingPoint();
-	}
-	
-	return v1.m_impl->equals(v2.m_impl.get());
-}
-
-inline bool operator!=(const VariantValue& v1, const VariantValue& v2) {
-	return !(v1 == v2);
-}
+bool operator!=(const VariantValue& v1, const VariantValue& v2);
 
 
 #endif /* VARIANT_H */
