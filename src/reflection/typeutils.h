@@ -74,6 +74,7 @@ struct strip_reference<const volatile T&> {
 	typedef const volatile T* ptr_type;
 };
 
+
 // the /dev/null of arguments
 template<class... T>
 inline void sink(T&&... t) {}

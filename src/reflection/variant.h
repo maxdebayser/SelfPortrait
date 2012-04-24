@@ -245,12 +245,12 @@ public:
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
 					   ::std::is_same< ::std::string, ValueType>::value),
-		m_value(*reinterpret_cast<ValueType*>(m_hack.c)) {
-		new(m_hack.c) ValueType( ::std::forward<Args>(args)...);
+		m_value( ::std::forward<Args>(args)...)
+	{
 	}
 
 	~ValueHolder() noexcept{
-		m_value.~ValueType();
+		//m_value.~ValueType();
 	}
 
 	ValueHolder(const ValueHolder&) = delete;
@@ -286,18 +286,11 @@ public:
 	}
 
 	virtual void throwCast() const {
-		throw &m_value;
+		throw const_cast<ValueType*>(&m_value);
 	}
 
 private:
-	/*alignas(ValueType) char m_buffer[sizeof(ValueType)]*/
-
-	// Ugly hack until g++ supports alignas
-	union align_hack {
-		char c[sizeof(ValueType)];
-		typename ::std::aligned_storage<sizeof(ValueType), alignof(ValueType)>::type placeholder;
-	} m_hack;
-	ValueType& m_value;
+	ValueType m_value;
 };
 
 
