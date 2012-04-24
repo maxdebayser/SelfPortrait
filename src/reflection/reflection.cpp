@@ -213,7 +213,7 @@ Constructor::Constructor(Constructor&& rhs) : Constructor(rhs.m_impl) {}
 
 Constructor& Constructor::operator=(Constructor&& rhs) { m_impl = rhs.m_impl; return *this; }
 
-Constructor::Constructor(AbstractConstructorImpl* impl)
+Constructor::Constructor(ConstructorImpl* impl)
 	: AnnotatedFrontend(*impl)
 	, m_impl(impl) {}
 
@@ -259,7 +259,7 @@ void Method::check_valid() const
 Method::Method()
 	: Method(nullptr) {}
 
-Method::Method(AbstractMethodImpl* impl)
+Method::Method(MethodImpl* impl)
 	: AnnotatedFrontend(*impl)
 	, m_impl(impl) {}
 
@@ -423,7 +423,7 @@ VariantValue Function::callArgArray(const ::std::vector<VariantValue>& vargs) co
 	return m_impl->call(vargs);
 }
 
-Function::Function(AbstractFunctionImpl* impl)
+Function::Function(FunctionImpl* impl)
 	: AnnotatedFrontend(*impl)
 	, m_impl(impl)
 {}

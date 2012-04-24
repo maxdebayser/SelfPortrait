@@ -94,7 +94,7 @@ struct typelist_size<TL<T...>> {
 };
 
 template<class TL>
-constexpr size_t size()
+constexpr std::size_t size()
 {
 	return typelist_size<TL>::value;
 }

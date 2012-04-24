@@ -478,6 +478,14 @@ private:
 			if (success != nullptr) *success = false;
 			return ValueType();
 		}
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+			try {
+				holder->throwCast();
+			} catch (ValueType& ptr) {
+				return ptr;
+			} catch(...) { }
+			throw std::runtime_error("failed to convert variant to pointer");
+		}
 	};
 
 	template<class ValueType>
@@ -486,6 +494,9 @@ private:
 			if (success != nullptr) *success = true;
 			number_return r = holder->convertToNumber(NumberType::INTEGER);
 			return static_cast<ValueType>(r.i);
+		}
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+			return value(holder, nullptr);
 		}
 	};
 		
@@ -496,6 +507,9 @@ private:
 			number_return r = holder->convertToNumber(NumberType::FLOATING);
 			return static_cast<ValueType>(r.f);
 		}
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+			return value(holder, nullptr);
+		}
 	};
 		
 	template<class ValueType>
@@ -503,6 +517,9 @@ private:
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			return holder->convertToString();
+		}
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+			return value(holder, nullptr);
 		}
 	};
 	
@@ -512,6 +529,9 @@ private:
 			if (success != nullptr) *success = false;
 			return ValueType();
 		}
+		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+			throw std::runtime_error("failed conversion");
+		}
 	};
 	
 	template<class ValueType>
@@ -520,6 +540,9 @@ private:
 			if (success != nullptr) *success = false;
 			ValueType* ptr = nullptr;
 			return *ptr;
+		}
+		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder) {
+			throw std::runtime_error("failed conversion");
 		}
 	};
 	
@@ -560,6 +583,27 @@ public:
 	}
 
 	template<class ValueType>
+	ValueType convertToThrow() const {
+		check_valid();
+
+		auto ptr = isAPriv<ValueType>();
+
+		if (ptr != nullptr) {
+			return *ptr;
+		}
+
+		ValueType val = Select< ::std::is_integral<ValueType>::value,
+				integralConversion<ValueType>,
+				typename Select< ::std::is_floating_point<ValueType>::value,
+					floatConversion<ValueType>,
+					typename Select< ::std::is_same<ValueType, ::std::string>::value,
+						stringConversion<ValueType>,
+						typename Select< ::std::is_pointer<ValueType>::value,
+								pointerConversion<ValueType>,
+								impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl);
+	}
+
+	template<class ValueType>
 	ValueType&& moveValue(bool * success = nullptr) const {
 		check_valid();
 
@@ -577,6 +621,25 @@ public:
 					typename Select< ::std::is_same<ValueType, ::std::string>::value,
 						stringConversion<ValueType>,
 						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl, success));
+	}
+
+	template<class ValueType>
+	ValueType&& moveValueThrow() const {
+		check_valid();
+
+		auto ptr = isAPriv<ValueType>();
+
+		if (ptr != nullptr) {
+			return ::std::forward<ValueType>(*ptr);
+		}
+
+		return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value,
+				integralConversion<ValueType>,
+				typename Select< ::std::is_floating_point<ValueType>::value,
+					floatConversion<ValueType>,
+					typename Select< ::std::is_same<ValueType, ::std::string>::value,
+						stringConversion<ValueType>,
+						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl));
 	}
 
 	template<class ValueType>
@@ -607,11 +670,9 @@ public:
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
 #endif
-	
-	// Is a Plain-Old-Datatype (can be memcpy'd)
+
 	bool isStdString() const;
-	
-	// Is a Plain-Old-Datatype (can be memcpy'd)
+
 	bool isIntegral() const;
 	
 	bool isFloatingPoint() const;

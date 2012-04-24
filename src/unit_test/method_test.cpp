@@ -22,7 +22,7 @@ namespace {
 
 void MethodTestSuite::testNonCVMethod() {
 
-	auto method = make_method("method1", &Test1::method1, "int", "int");
+	auto method = make_method<int(Test1::*)(int)>(&method_type<int(Test1::*)(int)>::bindcall<&Test1::method1>, "method1", "int", "int");
 
 	TS_ASSERT_THROWS(method.call(3), std::runtime_error);
 
@@ -55,7 +55,7 @@ void MethodTestSuite::testNonCVMethod() {
 void MethodTestSuite::testCMethod()
 {
 
-	auto method = make_method("method2", &Test1::method2, "int", "int");
+	auto method = make_method<int(Test1::*)(int) const>(&method_type<int(Test1::*)(int) const>::bindcall<&Test1::method2>, "method2", "int", "int");
 
 	VariantValue v1 = Test1();
 	VariantValue r1 = method.call(v1, 3);
@@ -82,7 +82,7 @@ void MethodTestSuite::testCMethod()
 
 void MethodTestSuite::testVMethod()
 {
-	auto method = make_method("method3", &Test1::method3, "int", "int");
+	auto method = make_method<int(Test1::*)(int) volatile>(&method_type<int(Test1::*)(int) volatile>::bindcall<&Test1::method3>, "method3", "int", "int");
 
 	VariantValue v1 = Test1();
 
@@ -110,7 +110,7 @@ void MethodTestSuite::testVMethod()
 
 void MethodTestSuite::testCVMethod()
 {
-	auto method = make_method<int(Test1::*)(int) const volatile>("method4", &Test1::method4, "int", "int");
+	auto method = make_method<int(Test1::*)(int) const volatile>(&method_type<int(Test1::*)(int) const volatile>::bindcall<&Test1::method4>, "method4", "int", "int");
 
 	VariantValue v1 = Test1();
 
@@ -147,7 +147,7 @@ void MethodTestSuite::testCVMethod()
 
 void MethodTestSuite::testStaticMethod()
 {
-	auto method = make_static_method<Test1>("method5", &Test1::method5, "int", "int");
+	auto method = make_static_method<Test1, int (*)(int)>(&method_type<int (*)(int)>::bindcall<&Test1::method5>, "method5", "int", "int");
 	VariantValue r = method.call(3);
 	TS_ASSERT(r.isA<int>());
 	TS_ASSERT_EQUALS(r.value<int>(), 18);

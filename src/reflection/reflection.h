@@ -85,7 +85,7 @@ private:
 	friend Attribute make_static_attribute(const char* name, A ptr, const char* arg);
 };
 
-class AbstractConstructorImpl;
+class ConstructorImpl;
 
 class Constructor: public AnnotatedFrontend {
 public:
@@ -118,9 +118,9 @@ private:
 
 	void check_valid() const;
 
-	Constructor(AbstractConstructorImpl* impl);
+	Constructor(ConstructorImpl* impl);
 	
-	AbstractConstructorImpl* m_impl;
+	ConstructorImpl* m_impl;
 	
 	friend class Class;
 	
@@ -128,7 +128,9 @@ private:
 	friend Constructor make_constructor(const char* argString);
 };
 
-class AbstractMethodImpl;
+class MethodImpl;
+
+typedef VariantValue (*boundmethod)(const volatile VariantValue&, const ::std::vector<VariantValue>& args);
 
 class Method: public AnnotatedFrontend {
 public:
@@ -194,12 +196,12 @@ private:
 
 	void check_valid() const;
 	
-	Method(AbstractMethodImpl* impl);
+	Method(MethodImpl* impl);
 		
-	AbstractMethodImpl* m_impl;
+	MethodImpl* m_impl;
 	
-	template<class M> friend Method make_method(const char* name, M ptr, const char* rString, const char* argString);
-	template<class C, class M> friend Method make_static_method(const char* name, M ptr, const char* rString, const char* argString);
+	template<class M> friend Method make_method(boundmethod m, const char* name, const char* rString, const char* argString);
+	template<class C, class M> friend Method make_static_method(boundmethod m, const char* name, const char* rString, const char* argString);
 };
 
 
@@ -273,7 +275,9 @@ inline bool operator!=(const Class& c1, const Class& c2)
 }
 
 
-class AbstractFunctionImpl;
+class FunctionImpl;
+
+typedef VariantValue (*boundfunction)(const ::std::vector<VariantValue>& args);
 
 class Function: public AnnotatedFrontend {
 public:
@@ -313,11 +317,11 @@ private:
 
 	void check_valid() const;
 
-	Function(AbstractFunctionImpl* impl);
-	AbstractFunctionImpl* m_impl;
+	Function(FunctionImpl* impl);
+	FunctionImpl* m_impl;
 
 	template<class FuncPtr>
-	friend Function make_function(const char* name, FuncPtr ptr, const char* rString, const char* argString);
+	friend Function make_function(boundfunction bf, const char* name, const char* rString, const char* argString);
 };
 
 

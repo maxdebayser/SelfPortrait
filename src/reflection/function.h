@@ -52,18 +52,21 @@ struct function_type<_Result(*)(Args...)> {
 		}
 	};
 
-	static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
+	template <_Result(*ptr)(Args...)>
+	static VariantValue bindcall(const ::std::vector<VariantValue>& args) {
 		return call_helper<Result, typename make_indices<sizeof...(Args)>::type>::call(ptr, args);
 	}
 };
 
 }
 
-class AbstractFunctionImpl: public Annotated {
+
+class FunctionImpl: public Annotated {
 public:
 
-	AbstractFunctionImpl(
-			const char* name
+	FunctionImpl(
+			boundfunction f
+			, const char* name
 			, const char* returnSpelling
 			, int numArgs
 			, const char* argSpellings
@@ -71,34 +74,25 @@ public:
 			, const ::std::type_info& returnType
 			, ::std::vector<const ::std::type_info*> argumentTypes
 #endif
-			)
-		: m_name(name)
-		, m_returnSpelling(returnSpelling)
-		, m_numArgs(numArgs)
-		, m_argSpellings(argSpellings)
-#ifndef NO_RTTI
-		, m_returnType(returnType)
-		, m_argumentTypes(argumentTypes)
-#endif
-	{}
+			);
 
-	virtual ~AbstractFunctionImpl() {}
+	~FunctionImpl();
 	
-	::std::string name() const { return m_name; }
-	::std::size_t numberOfArguments() const { return m_numArgs; }
-	::std::string returnTypeSpelling() const { return normalizedTypeName(m_returnSpelling); }
-	::std::vector< ::std::string> argumentSpellings() const { return splitArgs(m_argSpellings); }
+	::std::string name() const;
+	::std::size_t numberOfArguments() const;
+	::std::string returnTypeSpelling() const;
+	::std::vector< ::std::string> argumentSpellings() const;
 #ifndef NO_RTTI
-	const ::std::type_info& returnType() const { return m_returnType; }
-	::std::vector<const ::std::type_info*> argumentTypes() const { return m_argumentTypes; }
+	const ::std::type_info& returnType() const;
+	::std::vector<const ::std::type_info*> argumentTypes() const;
 #endif
 
-	virtual VariantValue call(const ::std::vector<VariantValue>& args) const = 0;
+	VariantValue call(const ::std::vector<VariantValue>& args) const;
 	
-	AbstractFunctionImpl(const AbstractFunctionImpl&) = delete;
-	AbstractFunctionImpl(AbstractFunctionImpl&&) = delete;
-	AbstractFunctionImpl& operator=(const AbstractFunctionImpl&) = delete;
-	AbstractFunctionImpl& operator=(AbstractFunctionImpl&&) = delete;
+	FunctionImpl(const FunctionImpl&) = delete;
+	FunctionImpl(FunctionImpl&&) = delete;
+	FunctionImpl& operator=(const FunctionImpl&) = delete;
+	FunctionImpl& operator=(FunctionImpl&&) = delete;
 
 private:
 	const char* m_name;
@@ -110,48 +104,29 @@ private:
 	const ::std::type_info& m_returnType;
 	::std::vector<const ::std::type_info*> m_argumentTypes;
 #endif
+	boundfunction m_f;
 };
-
-
-template<class Func>
-class FunctionImpl: public AbstractFunctionImpl {
-public:
-	typedef function_type<Func> FDescr;
-	typedef typename FDescr::ptr_to_function ptr_to_function;
-	typedef typename FDescr::Arguments Arguments;
-	typedef typename FDescr::Result Result;
-	
-	FunctionImpl(
-			const char* name
-			, ptr_to_function ptr
-			, const char* returnSpelling
-			, const char* argSpellings
-			)
-		: AbstractFunctionImpl(name, returnSpelling, typelist_size<Arguments>::value, argSpellings
-#ifndef NO_RTTI
-			  , typeid(Result)
-			  , get_typeinfo<typename FDescr::Arguments>()
-#endif
-			  )
-		, m_ptr(ptr) {}
-	
-
-	
-	virtual VariantValue call(const ::std::vector<VariantValue>& args) const {
-		return FDescr::call(m_ptr, args);
-	}
-
-private:
-	ptr_to_function m_ptr;
-};
-
 
 
 
 template<class FuncPtr>
-Function make_function(const char* name, FuncPtr ptr, const char* resultString, const char* argString)
+Function make_function(boundfunction f, const char* name, const char* resultString, const char* argString)
 {
-	static FunctionImpl<FuncPtr> impl(name, ptr, resultString, argString);
+	typedef function_type<FuncPtr> FDescr;
+	typedef typename FDescr::Arguments Arguments;
+	typedef typename FDescr::Result Result;
+
+	static FunctionImpl impl(
+				f
+				, name
+				, resultString
+				, typelist_size<Arguments>::value
+				, argString
+#ifndef NO_RTTI
+				, typeid(Result)
+				, get_typeinfo<Arguments>()
+#endif
+				);
 	return &impl;
 }
 

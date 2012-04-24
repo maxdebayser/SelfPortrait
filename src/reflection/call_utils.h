@@ -4,6 +4,9 @@
 #include "typelist.h"
 #include "typeutils.h"
 
+
+#include <array>
+
 namespace {
 	template< ::size_t N>
 	struct call_verifier {
@@ -28,6 +31,17 @@ namespace {
 		call_verifier<sizeof...(I)> ver(args.size());
 		sink(args[I].moveValue<typename type_at<Arguments, I>::type>(&ver.success[I])...);
 		ver.assert_conversion_succeded();
+	}
+
+	template<class Clazz>
+	Clazz& verifyObject(const volatile VariantValue& object) {
+		bool success = false;
+		Clazz& ref = object.convertTo<Clazz&>(&success);
+
+		if (!success) {
+			throw ::std::runtime_error("method called with wrong type of object");
+		}
+		return ref;
 	}
 }
 
