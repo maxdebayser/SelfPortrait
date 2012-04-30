@@ -70,7 +70,7 @@ public:
 #endif
 private:
 	const char* m_argSpellings;
-	unsigned int m_numArgs : 5;
+	unsigned int m_numArgs;
 #ifndef NO_RTTI
 	::std::vector<const ::std::type_info*> m_argumentTypes;
 #endif

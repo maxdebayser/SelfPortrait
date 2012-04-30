@@ -97,7 +97,7 @@ public:
 private:
 	const char* m_name;
 	const char* m_returnSpelling;
-	unsigned int m_numArgs : 5;
+	unsigned int m_numArgs;
 	const char* m_argSpellings;
 
 #ifndef NO_RTTI

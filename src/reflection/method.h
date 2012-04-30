@@ -283,7 +283,7 @@ private:
 	const char* m_name;
 	const char* m_returnSpelling;
 	const char* m_argSpellings;
-	const unsigned int m_numArgs : 5; // up to 32 parameters are supported
+	const unsigned int m_numArgs;
 	const unsigned int m_isConst : 1;
 	const unsigned int m_isVolatile : 1;
 	const unsigned int m_isStatic : 1;
