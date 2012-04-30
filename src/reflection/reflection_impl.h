@@ -73,38 +73,172 @@ return &instance;\
 #define REFL_SUPER_CLASS(CLASS_NAME) \
 instance.registerSuperClass(ClassOf<CLASS_NAME>());
 
-/*
-#define REFL_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(nullptr, #METHOD_NAME, #RESULT, #__VA_ARGS__));
 
-#define REFL_CONST_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(nullptr, #METHOD_NAME, #RESULT, #__VA_ARGS__));
-
-#define REFL_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(nullptr, #METHOD_NAME, #RESULT, #__VA_ARGS__));
-
-#define REFL_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(nullptr, #METHOD_NAME, #RESULT, #__VA_ARGS__));
-
-#define REFL_STATIC_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(nullptr, #METHOD_NAME, #RESULT, #__VA_ARGS__));
-*/
-
+#ifndef NO_RTTI
 
 #define REFL_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__)>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>, #METHOD_NAME, #RESULT, #__VA_ARGS__));
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::is_volatile,\
+			  false\
+			  , typeid(typename method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::Result)\
+			  , get_typeinfo<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::Arguments>()\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
 
 #define REFL_CONST_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::bindcall<&ThisClass::METHOD_NAME>, #METHOD_NAME, #RESULT, #__VA_ARGS__));
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::is_volatile,\
+			  false\
+			  , typeid(typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::Result)\
+			  , get_typeinfo<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::Arguments>()\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
 
 #define REFL_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) volatile>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::bindcall<&ThisClass::METHOD_NAME>, #METHOD_NAME, #RESULT, #__VA_ARGS__));
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::is_volatile,\
+			  false\
+			  , typeid(typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::Result)\
+			  , get_typeinfo<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::Arguments>()\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
 
 #define REFL_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_method<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>, #METHOD_NAME, #RESULT, #__VA_ARGS__));
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::is_volatile,\
+			  false\
+			  , typeid(typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::Result)\
+			  , get_typeinfo<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::Arguments>()\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
 
 #define REFL_STATIC_METHOD(METHOD_NAME, RESULT, ...) \
-	instance.registerMethod(make_static_method<ThisClass, RESULT(*)(__VA_ARGS__)>(&method_type<RESULT(*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>, #METHOD_NAME, #RESULT, #__VA_ARGS__));
+{\
+static MethodImpl impl(\
+			&method_type<RESULT(*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>,\
+			#METHOD_NAME,\
+			#RESULT,\
+			typelist_size<typename method_type<RESULT(*)(__VA_ARGS__)>::Arguments>::value,\
+			#__VA_ARGS__,\
+			false,\
+			false,\
+			true\
+			, typeid(typename method_type<RESULT(*)(__VA_ARGS__)>::Result)\
+			, get_typeinfo<typename method_type<RESULT(*)(__VA_ARGS__)>::Arguments>()\
+			);\
+instance.registerMethod(Method(&impl));\
+}
+
+#else
+
+
+#define REFL_METHOD(METHOD_NAME, RESULT, ...) \
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::is_volatile,\
+			  false\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
+
+#define REFL_CONST_METHOD(METHOD_NAME, RESULT, ...) \
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::is_volatile,\
+			  false\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
+
+#define REFL_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::is_volatile,\
+			  false\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
+
+#define REFL_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+{\
+static MethodImpl impl(\
+			  &method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>,\
+			  #METHOD_NAME,\
+			  #RESULT,\
+			  typelist_size<typename method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::Arguments>::value,\
+			  #__VA_ARGS__,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::is_const,\
+			  method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::is_volatile,\
+			  false\
+			  );\
+instance.registerMethod(Method(&impl));\
+}
+
+#define REFL_STATIC_METHOD(METHOD_NAME, RESULT, ...) \
+{\
+static MethodImpl impl(\
+			&method_type<RESULT(*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>,\
+			#METHOD_NAME,\
+			#RESULT,\
+			typelist_size<typename method_type<RESULT(*)(__VA_ARGS__)>::Arguments>::value,\
+			#__VA_ARGS__,\
+			false,\
+			false,\
+			true\
+			);\
+instance.registerMethod(Method(&impl));\
+}
+#endif
 
 #define REFL_ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
 	instance.registerAttribute(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING));

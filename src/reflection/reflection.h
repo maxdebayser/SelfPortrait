@@ -192,11 +192,11 @@ public:
 	VariantValue callArgArray(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
 	VariantValue callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
 
+
+	Method(MethodImpl* impl);
 private:
 
 	void check_valid() const;
-	
-	Method(MethodImpl* impl);
 		
 	MethodImpl* m_impl;
 	
