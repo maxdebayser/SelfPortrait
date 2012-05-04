@@ -8,10 +8,10 @@ SET(SOURCES
 SET(CLANG_LIBS
 	clangFrontend
 	clangDriver
-	clangSema
-	clangAnalysis
-	clangAST
-	clangParse
+    clangParse
+    clangSema
+    clangAnalysis
+    clangAST
 	clangLex
 	clangBasic
 	clangSerialization
