@@ -166,7 +166,7 @@ const Class::ClassList& Class::superclasses() const {
 	return m_impl->superclasses();
 }
 
-Class Class::forName(const ::std::string& name)
+Class Class::lookup(const ::std::string& name)
 {
 	return ClassRegistry::instance().forName(name);
 }

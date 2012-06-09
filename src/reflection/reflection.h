@@ -249,7 +249,7 @@ public:
 	
 	const ClassList& superclasses() const;
 
-	static Class forName(const ::std::string& name);
+	static Class lookup(const ::std::string& name);
 	
 private:
 

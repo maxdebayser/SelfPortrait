@@ -418,7 +418,7 @@ int Lua_Class::lookup(lua_State* L)
 
 	luaL_argcheck(L, name && (length > 0), 1, "empty class name");
 
-	Class c = Class::forName(name);
+	Class c = Class::lookup(name);
 
 	try {
 		c.fullyQualifiedName();

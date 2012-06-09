@@ -88,7 +88,7 @@ void ClassTestSuite::testClass()
 {
 	//Class test = ClassOf<Test1>();
 
-	Class test = Class::forName("Test::Test1");
+	Class test = Class::lookup("Test::Test1");
 
 	TS_ASSERT_EQUALS(test.simpleName(), "Test1");
 
