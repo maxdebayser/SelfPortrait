@@ -10,6 +10,7 @@ public:
 	// test methods must begin with "test", otherwise cxxtestgen ignores them
 	void testClass();
 	void testOverload();
+	void testLuaAPI();
 };
 
 

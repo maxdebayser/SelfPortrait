@@ -7,6 +7,7 @@ set(HEADERS
 	test_utils.h
 	utilities_test.h
 	variant_test.h
+    lua_utils.h
 )
 
 set(SOURCES
@@ -17,10 +18,16 @@ set(SOURCES
 	method_test.cpp
 	utilities_test.cpp
 	variant_test.cpp
+    lua_utils.cpp
+)
+
+set(LUA_SOURCES
+    class_test.lua
 )
 
 set(LIBS
-	reflection
+    reflection
+    lua
 )
 
 add_definitions(-DCXXTEST_HAVE_STD -DCXXTEST_HAVE_EH)
@@ -31,6 +38,11 @@ foreach(header ${HEADERS})
 	list(APPEND HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${header}")
 endforeach()
 
+set(LUA_FILES)
+foreach(lua_source ${LUA_SOURCES})
+    list(APPEND LUA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${lua_source}")
+endforeach()
+
 add_custom_command(
 	OUTPUT runner.cpp
 	COMMAND cxxtestgen --error-printer --have-eh --have-std -o runner.cpp ${HEADER_FILES}
@@ -38,6 +50,13 @@ add_custom_command(
 )
 
 add_executable(unit_test ${HEADERS} ${SOURCES} runner.cpp)
+
+ADD_CUSTOM_TARGET(lua_source_dependency
+    COMMAND ${CMAKE_COMMAND} -E copy "${LUA_FILES}" "${CMAKE_CURRENT_BINARY_DIR}"
+    DEPENDS ${LUA_FILES}
+)
+
+add_dependencies(unit_test lua_source_dependency)
 
 target_link_libraries(unit_test ${LIBS})
 

@@ -51,6 +51,10 @@ double function2(double i, double s) {
 	return i + s;
 }
 
+int getFooAttr(const Foo& foo) {
+	return foo.attr;
+}
+
 REFL_BEGIN_CLASS(Foo)
 REFL_CONSTRUCTOR(int)
 REFL_ATTRIBUTE(attr, int)
@@ -63,6 +67,7 @@ REFL_END_CLASS
 REFL_FUNCTION(function1, int, int)
 REFL_FUNCTION(function2, double, double)
 REFL_FUNCTION(function2, double, double, double)
+REFL_FUNCTION(getFooAttr, int, const Foo&)
 
 //=====================Declarations=============================================
 
@@ -138,6 +143,7 @@ public:
 	static VariantValue getFromStack(lua_State* L, int idx = 1);
 
 	static int newInstance(lua_State* L);
+
 	static int tostring(lua_State* L);
 
 	static const char * metatableName;
@@ -194,6 +200,7 @@ private:
 	Class m_class;
 	static MethodTable methods;
 	static const struct luaL_Reg lib_f[];
+	static const struct luaL_Reg lib_m[];
 	friend class LuaAdapter<Lua_Class>;
 };
 
@@ -398,6 +405,13 @@ MethodTable Lua_Class::methods;
 
 const struct luaL_Reg Lua_Class::lib_f[] = {
 	{ "lookup", lookup },
+	{ NULL, NULL }
+};
+
+const struct luaL_Reg Lua_Class::lib_m[] = {
+	{ "__gc", gc },
+	{ "__index", index },
+	{ "__tostring", fullyQualifiedName },
 	{ NULL, NULL }
 };
 
