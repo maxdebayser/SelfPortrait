@@ -3,6 +3,7 @@
 #include "lua_utils.h"
 #include "reflection_impl.h"
 #include "test_utils.h"
+#include "str_utils.h"
 
 #include <lua.hpp>
 
@@ -288,13 +289,11 @@ void ClassTestSuite::testOverload()
 
 void ClassTestSuite::testLuaAPI()
 {
-	lua_State* L = luaL_newstate();
-
-	luaL_openlibs(L);
+	LuaUtils::LuaStateHolder L;
 
 	if (luaL_loadfile(L, "class_test.lua") || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
 	}
 
-	TS_ASSERT(LuaUtils::callFunc<bool>(L, "testClass"));
+	LuaUtils::callFunc<bool>(L, "testClass");
 }

@@ -202,12 +202,12 @@ namespace LuaUtils {
 	template<class K, class V> struct LuaValue<std::map<K,V>> : public LuaAssociativeArray<std::map<K,V>> {};
 	template<class K, class V> struct LuaValue<std::unordered_map<K,V>> : public LuaAssociativeArray<std::unordered_map<K,V>> {};
 
-	int pushArgs(lua_State* L) {
+	inline int pushArgs(lua_State* L) {
 		return 0;
 	}
 
 	template<class H, class... T>
-	int pushArgs(lua_State* L, const H& h, const T&... t) {
+	inline int pushArgs(lua_State* L, const H& h, const T&... t) {
 		int size = LuaValue<H>::size();
 		LuaValue<H>::pushValue(L, h);
 		return size + pushArgs(L, t...);
@@ -221,14 +221,32 @@ namespace LuaUtils {
 		const int size = pushArgs(L, args...);
 
 		if (lua_pcall(L, size, LuaValue<R>::size(), 0) != 0) {
-			luaL_error(L, "error running funtion %1", name.c_str());
+			luaL_error(L, "error running function %s", name.c_str());
 		}
 		popper p(L, LuaValue<R>::size());
 		return LuaValue<R>::getStackValue(L, -1);
 	}
 
 
+	int atPanicThrow(lua_State* L);
 
+	int ts_fail(lua_State* L);
+
+	struct LuaStateHolder {
+		explicit LuaStateHolder(lua_State* L) : m_L(L) {
+			lua_atpanic(m_L, atPanicThrow);
+			luaL_openlibs(m_L);
+			lua_pushcfunction(m_L, ts_fail);
+			lua_setglobal(L, "TS_FAIL");
+		}
+		LuaStateHolder() : LuaStateHolder(luaL_newstate()) {}
+		~LuaStateHolder() {
+			lua_close(m_L);
+		}
+		operator lua_State*() { return m_L; }
+	private:
+		lua_State* m_L;
+	};
 }
 
 #endif /* LUA_UTILS_H */

@@ -23,6 +23,7 @@ set(SOURCES
 
 set(LUA_SOURCES
     class_test.lua
+    cxxtest.lua
 )
 
 set(LIBS
@@ -38,10 +39,6 @@ foreach(header ${HEADERS})
 	list(APPEND HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${header}")
 endforeach()
 
-set(LUA_FILES)
-foreach(lua_source ${LUA_SOURCES})
-    list(APPEND LUA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${lua_source}")
-endforeach()
 
 add_custom_command(
 	OUTPUT runner.cpp
@@ -51,12 +48,14 @@ add_custom_command(
 
 add_executable(unit_test ${HEADERS} ${SOURCES} runner.cpp)
 
-ADD_CUSTOM_TARGET(lua_source_dependency
-    COMMAND ${CMAKE_COMMAND} -E copy "${LUA_FILES}" "${CMAKE_CURRENT_BINARY_DIR}"
-    DEPENDS ${LUA_FILES}
-)
-
-add_dependencies(unit_test lua_source_dependency)
+# horrible...
+foreach(lua_source ${LUA_SOURCES})
+    ADD_CUSTOM_TARGET("${lua_source}_dependency"
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${lua_source}" "${CMAKE_CURRENT_BINARY_DIR}"
+        DEPENDS ${LUA_FILES}
+    )
+    add_dependencies(unit_test "${lua_source}_dependency")
+endforeach()
 
 target_link_libraries(unit_test ${LIBS})
 
