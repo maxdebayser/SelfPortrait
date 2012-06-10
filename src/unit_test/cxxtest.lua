@@ -1,5 +1,14 @@
 function TS_ASSERT(code)
 
+    if (type(code) ~= "string") then
+        if not code then
+            local info = debug.getinfo(2, "Sl");
+            local msg = {"Failed assertion"}
+            TS_FAIL(info.short_src, info.currentline, table.concat(msg))
+        end
+        return
+    end
+
     local func = assert(loadstring("return "..code))
 
     local calling_globals = getfenv(2)
@@ -31,14 +40,20 @@ function TS_ASSERT(code)
 
     setfenv(func, env)
     if not func() then
-       local msg = {"Failed assertion: ", code, ". Variables: "}
+       local info = debug.getinfo(2, "Sl");
+       local msg = {"Failed assertion: ", code}
+
        local first = true
        for k, v in pairs(referenced) do
-           if not first then msg[#msg+1] = ", " end
+           if first then
+               msg[#msg+1]= ". Variables: "
+           else
+               msg[#msg+1] = ", "
+           end
            msg[#msg+1]= tostring(k).." = "..tostring(v)
            first = false
        end
-       TS_FAIL(table.concat(msg))
+       TS_FAIL(info.short_src, info.currentline, table.concat(msg))
     end
 end
 

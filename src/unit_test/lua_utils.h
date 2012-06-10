@@ -231,6 +231,8 @@ namespace LuaUtils {
 	int atPanicThrow(lua_State* L);
 
 	int ts_fail(lua_State* L);
+	int ts_warn(lua_State* L);
+	int ts_trace(lua_State* L);
 
 	struct LuaStateHolder {
 		explicit LuaStateHolder(lua_State* L) : m_L(L) {
@@ -238,6 +240,10 @@ namespace LuaUtils {
 			luaL_openlibs(m_L);
 			lua_pushcfunction(m_L, ts_fail);
 			lua_setglobal(L, "TS_FAIL");
+			lua_pushcfunction(m_L, ts_trace);
+			lua_setglobal(L, "TS_TRACE");
+			lua_pushcfunction(m_L, ts_warn);
+			lua_setglobal(L, "TS_WARN");
 		}
 		LuaStateHolder() : LuaStateHolder(luaL_newstate()) {}
 		~LuaStateHolder() {

@@ -5,7 +5,7 @@ require "cxxtest"
 function testClass()
     local Test1Class = Class.lookup("Test::Test1")
 
-    TS_ASSERT [[Test1Class]]
+    TS_ASSERT (Test1Class)
     TS_ASSERT [[Test1Class:simpleName() == "Test1"]]
     TS_ASSERT [[Test1Class:fullyQualifiedName() == "Test::Test1"]]
 

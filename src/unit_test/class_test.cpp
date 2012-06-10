@@ -295,5 +295,8 @@ void ClassTestSuite::testLuaAPI()
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
 	}
 
+	int i = 3;
+	int b = 4;
+	//TS_ASSERT_EQUALS(i, b);
 	LuaUtils::callFunc<bool>(L, "testClass");
 }
