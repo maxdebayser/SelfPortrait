@@ -1,6 +1,9 @@
 #include <lua.hpp>
 #include "reflection_impl.h"
+#include "lua_utils.h"
+
 #include <ctype.h>
+
 
 #include <map>
 #include <string>
@@ -143,8 +146,16 @@ public:
 	static VariantValue getFromStack(lua_State* L, int idx = 1);
 
 	static int newInstance(lua_State* L);
-
 	static int tostring(lua_State* L);
+	static int tonumber(lua_State* L);
+	static int isValid(lua_State* L);
+	static int isStdString(lua_State* L);
+	static int isIntegral(lua_State* L);
+	static int isFloatingPoint(lua_State* L);
+	static int isArithmetical(lua_State* L);
+	static int isPOD(lua_State* L);
+	static int sizeOf(lua_State* L);
+	static int alignOf(lua_State* L);
 
 	static const char * metatableName;
 	static const char * userDataName;
@@ -210,8 +221,14 @@ class Lua_Method: public LuaAdapter<Lua_Method> {
 public:
 	Lua_Method(Method m) : m_method(m) {}
 
-	static int name(lua_State* L);
 	static int call(lua_State* L);
+	static int name(lua_State* L);
+	static int numberOfArguments(lua_State* L);
+	static int returnSpelling(lua_State* L);
+	static int argumentSpellings(lua_State* L);
+	static int isConst(lua_State* L);
+	static int isVolatile(lua_State* L);
+	static int isStatic(lua_State* L);
 
 	static void initialize();
 	static Lua_Method* checkUserData(lua_State* L) { return (Lua_Method*)luaL_checkudata(L, 1, Lua_Method::metatableName); }
@@ -260,6 +277,9 @@ public:
 	static int get(lua_State* L);
 	static int set(lua_State* L);
 	static int name(lua_State* L);
+	static int typeSpelling(lua_State* L);
+	static int isConst(lua_State* L);
+	static int isStatic(lua_State* L);
 
 	static void initialize();
 	static Lua_Attribute* checkUserData(lua_State* L) { return (Lua_Attribute*)luaL_checkudata(L, 1, Lua_Attribute::metatableName); }
@@ -326,6 +346,16 @@ const struct luaL_Reg Lua_Variant::lib_m[] = {
 
 void Lua_Variant::initialize()
 {
+	methods["tostring"]        = &tostring;
+	methods["tonumber"]        = &tonumber;
+	methods["isValid"]         = &isValid;
+	methods["isStdString"]     = &isStdString;
+	methods["isIntegral"]      = &isIntegral;
+	methods["isFloatingPoint"] = &isFloatingPoint;
+	methods["isArithmetical"]  = &isArithmetical;
+	methods["isPOD"]           = &isPOD;
+	methods["sizeOf"]          = &sizeOf;
+	methods["alignOf"]         = &alignOf;
 }
 
 VariantValue Lua_Variant::getFromStack(lua_State* L, int idx)
@@ -397,6 +427,70 @@ int Lua_Variant::tostring(lua_State* L)
 
 	return 1;
 }
+
+int Lua_Variant::tonumber(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<double>::pushValue(L, v->m_variant.convertTo<double>());
+	return 1;
+}
+
+int Lua_Variant::isValid(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isValid());
+	return 1;
+}
+
+int Lua_Variant::isStdString(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isStdString());
+	return 1;
+}
+
+int Lua_Variant::isIntegral(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isIntegral());
+	return 1;
+}
+
+int Lua_Variant::isFloatingPoint(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isFloatingPoint());
+	return 1;
+}
+
+int Lua_Variant::isArithmetical(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isArithmetical());
+	return 1;
+}
+
+int Lua_Variant::isPOD(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isPOD());
+	return 1;
+}
+
+int Lua_Variant::sizeOf(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<int>::pushValue(L, v->m_variant.sizeOf());
+	return 1;
+}
+
+int Lua_Variant::alignOf(lua_State* L)
+{
+	Lua_Variant* v = checkUserData(L);
+	LuaUtils::LuaValue<int>::pushValue(L, v->m_variant.alignOf());
+	return 1;
+}
+
 
 
 //---------------Class----------------------------------------------------------
@@ -543,16 +637,66 @@ const struct luaL_Reg Lua_Method::lib_f[] = {
 
 void Lua_Method::initialize()
 {
-	methods["name"] = &name;
-	methods["call"] = &call;
+	methods["name"]              = &name;
+	methods["call"]              = &call;
+	methods["numberOfArguments"] = &numberOfArguments;
+	methods["returnSpelling"]    = &returnSpelling;
+	methods["argumentSpellings"] = &argumentSpellings;
+	methods["isConst"]           = &isConst;
+	methods["isVolatile"]        = &isVolatile;
+	methods["isStatic"]          = &isStatic;
 }
 
 int Lua_Method::name(lua_State* L)
 {
 	Lua_Method* c = checkUserData(L);
-	lua_pushstring(L, c->m_method.name().c_str());
+	LuaUtils::LuaValue<std::string>::pushValue(L, c->m_method.name());
 	return 1;
 }
+
+
+int Lua_Method::numberOfArguments(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<int>::pushValue(L, c->m_method.numberOfArguments());
+	return 1;
+}
+
+int Lua_Method::returnSpelling(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<std::string>::pushValue(L, c->m_method.returnSpelling());
+	return 1;
+}
+
+int Lua_Method::argumentSpellings(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<std::vector<std::string>>::pushValue(L, c->m_method.argumentSpellings());
+	return 1;
+}
+
+int Lua_Method::isConst(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, c->m_method.isConst());
+	return 1;
+}
+
+int Lua_Method::isVolatile(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, c->m_method.isVolatile());
+	return 1;
+}
+
+int Lua_Method::isStatic(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, c->m_method.isStatic());
+	return 1;
+}
+
 
 int Lua_Method::call(lua_State* L)
 {
@@ -643,17 +787,22 @@ int Lua_Constructor::call(lua_State* L)
 
 int Lua_Constructor::numberOfArguments(lua_State* L)
 {
-
+	Lua_Constructor* c = checkUserData(L);
+	LuaUtils::LuaValue<int>::pushValue(L, c->m_constructor.numberOfArguments());
 	return 1;
 }
 
 int Lua_Constructor::argumentSpellings(lua_State* L)
 {
+	Lua_Constructor* c = checkUserData(L);
+	LuaUtils::LuaValue<std::vector<std::string>>::pushValue(L, c->m_constructor.argumentSpellings());
 	return 1;
 }
 
 int Lua_Constructor::isDefaultConstructor(lua_State* L)
 {
+	Lua_Constructor* c = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, c->m_constructor.isDefaultConstructor());
 	return 1;
 }
 
@@ -670,9 +819,12 @@ const struct luaL_Reg Lua_Attribute::lib_f[] = {
 
 void Lua_Attribute::initialize()
 {
-	methods["get"] = &get;
-	methods["set"] = &set;
-	methods["name"] = &name;
+	methods["get"]          = &get;
+	methods["set"]          = &set;
+	methods["name"]         = &name;
+	methods["typeSpelling"] = &typeSpelling;
+	methods["isConst"]      = &isConst;
+	methods["isStatic"]     = &isStatic;
 }
 
 int Lua_Attribute::get(lua_State* L)
@@ -688,7 +840,16 @@ int Lua_Attribute::get(lua_State* L)
 		obj = Lua_Variant::getFromStack(L, 2);
 	}
 	try {
-		Lua_Variant::create(L, c->m_attribute.get(obj));
+
+		VariantValue ret = c->m_attribute.get(obj);
+		if (ret.isArithmetical()) {
+			lua_pushnumber(L, ret.convertTo<lua_Number>());
+		} else if (ret.isStdString()) {
+			lua_pushstring(L, ret.convertTo<std::string>().c_str());
+		} else {
+			Lua_Variant::create(L, ret);
+		}
+
 	} catch (const std::exception& ex) {
 		luaL_error(L, "call threw exception: %s", ex.what());
 	} catch (...) {
@@ -730,7 +891,26 @@ int Lua_Attribute::set(lua_State* L)
 int Lua_Attribute::name(lua_State* L)
 {
 	Lua_Attribute* c = checkUserData(L);
-	lua_pushstring(L, c->m_attribute.name().c_str());
+	LuaUtils::LuaValue<std::string>::pushValue(L, c->m_attribute.name());
+	return 1;
+}
+
+int Lua_Attribute::typeSpelling(lua_State* L)
+{
+	Lua_Attribute* c = checkUserData(L);
+	LuaUtils::LuaValue<std::string>::pushValue(L, c->m_attribute.typeSpelling());
+	return 1;
+}
+int Lua_Attribute::isConst(lua_State* L)
+{
+	Lua_Attribute* c = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, c->m_attribute.isConst());
+	return 1;
+}
+int Lua_Attribute::isStatic(lua_State* L)
+{
+	Lua_Attribute* c = checkUserData(L);
+	LuaUtils::LuaValue<bool>::pushValue(L, c->m_attribute.isStatic());
 	return 1;
 }
 
