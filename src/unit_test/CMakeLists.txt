@@ -7,7 +7,6 @@ set(HEADERS
 	test_utils.h
 	utilities_test.h
 	variant_test.h
-    lua_utils.h
 )
 
 set(SOURCES
@@ -16,9 +15,9 @@ set(SOURCES
 	constructor_test.cpp
 	function_test.cpp
 	method_test.cpp
+	test_utils.cpp
 	utilities_test.cpp
 	variant_test.cpp
-    lua_utils.cpp
 )
 
 set(LUA_SOURCES
@@ -29,6 +28,7 @@ set(LUA_SOURCES
 set(LIBS
     reflection
     lua
+	utils
 )
 
 add_definitions(-DCXXTEST_HAVE_STD -DCXXTEST_HAVE_EH)

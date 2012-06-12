@@ -29,5 +29,6 @@ function testClass()
 
     local Base2Constructor = Base2Cons[1]
 
+
     return false
 end

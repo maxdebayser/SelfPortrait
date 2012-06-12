@@ -234,6 +234,9 @@ public:
 	Lua_Constructor(Constructor c) : m_constructor(c) {}
 
 	static int call(lua_State* L);
+	static int numberOfArguments(lua_State* L);
+	static int argumentSpellings(lua_State* L);
+	static int isDefaultConstructor(lua_State* L);
 
 	static void initialize();
 	static Lua_Constructor* checkUserData(lua_State* L) { return (Lua_Constructor*)luaL_checkudata(L, 1, Lua_Constructor::metatableName); }
@@ -611,6 +614,9 @@ const struct luaL_Reg Lua_Constructor::lib_f[] = {
 void Lua_Constructor::initialize()
 {
 	methods["call"] = &call;
+	methods["numberOfArguments"] = &numberOfArguments;
+	methods["argumentSpellings"] = &argumentSpellings;
+	methods["isDefaultConstructor"] = &isDefaultConstructor;
 }
 
 
@@ -632,6 +638,22 @@ int Lua_Constructor::call(lua_State* L)
 	} catch (...) {
 		luaL_error(L, "call threw exception");
 	}
+	return 1;
+}
+
+int Lua_Constructor::numberOfArguments(lua_State* L)
+{
+
+	return 1;
+}
+
+int Lua_Constructor::argumentSpellings(lua_State* L)
+{
+	return 1;
+}
+
+int Lua_Constructor::isDefaultConstructor(lua_State* L)
+{
 	return 1;
 }
 

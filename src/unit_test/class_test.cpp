@@ -1,6 +1,5 @@
 #include "class_test.h"
 #include "class.h"
-#include "lua_utils.h"
 #include "reflection_impl.h"
 #include "test_utils.h"
 #include "str_utils.h"
