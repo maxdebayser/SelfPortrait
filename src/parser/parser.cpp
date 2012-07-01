@@ -488,7 +488,7 @@ int main(int argc, const char* argv[])
 		args.push_back("-fno-spell-checking");
 	}
 
-	args.push_back("-I/usr/lib/clang/3.1/include"); // why can't clang find this from the resource path?
+	args.push_back("-I/usr/lib/clang/3.2/include"); // why can't clang find this from the resource path?
 	args.push_back("-Qunused-arguments"); // why do I keep getting warnings about the unused linker if I'm only creating an ASTunit
 
 	for (int i = 1; i < argc; ++i) {
