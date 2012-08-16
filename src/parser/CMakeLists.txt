@@ -5,6 +5,7 @@ SET(SOURCES
 	parser.cpp
 )
 
+
 SET(CLANG_LIBS
 	clangFrontend
 	clangDriver
@@ -16,9 +17,8 @@ SET(CLANG_LIBS
 	clangBasic
 	clangSerialization
 	clangEdit
-	LLVMMC
-	LLVMSupport
 )
+SET(CLANG_LIBS "${CLANG_LIBS} ${LLVM_ALL_LIBS}")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS} -fno-rtti")
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LLVM_LINKER_FLAGS}")
