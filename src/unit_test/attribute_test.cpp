@@ -2,12 +2,19 @@
 #include "attribute.h"
 #include "reflection.h"
 
+#include "reflection_impl.h"
+
+#include "test_utils.h"
+#include "str_utils.h"
+
+#include <lua.hpp>
+
 #include <iostream>
 #include <string>
 using namespace std;
 
 
-namespace {
+namespace AttributeTest {
 
 	class Test {
 	public:
@@ -28,9 +35,20 @@ namespace {
 
 }
 
+REFL_BEGIN_CLASS(AttributeTest::Test)
+	REFL_ATTRIBUTE(attr1, int)
+	REFL_ATTRIBUTE(attr2, const int)
+	REFL_STATIC_ATTRIBUTE(attr3, int)
+	REFL_STATIC_ATTRIBUTE(attr4, const int)
+	REFL_DEFAULT_CONSTRUCTOR()
+REFL_END_CLASS
+
+using namespace AttributeTest;
+
 void AttributeTestSuite::testVanillaAttribute()
 {
-	auto attr1 = make_attribute("attr1", &Test::attr1, "int");
+	AttributeImpl<int Test::*> aImpl("attr1", &Test::attr1, "int");
+	Attribute attr1(&aImpl);
 
 	VariantValue v1 = Test();
 	VariantValue r1 = attr1.get(v1);
@@ -58,7 +76,8 @@ void AttributeTestSuite::testVanillaAttribute()
 
 void AttributeTestSuite::testConstAttribute()
 {
-	auto attr2 = make_attribute("attr2", &Test::attr2, "const int");
+	AttributeImpl<const int Test::*> aImpl("attr2", &Test::attr2, "const int");
+	Attribute attr2(&aImpl);
 
 	VariantValue v1 = Test();
 	VariantValue r1 = attr2.get(v1);
@@ -78,7 +97,8 @@ void AttributeTestSuite::testConstAttribute()
 
 void AttributeTestSuite::testStaticAttribute()
 {
-	auto attr3 = make_static_attribute<Test>("attr3", &Test::attr3, "int");
+	StaticAttributeImpl<Test, int*> aImpl3("attr3", &Test::attr3, "int");
+	Attribute attr3(&aImpl3);
 
 	VariantValue r1 = attr3.get();
 
@@ -90,8 +110,12 @@ void AttributeTestSuite::testStaticAttribute()
 	TS_ASSERT(r1.isA<int>());
 	TS_ASSERT_EQUALS(r1.value<int>(), 201);
 
+	// reset
+	Test::attr3 = 103;
 
-	auto attr4 = make_static_attribute<Test>("attr4", &Test::attr4, "const int");
+	StaticAttributeImpl<Test, const int*> aImpl4("attr4", &Test::attr4, "const int");
+	Attribute attr4(&aImpl4);
+
 	VariantValue r2 = attr4.get();
 
 	TS_ASSERT(r2.isA<int>());
@@ -100,3 +124,18 @@ void AttributeTestSuite::testStaticAttribute()
 	TS_ASSERT_THROWS(attr4.set(202), std::runtime_error);
 }
 
+
+
+void AttributeTestSuite::testLuaAPI()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "attribute_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+
+	int i = 3;
+	int b = 4;
+	//TS_ASSERT_EQUALS(i, b);
+	LuaUtils::callFunc<bool>(L, "testAttribute");
+}

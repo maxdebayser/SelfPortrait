@@ -70,12 +70,14 @@ public:
 	VariantValue get(const VariantValue& object) const;
 	void set(VariantValue& object, const VariantValue& value) const;
 	void set(const VariantValue& object, const VariantValue& value) const;
+
+	bool isValid() const;
 	
+	Attribute(AbstractAttributeImpl* impl);
 private:
 
 	void check_valid() const;
 
-	Attribute(AbstractAttributeImpl* impl);
 	
 	AbstractAttributeImpl* m_impl;
 	
@@ -114,18 +116,16 @@ public:
 
 	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const ;
 	
+	Constructor(ConstructorImpl* impl);
 private:
 
 	void check_valid() const;
 
-	Constructor(ConstructorImpl* impl);
 	
 	ConstructorImpl* m_impl;
 	
 	friend class Class;
-	
-	template<class C, class... A>
-	friend Constructor make_constructor(const char* argString);
+
 };
 
 class MethodImpl;
@@ -246,6 +246,8 @@ public:
 	const ConstructorList& constructors() const;
 	
 	const AttributeList& attributes() const;
+
+	Attribute getAttribute(const std::string& name) const;
 	
 	const ClassList& superclasses() const;
 

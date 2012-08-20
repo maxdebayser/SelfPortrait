@@ -13,7 +13,7 @@
 using namespace std;
 
 
-namespace Test {
+namespace ClassTest {
 
 	class TestBase1 {
 	public:
@@ -59,40 +59,40 @@ namespace Test {
 
 }
 
-REFL_BEGIN_CLASS(Test::TestBase1)
+REFL_BEGIN_CLASS(ClassTest::TestBase1)
 	REFL_METHOD(method2, double, double)
 	REFL_METHOD(base1Method1, int)
 	REFL_DEFAULT_CONSTRUCTOR()
 REFL_END_CLASS
 
-REFL_BEGIN_CLASS(Test::TestBase2)
+REFL_BEGIN_CLASS(ClassTest::TestBase2)
 	REFL_CONST_METHOD(base2Method1, int)
 	REFL_DEFAULT_CONSTRUCTOR()
 REFL_END_CLASS
 
-REFL_BEGIN_CLASS(Test::Test1)
-	REFL_SUPER_CLASS(class Test::TestBase1)
-	REFL_SUPER_CLASS(Test::TestBase2)
+REFL_BEGIN_CLASS(ClassTest::Test1)
+	REFL_SUPER_CLASS(class ClassTest::TestBase1)
+	REFL_SUPER_CLASS(ClassTest::TestBase2)
 	REFL_CONST_METHOD(method1, std::string)
 	REFL_METHOD(method2, double, double)
 	REFL_STATIC_METHOD(staticMethod, double)
 	REFL_ATTRIBUTE(attribute1, int)
 	REFL_DEFAULT_CONSTRUCTOR()
 	REFL_CONSTRUCTOR(int)
-	REFL_CONSTRUCTOR(const Test::Test1&)
-	REFL_METHOD(operator=, Test::Test1&, const Test::Test1&)
+	REFL_CONSTRUCTOR(const ClassTest::Test1&)
+	REFL_METHOD(operator=, ClassTest::Test1&, const ClassTest::Test1&)
 REFL_END_CLASS
 
 
 
 
-using namespace Test;
+using namespace ClassTest;
 
 void ClassTestSuite::testClass()
 {
 	//Class test = ClassOf<Test1>();
 
-	Class test = Class::lookup("Test::Test1");
+	Class test = Class::lookup("ClassTest::Test1");
 
 	TS_ASSERT_EQUALS(test.simpleName(), "Test1");
 
@@ -106,16 +106,16 @@ void ClassTestSuite::testClass()
 	TS_ASSERT_THROWS(base1.simpleName(), std::runtime_error); // uninitialized handle
 
 	for(const Class& c: superClasses) {
-		if (c.fullyQualifiedName() == "Test::TestBase1") {
+		if (c.fullyQualifiedName() == "ClassTest::TestBase1") {
 			base1 = c;
-		} else if (c.fullyQualifiedName() == "Test::TestBase2") {
+		} else if (c.fullyQualifiedName() == "ClassTest::TestBase2") {
 			base2 = c;
 		}
 	}
 
-	TS_ASSERT_EQUALS(base1.fullyQualifiedName(), "Test::TestBase1");
+	TS_ASSERT_EQUALS(base1.fullyQualifiedName(), "ClassTest::TestBase1");
 	TS_ASSERT_EQUALS(base1.simpleName(), "TestBase1");
-	TS_ASSERT_EQUALS(base2.fullyQualifiedName(), "Test::TestBase2");
+	TS_ASSERT_EQUALS(base2.fullyQualifiedName(), "ClassTest::TestBase2");
 	TS_ASSERT_EQUALS(base2.simpleName(), "TestBase2");
 
 	Class::ConstructorList base1Constructors = base1.constructors();

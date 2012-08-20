@@ -10,7 +10,8 @@
 #include "call_utils.h"
 
 typedef VariantValue (*boundcons)(const ::std::vector<VariantValue>& args);
-
+#include <iostream>
+using namespace std;
 namespace {
 
 template<class _Clazz, class... Args>
@@ -77,6 +78,7 @@ private:
 	boundcons m_c;
 };
 
+namespace {
 
 template<class Clazz, class... Args>
 Constructor make_constructor(const char* argString) {
@@ -91,6 +93,8 @@ Constructor make_constructor(const char* argString) {
 				);
 
 	return Constructor(&impl);
+}
+
 }
 
 #endif /* CONSTRUCTOR_H */

@@ -1,12 +1,18 @@
 #include "method_test.h"
 #include "method.h"
 #include "reflection.h"
+#include "reflection_impl.h"
+
+#include "test_utils.h"
+#include "str_utils.h"
+
+#include <lua.hpp>
 
 #include <iostream>
 #include <string>
 using namespace std;
 
-namespace {
+namespace MethodTest {
 	class Test1 {
 	public:
 		int method1(int arg) { return arg*2; }
@@ -19,6 +25,17 @@ namespace {
 
 }
 
+REFL_BEGIN_CLASS(MethodTest::Test1)
+	REFL_DEFAULT_CONSTRUCTOR()
+	REFL_METHOD(method1, int, int)
+	REFL_CONST_METHOD(method2, int, int)
+	REFL_VOLATILE_METHOD(method3, int, int)
+	REFL_CONST_VOLATILE_METHOD(method4, int, int)
+	REFL_CONST_VOLATILE_METHOD(method4, int, int, int)
+	REFL_STATIC_METHOD(method5, int, int)
+REFL_END_CLASS
+
+using namespace MethodTest;
 
 void MethodTestSuite::testNonCVMethod() {
 
@@ -151,4 +168,15 @@ void MethodTestSuite::testStaticMethod()
 	VariantValue r = method.call(3);
 	TS_ASSERT(r.isA<int>());
 	TS_ASSERT_EQUALS(r.value<int>(), 18);
+}
+
+
+void MethodTestSuite::testLuaAPI()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "method_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testMethod");
 }

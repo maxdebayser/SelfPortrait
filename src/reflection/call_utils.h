@@ -34,14 +34,20 @@ namespace {
 	}
 
 	template<class Clazz>
-	Clazz& verifyObject(const volatile VariantValue& object) {
+	Clazz& verifyObject(const volatile VariantValue& object, bool methodIsConst) {
 		bool success = false;
-		Clazz& ref = object.convertTo<Clazz&>(&success);
+		const Clazz& ref = object.convertTo<const Clazz&>(&success);
 
 		if (!success) {
 			throw ::std::runtime_error("method called with wrong type of object");
 		}
-		return ref;
+		if (!methodIsConst) {
+			object.convertTo<Clazz&>(&success);
+			if (!success) {
+				throw ::std::runtime_error("non-const method called with const object");
+			}
+		}
+		return const_cast<Clazz&>(ref);
 	}
 }
 

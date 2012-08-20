@@ -3,13 +3,18 @@ function TS_ASSERT(code)
     if (type(code) ~= "string") then
         if not code then
             local info = debug.getinfo(2, "Sl");
-            local msg = {"Failed assertion"}
-            TS_FAIL(info.short_src, info.currentline, table.concat(msg))
+            TS_FAIL(info.short_src, info.currentline, "Failed assertion")
         end
         return
     end
 
-    local func = assert(loadstring("return "..code))
+    local func, err = loadstring("return "..code)
+    if not func then
+        local info = debug.getinfo(2, "Sl");
+        local msg = {"Uncompilable test expression at ", info.short_src, ":", info.currentline, ":" , tostring(err) }
+        print(tostring(table.concat))
+        error(table.concat(msg))
+    end
 
     local calling_globals = getfenv(2)
     local calling_locals  = {}
@@ -19,6 +24,15 @@ function TS_ASSERT(code)
         if not name then break end
         calling_locals[name] = value
         i = i + 1
+    end
+
+    local info = debug.getinfo(2, "Sluf");
+
+    local up = 1
+    while up <= info.nups do
+        local name, value = debug.getupvalue(info.func, up)
+        calling_locals[name] = value
+        up = up + 1
     end
 
     local notpresent = {}
@@ -40,7 +54,6 @@ function TS_ASSERT(code)
 
     setfenv(func, env)
     if not func() then
-       local info = debug.getinfo(2, "Sl");
        local msg = {"Failed assertion: ", code}
 
        local first = true

@@ -2,14 +2,18 @@
 #include "function.h"
 #include "reflection.h"
 #include "reflection_impl.h"
+
 #include "test_utils.h"
+#include "str_utils.h"
+
+#include <lua.hpp>
 
 #include <iostream>
 #include <string>
 using namespace std;
 
 
-namespace Test {
+namespace FunctionTest {
 
 	double globalFunction(double arg1, double arg2) {
 		return arg1 + arg2;
@@ -21,13 +25,13 @@ namespace Test {
 
 }
 
-REFL_FUNCTION(Test::globalFunction, double, double, double)
-REFL_FUNCTION(Test::globalFunction, int, int, int)
+REFL_FUNCTION(FunctionTest::globalFunction, double, double, double)
+REFL_FUNCTION(FunctionTest::globalFunction, int, int, int)
 
 
 void FunctionTestSuite::testFunction()
 {
-	std::list<Function> functions = Function::findFunctions("Test::globalFunction");
+	std::list<Function> functions = Function::findFunctions("FunctionTest::globalFunction");
 
 	Function overload1;
 	Function overload2;
@@ -41,7 +45,7 @@ void FunctionTestSuite::testFunction()
 		}
 	}
 
-	TS_ASSERT_EQUALS(overload1.name(), "Test::globalFunction" );
+	TS_ASSERT_EQUALS(overload1.name(), "FunctionTest::globalFunction" );
 
 	TS_ASSERT( overload1.returnSpelling() == "double");
 	WITH_RTTI(TS_ASSERT( overload1.returnType() == typeid(double) ));
@@ -53,7 +57,7 @@ void FunctionTestSuite::testFunction()
 	TS_ASSERT_DELTA(v1.value<double>(), 5.3, 0.0001);
 
 
-	TS_ASSERT_EQUALS(overload2.name(), "Test::globalFunction" );
+	TS_ASSERT_EQUALS(overload2.name(), "FunctionTest::globalFunction" );
 	TS_ASSERT( overload2.returnSpelling() == "int" );
 	WITH_RTTI(TS_ASSERT( overload2.returnType() == typeid(int) ));
 
@@ -63,7 +67,7 @@ void FunctionTestSuite::testFunction()
 	TS_ASSERT_EQUALS(v2.value<int>(), 5);
 }
 
-namespace {
+namespace FunctionTest {
 
 	class CopyCount {
 	public:
@@ -158,6 +162,28 @@ namespace {
 	}
 }
 
+
+REFL_BEGIN_CLASS(FunctionTest::CopyCount)
+	REFL_CONSTRUCTOR(int)
+	REFL_CONST_METHOD(id, int)
+	REFL_METHOD(changeId, void, int)
+	REFL_METHOD(hasBeenMoved, bool)
+	REFL_STATIC_METHOD(resetCopyCount, void)
+	REFL_STATIC_METHOD(numberOfCopies, int)
+	REFL_STATIC_METHOD(resetMoveCount, void)
+	REFL_STATIC_METHOD(numberOfMoves, int)
+	REFL_STATIC_METHOD(resetAll, void)
+REFL_END_CLASS
+
+REFL_FUNCTION(FunctionTest::returnObjectByValue, FunctionTest::CopyCount)
+REFL_FUNCTION(FunctionTest::returnObjectByReference, FunctionTest::CopyCount&)
+REFL_FUNCTION(FunctionTest::returnObjectByConstReference, const FunctionTest::CopyCount&)
+REFL_FUNCTION(FunctionTest::paramByValue, int, FunctionTest::CopyCount)
+REFL_FUNCTION(FunctionTest::paramByReference, int, FunctionTest::CopyCount&)
+REFL_FUNCTION(FunctionTest::paramByConstReference, int, const FunctionTest::CopyCount&)
+
+using namespace FunctionTest;
+
 void FunctionTestSuite::testReturnByValue()
 {
 	auto f = make_function<CopyCount (*)()>(&function_type<CopyCount (*)()>::bindcall<&returnObjectByValue>, "returnObjectByValue", "CopyCount", "");
@@ -241,7 +267,7 @@ void FunctionTestSuite::testParametersByValue()
 	int reflectionMoves = CopyCount::numberOfMoves();
 
 	TS_ASSERT_EQUALS(reflectionCopies, 1);
-	TS_ASSERT_EQUALS(reflectionMoves,  1);
+	TS_ASSERT_EQUALS(reflectionMoves,  2);
 	TS_ASSERT(!c.hasBeenMoved());
 }
 
@@ -292,3 +318,76 @@ void FunctionTestSuite::testParametersByConstReference()
 	TS_ASSERT_EQUALS(r.value<int>(), 44);
 	TS_ASSERT_EQUALS(c.id(), 44);
 }
+
+
+
+void FunctionTestSuite::testLuaAPI()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testFunction");
+}
+
+void FunctionTestSuite::testLuaReturnByValue()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testReturnByValue");
+}
+
+void FunctionTestSuite::testLuaReturnByReference()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testReturnByReference");
+}
+
+void FunctionTestSuite::testLuaReturnByConstReference()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testReturnByConstReference");
+}
+
+void FunctionTestSuite::testLuaParameterByValue()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testParameterByValue");
+}
+
+void FunctionTestSuite::testLuaParameterByReference()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testParameterByReference");
+}
+
+void FunctionTestSuite::testLuaParameterByConstReference()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "function_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testParameterByConstReference");
+}
+

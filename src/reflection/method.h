@@ -56,7 +56,7 @@ struct method_type<_Result(_Clazz::*)(Args...)> {
 
 	template<_Result(_Clazz::*ptr)(Args...)>
 	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
-		Clazz& ref = verifyObject<Clazz>(object);
+		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
 
@@ -101,7 +101,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const> {
 
 	template<_Result(_Clazz::*ptr)(Args...) const>
 	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
-		Clazz& ref = verifyObject<Clazz>(object);
+		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
 };
@@ -144,7 +144,7 @@ struct method_type<_Result(_Clazz::*)(Args...) volatile> {
 
 	template<_Result(_Clazz::*ptr)(Args...) volatile>
 	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
-		Clazz& ref = verifyObject<Clazz>(object);
+		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
 };
@@ -187,7 +187,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const volatile> {
 
 	template<_Result(_Clazz::*ptr)(Args...) const volatile>
 	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
-		Clazz& ref = verifyObject<Clazz>(object);
+		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
 };

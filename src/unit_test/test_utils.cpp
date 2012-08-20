@@ -6,7 +6,7 @@
 
 namespace LuaUtils {
 	int atPanicThrow(lua_State* L) {
-		throw std::runtime_error(fmt_str("error during execution of Lua code: %1\n", lua_tostring(L, -1)));
+		throw std::runtime_error(fmt_str("Error during execution of Lua code:\n%1", lua_tostring(L, -1)));
 		return 0;
 	}
 

@@ -221,7 +221,10 @@ namespace LuaUtils {
 		const int size = pushArgs(L, args...);
 
 		if (lua_pcall(L, size, LuaValue<R>::size(), 0) != 0) {
-			luaL_error(L, "error running function %s", name.c_str());
+			lua_pushfstring(L, "Error running function %s:\n", name.c_str());
+			lua_insert(L, -2);
+			lua_concat(L, 2);
+			lua_error(L);
 		}
 		popper p(L, LuaValue<R>::size());
 		return LuaValue<R>::getStackValue(L, -1);

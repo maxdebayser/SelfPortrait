@@ -241,7 +241,12 @@ instance.registerMethod(Method(&impl));\
 #endif
 
 #define REFL_ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
-	instance.registerAttribute(make_attribute(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING));
+	static AttributeImpl<decltype(&ThisClass::ATTRIBUTE_NAME)> impl##ATTRIBUTE_NAME(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING);\
+	instance.registerAttribute(&impl##ATTRIBUTE_NAME);
+
+#define REFL_STATIC_ATTRIBUTE(ATTRIBUTE_NAME, TYPE_SPELLING) \
+	static StaticAttributeImpl<ThisClass, decltype(&ThisClass::ATTRIBUTE_NAME)> impl##ATTRIBUTE_NAME(#ATTRIBUTE_NAME, &ThisClass::ATTRIBUTE_NAME, #TYPE_SPELLING);\
+	instance.registerAttribute(&impl##ATTRIBUTE_NAME);
 
 #define REFL_DEFAULT_CONSTRUCTOR(...) \
 	instance.registerConstructor(make_constructor<ThisClass>(""));

@@ -12,6 +12,7 @@ public:
 	void testVanillaAttribute();
 	void testConstAttribute();
 	void testStaticAttribute();
+	void testLuaAPI();
 };
 
 

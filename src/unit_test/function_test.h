@@ -16,6 +16,13 @@ public:
 	void testParametersByValue();
 	void testParametersByReference();
 	void testParametersByConstReference();
+	void testLuaAPI();
+	void testLuaReturnByValue();
+	void testLuaReturnByReference();
+	void testLuaReturnByConstReference();
+	void testLuaParameterByValue();
+	void testLuaParameterByReference();
+	void testLuaParameterByConstReference();
 };
 
 

@@ -3,11 +3,11 @@ require "libluacppreflect"
 require "cxxtest"
 
 function testClass()
-    local Test1Class = Class.lookup("Test::Test1")
+    local Test1Class = Class.lookup("ClassTest::Test1")
 
     TS_ASSERT (Test1Class)
     TS_ASSERT [[Test1Class:simpleName() == "Test1"]]
-    TS_ASSERT [[Test1Class:fullyQualifiedName() == "Test::Test1"]]
+    TS_ASSERT [[Test1Class:fullyQualifiedName() == "ClassTest::Test1"]]
 
     local Superclasses = Test1Class:superclasses()
 	if (#Superclasses ~= 2) then return false end

@@ -492,7 +492,7 @@ private:
 			return value(holder, nullptr);
 		}
 	};
-		
+
 	template<class ValueType>
 	struct floatConversion {
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
@@ -504,7 +504,7 @@ private:
 			return value(holder, nullptr);
 		}
 	};
-		
+
 	template<class ValueType>
 	struct stringConversion {
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
@@ -515,7 +515,7 @@ private:
 			return value(holder, nullptr);
 		}
 	};
-	
+
 	template<class ValueType>
 	struct impossibleConversion {
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
@@ -526,7 +526,7 @@ private:
 			throw std::runtime_error("failed conversion");
 		}
 	};
-	
+
 	template<class ValueType>
 	struct impossibleConversion<ValueType&> {
 		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
@@ -538,7 +538,7 @@ private:
 			throw std::runtime_error("failed conversion");
 		}
 	};
-	
+
 
 public:
 	
@@ -597,7 +597,7 @@ public:
 	}
 
 	template<class ValueType>
-	ValueType&& moveValue(bool * success = nullptr) const {
+	ValueType moveValue(bool * success = nullptr) const {
 		check_valid();
 
 		auto ptr = isAPriv<ValueType>();

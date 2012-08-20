@@ -21,9 +21,14 @@ set(SOURCES
 )
 
 set(LUA_SOURCES
+    attribute_test.lua
     class_test.lua
+	constructor_test.lua
+	function_test.lua
+	method_test.lua
     cxxtest.lua
 )
+
 
 set(LIBS
     reflection

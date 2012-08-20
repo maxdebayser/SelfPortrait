@@ -303,6 +303,9 @@ public:
 
 	static int name(lua_State* L);
 	static int call(lua_State* L);
+	static int numberOfArguments(lua_State* L);
+	static int returnSpelling(lua_State* L);
+	static int argumentSpellings(lua_State* L);
 	static int lookup(lua_State* L);
 
 	static void initialize();
@@ -930,6 +933,9 @@ void Lua_Function::initialize()
 {
 	methods["call"] = &call;
 	methods["name"] = &name;
+	methods["numberOfArguments"] = &numberOfArguments;
+	methods["returnSpelling"]    = &returnSpelling;
+	methods["argumentSpellings"] = &argumentSpellings;
 }
 
 int Lua_Function::name(lua_State* L)
@@ -975,6 +981,28 @@ int Lua_Function::call(lua_State* L)
 		return 0;
 	}
 }
+
+int Lua_Function::numberOfArguments(lua_State* L)
+{
+	Lua_Function* c = checkUserData(L);
+	LuaUtils::LuaValue<int>::pushValue(L, c->m_function.numberOfArguments());
+	return 1;
+}
+
+int Lua_Function::returnSpelling(lua_State* L)
+{
+	Lua_Function* c = checkUserData(L);
+	LuaUtils::LuaValue<std::string>::pushValue(L, c->m_function.returnSpelling());
+	return 1;
+}
+
+int Lua_Function::argumentSpellings(lua_State* L)
+{
+	Lua_Function* c = checkUserData(L);
+	LuaUtils::LuaValue<std::vector<std::string>>::pushValue(L, c->m_function.argumentSpellings());
+	return 1;
+}
+
 
 int Lua_Function::lookup(lua_State* L)
 {

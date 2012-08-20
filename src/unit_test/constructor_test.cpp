@@ -1,13 +1,18 @@
 #include "constructor_test.h"
 #include "constructor.h"
 #include "reflection.h"
+#include "reflection_impl.h"
+
 #include "test_utils.h"
+#include "str_utils.h"
+
+#include <lua.hpp>
 
 #include <iostream>
 #include <string>
 using namespace std;
 
-namespace {
+namespace ConstructorTest {
 
 	class Test {
 	public:
@@ -34,8 +39,18 @@ namespace {
 		int attr1;
 		int attr2;
 	};
-
 }
+
+REFL_BEGIN_CLASS(ConstructorTest::Test)
+	REFL_ATTRIBUTE(attr1, int)
+	REFL_ATTRIBUTE(attr2, int)
+	REFL_DEFAULT_CONSTRUCTOR()
+	REFL_CONSTRUCTOR(int)
+	REFL_CONSTRUCTOR(int, int)
+	REFL_CONSTRUCTOR(const ConstructorTest::Test&)
+REFL_END_CLASS
+
+using namespace ConstructorTest;
 
 void ConstructorTestSuite::testConstruction()
 {
@@ -86,4 +101,15 @@ void ConstructorTestSuite::testConstruction()
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(t4.attr1, 13);
 	TS_ASSERT_EQUALS(t4.attr2, 17);
+}
+
+
+void ConstructorTestSuite::testLuaAPI()
+{
+	LuaUtils::LuaStateHolder L;
+
+	if (luaL_loadfile(L, "constructor_test.lua") || lua_pcall(L,0,0,0)) {
+		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+	}
+	LuaUtils::callFunc<bool>(L, "testConstructor");
 }

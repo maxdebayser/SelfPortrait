@@ -14,6 +14,7 @@ public:
 	void testVMethod();
 	void testCVMethod();
 	void testStaticMethod();
+	void testLuaAPI();
 };
 
 

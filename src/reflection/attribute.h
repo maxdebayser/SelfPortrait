@@ -262,18 +262,4 @@ private:
 
 }
 
-template<class Attr>
-Attribute make_attribute(const char* name, Attr ptr, const char* arg) {
-	// call split to canonicalize the type spelling
-	static AttributeImpl<Attr> impl(name, ptr, arg);
-	return Attribute(&impl);
-}
-
-template<class Clazz, class Attr>
-Attribute make_static_attribute(const char* name, Attr ptr, const char* arg) {
-	// call split to canonicalize the type spelling
-	static StaticAttributeImpl<Clazz,Attr> impl(name, ptr, arg);
-	return Attribute(&impl);
-}
-
 #endif /* ATTRIBUTE_H */

@@ -7,11 +7,18 @@
 #include "class.h"
 #include "reflection_impl.h"
 
+#include <algorithm>
+
 //--------attribute-----------------------------------------------
+
+bool Attribute::isValid() const
+{
+	return (m_impl != nullptr);
+}
 
 void Attribute::check_valid() const
 {
-	if (m_impl == nullptr) {
+	if (!isValid()) {
 		throw std::runtime_error("Invalid use of uninitialized Attribute handle");
 	}
 }
@@ -159,6 +166,15 @@ const Class::ConstructorList& Class::constructors() const {
 const Class::AttributeList& Class::attributes() const {
 	check_valid();
 	return m_impl->attributes();
+}
+
+Attribute Class::getAttribute(const std::string& name) const {
+	check_valid();
+
+	for (const Attribute& attr: m_impl->attributes()) {
+		if (attr.name() == name) return attr;
+	}
+	return Attribute();
 }
 
 const Class::ClassList& Class::superclasses() const {
