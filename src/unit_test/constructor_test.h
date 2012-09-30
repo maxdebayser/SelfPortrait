@@ -12,6 +12,7 @@ public:
 	void testConstruction();
 	void testLuaAPI();
 	void testConstructorHash();
+	void testClassRef();
 };
 
 

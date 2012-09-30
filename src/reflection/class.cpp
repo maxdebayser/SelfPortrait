@@ -53,18 +53,21 @@ void ClassImpl::setFullyQualifiedName(const ::std::string& fqn)
 void ClassImpl::registerMethod(Method m)
 { // Method is just a lightweigth handle
 	assert_open();
+	m.setClass(this);
 	m_methods.push_back(m);
 }
 
 void ClassImpl::registerConstructor(Constructor c)
 { // Constructor is just a lightweigth handle
 	assert_open();
+	c.setClass(this);
 	m_constructors.push_back(c);
 }
 
 void ClassImpl::registerAttribute(Attribute attr)
 {
 	assert_open();
+	attr.setClass(this);
 	m_attributes.push_back(attr);
 }
 

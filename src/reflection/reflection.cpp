@@ -25,20 +25,23 @@ void Attribute::check_valid() const
 
 Attribute::Attribute() : Attribute(nullptr) {}
 
-Attribute::Attribute(AbstractAttributeImpl* impl)
+Attribute::Attribute(AbstractAttributeImpl* impl, ClassImpl *cimpl)
 	: AnnotatedFrontend(*impl)
-	, m_impl(impl) {}
+	, m_impl(impl)
+	, m_class(cimpl) {}
 
-Attribute::Attribute(const Attribute& rhs) : Attribute(rhs.m_impl) {}
+Attribute::Attribute(AbstractAttributeImpl* impl) : Attribute(impl, nullptr) {}
+
+Attribute::Attribute(const Attribute& rhs) : Attribute(rhs.m_impl, rhs.m_class) {}
 	
-Attribute::Attribute(Attribute&& rhs) : Attribute(rhs.m_impl) {}
+Attribute::Attribute(Attribute&& rhs) : Attribute(rhs.m_impl, rhs.m_class) {}
 	
 Attribute& Attribute::operator=(const Attribute& rhs) {
-	m_impl = rhs.m_impl; return *this;
+	m_impl = rhs.m_impl; m_class = rhs.m_class; return *this;
 }
 
 Attribute& Attribute::operator=(Attribute&& rhs) { 
-	m_impl = rhs.m_impl; return *this;
+	m_impl = rhs.m_impl; m_class = rhs.m_class; return *this;
 }
 
 ::std::string Attribute::name() const {
@@ -92,6 +95,11 @@ void Attribute::set(VariantValue& object, const VariantValue& value) const  {
 void Attribute::set(const VariantValue& object, const VariantValue& value) const {
 	check_valid();
 	return m_impl->set(object, value);
+}
+
+Class Attribute::getClass() const
+{
+	return Class(m_class);
 }
 
 namespace std {
@@ -226,17 +234,20 @@ void Constructor::check_valid() const
 
 Constructor::Constructor() : Constructor(nullptr) {}
 
-Constructor::Constructor(const Constructor& rhs) : Constructor(rhs.m_impl) {}
+Constructor::Constructor(const Constructor& rhs) : Constructor(rhs.m_impl, rhs.m_class) {}
 
-Constructor& Constructor::operator=(const Constructor& rhs) { m_impl = rhs.m_impl; return *this; }
+Constructor& Constructor::operator=(const Constructor& rhs) { m_impl = rhs.m_impl; m_class = rhs.m_class; return *this; }
 
-Constructor::Constructor(Constructor&& rhs) : Constructor(rhs.m_impl) {}
+Constructor::Constructor(Constructor&& rhs) : Constructor(rhs.m_impl, rhs.m_class) {}
 
-Constructor& Constructor::operator=(Constructor&& rhs) { m_impl = rhs.m_impl; return *this; }
+Constructor& Constructor::operator=(Constructor&& rhs) { m_impl = rhs.m_impl; m_class = rhs.m_class; return *this; }
 
-Constructor::Constructor(ConstructorImpl* impl)
+Constructor::Constructor(ConstructorImpl* impl) : Constructor(impl, nullptr) {}
+
+Constructor::Constructor(ConstructorImpl* impl, ClassImpl* cimpl)
 	: AnnotatedFrontend(*impl)
-	, m_impl(impl) {}
+	, m_impl(impl)
+	, m_class(cimpl) {}
 
 ::std::size_t Constructor::numberOfArguments() const {
 	check_valid();
@@ -266,6 +277,11 @@ VariantValue Constructor::callArgArray(const ::std::vector<VariantValue>& vargs)
 	return m_impl->call(vargs);
 }
 
+Class Constructor::getClass() const
+{
+	return Class(m_class);
+}
+
 
 namespace std {
 	size_t hash<Constructor>::operator()(const Constructor& c) const {
@@ -286,24 +302,29 @@ void Method::check_valid() const
 Method::Method()
 	: Method(nullptr) {}
 
-Method::Method(MethodImpl* impl)
+Method::Method(MethodImpl* impl, ClassImpl* cimpl)
 	: AnnotatedFrontend(*impl)
-	, m_impl(impl) {}
+	, m_impl(impl)
+	, m_class(cimpl) {}
+
+Method::Method(MethodImpl* impl) : Method(impl, nullptr) {}
 
 Method::Method(const Method& rhs)
-	: Method(rhs.m_impl) {}
+	: Method(rhs.m_impl, rhs.m_class) {}
 
 Method::Method(Method&& rhs)
-	: Method(rhs.m_impl) {}
+	: Method(rhs.m_impl, rhs.m_class) {}
 	
 
 Method& Method::operator=(const Method& rhs) { 
 	m_impl = rhs.m_impl; 
+	m_class = rhs.m_class;
 	return *this;
 }
 	
 Method& Method::operator=(Method&& rhs) {
 	m_impl = rhs.m_impl;
+	m_class = rhs.m_class;
 	return *this;
 }
 
@@ -378,6 +399,10 @@ VariantValue Method::callArgArray(volatile VariantValue& object, const ::std::ve
 VariantValue Method::callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
 	check_valid();
 	return m_impl->call(object, vargs );	
+}
+
+Class Method::getClass() const {
+	return Class(m_class);
 }
 
 namespace std {

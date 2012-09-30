@@ -25,6 +25,9 @@ inline void emplace(std::vector<VariantValue>& v, T&& t, U&&... u )
 	emplace(v, u...);
 }
 
+class ClassImpl;
+class Class;
+
 typedef ::std::string Annotation;
 typedef ::std::set<Annotation> AnnotationSet;
 
@@ -74,14 +77,21 @@ public:
 	void set(const VariantValue& object, const VariantValue& value) const;
 
 	bool isValid() const;
+
+	Class getClass() const;
 	
 	Attribute(AbstractAttributeImpl* impl);
 private:
+
+	Attribute(AbstractAttributeImpl* impl, ClassImpl *cimpl);
 
 	void check_valid() const;
 
 	
 	AbstractAttributeImpl* m_impl;
+	ClassImpl* m_class;
+
+	void setClass(ClassImpl* impl) { m_class = impl; }
 	
 	template<class A>
 	friend Attribute make_attribute(const char* name, A ptr, const char* arg);
@@ -89,6 +99,7 @@ private:
 	friend Attribute make_static_attribute(const char* name, A ptr, const char* arg);
 
 	friend struct std::hash<Attribute>;
+	friend class ClassImpl;
 };
 
 namespace std {
@@ -135,16 +146,21 @@ public:
 	}
 
 	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const ;
+
+	Class getClass() const;
 	
 	Constructor(ConstructorImpl* impl);
 private:
+	Constructor(ConstructorImpl* impl, ClassImpl* cimpl);
 
 	void check_valid() const;
 
+	void setClass(ClassImpl* impl) { m_class = impl; }
 	
 	ConstructorImpl* m_impl;
+	ClassImpl* m_class;
 	
-	friend class Class;
+	friend class ClassImpl;
 	friend struct std::hash<Constructor>;
 };
 
@@ -229,17 +245,26 @@ public:
 	VariantValue callArgArray(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
 	VariantValue callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
 
+	Class getClass() const;
 
 	Method(MethodImpl* impl);
+
+
 private:
+
+	Method(MethodImpl* impl, ClassImpl* cimpl);
 
 	void check_valid() const;
 		
 	MethodImpl* m_impl;
+	ClassImpl* m_class;
+
+	void setClass(ClassImpl* impl) { m_class = impl; }
 	
 	template<class M> friend Method make_method(boundmethod m, const char* name, const char* rString, const char* argString);
 	template<class C, class M> friend Method make_static_method(boundmethod m, const char* name, const char* rString, const char* argString);
 	friend struct std::hash<Method>;
+	friend class ClassImpl;
 };
 
 
@@ -263,7 +288,6 @@ inline bool operator!=(const Method& m1, const Method& m2)
 	return !(m1 == m2);
 }
 
-class ClassImpl;
 
 class Class: public AnnotatedFrontend {
 public:
@@ -320,6 +344,9 @@ private:
 	
 	template<class T> friend Class ClassOf();
 	friend struct std::hash<Class>;
+	friend class Constructor;
+	friend class Attribute;
+	friend class Method;
 };
 
 

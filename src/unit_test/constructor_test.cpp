@@ -39,7 +39,11 @@ namespace ConstructorTest {
 		int attr1;
 		int attr2;
 	};
+
+	class Test2 {};
 }
+
+
 
 REFL_BEGIN_CLASS(ConstructorTest::Test)
 	REFL_ATTRIBUTE(attr1, int)
@@ -48,6 +52,10 @@ REFL_BEGIN_CLASS(ConstructorTest::Test)
 	REFL_CONSTRUCTOR(int)
 	REFL_CONSTRUCTOR(int, int)
 	REFL_CONSTRUCTOR(const ConstructorTest::Test&)
+REFL_END_CLASS
+
+
+REFL_BEGIN_CLASS(ConstructorTest::Test2)
 REFL_END_CLASS
 
 using namespace ConstructorTest;
@@ -133,4 +141,23 @@ void ConstructorTestSuite::testConstructorHash()
 	TS_ASSERT_EQUALS(cmap[c1], 1);
 	TS_ASSERT_EQUALS(cmap[c2], 2);
 	TS_ASSERT_EQUALS(cmap[c3], 3);
+}
+
+
+void ConstructorTestSuite::testClassRef()
+{
+	Class test = Class::lookup("ConstructorTest::Test");
+	Class test2 = Class::lookup("ConstructorTest::Test2");
+	auto it = test.constructors().begin();
+	Constructor c1 = *it++;
+	Constructor c2 = *it++;
+	Constructor c3 = *it++;
+
+	TS_ASSERT_EQUALS(c1.getClass(), test);
+	TS_ASSERT_EQUALS(c2.getClass(), test);
+	TS_ASSERT_EQUALS(c3.getClass(), test);
+
+	TS_ASSERT_EQUALS(c1.getClass(), c2.getClass());
+
+	TS_ASSERT_DIFFERS(c1.getClass(), test2);
 }

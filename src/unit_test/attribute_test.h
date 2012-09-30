@@ -14,6 +14,7 @@ public:
 	void testStaticAttribute();
 	void testLuaAPI();
 	void testHash();
+	void testClassRef();
 };
 
 

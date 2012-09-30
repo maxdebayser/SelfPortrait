@@ -33,6 +33,8 @@ namespace AttributeTest {
 	int Test::attr3 = 103;
 	const int Test::attr4 = 104;
 
+	class Test2 {};
+
 }
 
 REFL_BEGIN_CLASS(AttributeTest::Test)
@@ -41,6 +43,10 @@ REFL_BEGIN_CLASS(AttributeTest::Test)
 	REFL_STATIC_ATTRIBUTE(attr3, int)
 	REFL_STATIC_ATTRIBUTE(attr4, const int)
 	REFL_DEFAULT_CONSTRUCTOR()
+REFL_END_CLASS
+
+
+REFL_BEGIN_CLASS(AttributeTest::Test2)
 REFL_END_CLASS
 
 using namespace AttributeTest;
@@ -156,4 +162,23 @@ void AttributeTestSuite::testHash()
 	TS_ASSERT_EQUALS(amap[a1], 1);
 	TS_ASSERT_EQUALS(amap[a2], 2);
 	TS_ASSERT_EQUALS(amap[a3], 3);
+}
+
+
+void AttributeTestSuite::testClassRef()
+{
+	Class test = Class::lookup("AttributeTest::Test");
+	Class test2 = Class::lookup("AttributeTest::Test2");
+	auto it = test.attributes().begin();
+	Attribute a1 = *it++;
+	Attribute a2 = *it++;
+	Attribute a3 = *it++;
+
+	TS_ASSERT_EQUALS(a1.getClass(), test);
+	TS_ASSERT_EQUALS(a2.getClass(), test);
+	TS_ASSERT_EQUALS(a3.getClass(), test);
+
+	TS_ASSERT_EQUALS(a1.getClass(), a2.getClass());
+
+	TS_ASSERT_DIFFERS(a1.getClass(), test2);
 }

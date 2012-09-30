@@ -23,6 +23,8 @@ namespace MethodTest {
 		static int method5(int arg) { return arg*6; }
 	};
 
+	class Test2 {};
+
 }
 
 REFL_BEGIN_CLASS(MethodTest::Test1)
@@ -34,6 +36,11 @@ REFL_BEGIN_CLASS(MethodTest::Test1)
 	REFL_CONST_VOLATILE_METHOD(method4, int, int, int)
 	REFL_STATIC_METHOD(method5, int, int)
 REFL_END_CLASS
+
+
+REFL_BEGIN_CLASS(MethodTest::Test2)
+REFL_END_CLASS
+
 
 using namespace MethodTest;
 
@@ -200,4 +207,23 @@ void MethodTestSuite::testMethodHash()
 	TS_ASSERT_EQUALS(mmap[m1], 1);
 	TS_ASSERT_EQUALS(mmap[m2], 2);
 	TS_ASSERT_EQUALS(mmap[m3], 3);
+}
+
+void MethodTestSuite::testClassRef()
+{
+
+	Class test = Class::lookup("MethodTest::Test1");
+	Class test2 = Class::lookup("MethodTest::Test2");
+	auto it = test.methods().begin();
+	Method m1 = *it++;
+	Method m2 = *it++;
+	Method m3 = *it++;
+
+	TS_ASSERT_EQUALS(m1.getClass(), test);
+	TS_ASSERT_EQUALS(m2.getClass(), test);
+	TS_ASSERT_EQUALS(m3.getClass(), test);
+
+	TS_ASSERT_EQUALS(m1.getClass(), m2.getClass());
+
+	TS_ASSERT_DIFFERS(m1.getClass(), test2);
 }
