@@ -11,6 +11,7 @@ public:
 	void testClass();
 	void testOverload();
 	void testLuaAPI();
+	void testClassHash();
 };
 
 

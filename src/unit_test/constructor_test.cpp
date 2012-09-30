@@ -113,3 +113,24 @@ void ConstructorTestSuite::testLuaAPI()
 	}
 	LuaUtils::callFunc<bool>(L, "testConstructor");
 }
+
+
+void ConstructorTestSuite::testConstructorHash()
+{
+	using namespace std;
+	unordered_map<Constructor, int> cmap;
+
+	Class test = Class::lookup("ConstructorTest::Test");
+	auto it = test.constructors().begin();
+	Constructor c1 = *it++;
+	Constructor c2 = *it++;
+	Constructor c3 = *it++;
+
+	cmap[c1] = 1;
+	cmap[c2] = 2;
+	cmap[c3] = 3;
+
+	TS_ASSERT_EQUALS(cmap[c1], 1);
+	TS_ASSERT_EQUALS(cmap[c2], 2);
+	TS_ASSERT_EQUALS(cmap[c3], 3);
+}

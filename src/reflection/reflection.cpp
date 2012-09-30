@@ -94,6 +94,11 @@ void Attribute::set(const VariantValue& object, const VariantValue& value) const
 	return m_impl->set(object, value);
 }
 
+namespace std {
+	size_t hash<Attribute>::operator()(const Attribute& a) const {
+		return reinterpret_cast<size_t>(a.m_impl);
+	}
+}
 
 
 //--------class---------------------------------------------------
@@ -262,6 +267,12 @@ VariantValue Constructor::callArgArray(const ::std::vector<VariantValue>& vargs)
 }
 
 
+namespace std {
+	size_t hash<Constructor>::operator()(const Constructor& c) const {
+		return reinterpret_cast<size_t>(c.m_impl);
+	}
+}
+
 //--------method---------------------------------------------
 
 
@@ -369,6 +380,17 @@ VariantValue Method::callArgArray(const volatile VariantValue& object, const ::s
 	return m_impl->call(object, vargs );	
 }
 
+namespace std {
+
+	size_t hash<Method>::operator()(const Method& m) const {
+		if (m.m_impl == nullptr) {
+			return 0;
+		} else {
+			return reinterpret_cast<size_t>(m.m_impl->m_method);
+		}
+	}
+}
+
 //--------function---------------------------------------------
 
 
@@ -472,4 +494,14 @@ void FunctionRegistry::registerFunction(const ::std::string& name, const Functio
 FunctionRegistry& FunctionRegistry::instance() {
 	static FunctionRegistry instance;
 	return instance;
+}
+
+namespace std {
+	size_t hash<Function>::operator()(const Function& f)const {
+		if (f.m_impl == nullptr) {
+			return 0;
+		} else {
+			return reinterpret_cast<size_t>(f.m_impl->m_f);
+		}
+	}
 }

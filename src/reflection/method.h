@@ -277,19 +277,17 @@ public:
 	MethodImpl& operator=(const MethodImpl&) = delete;
 	MethodImpl& operator=(MethodImpl&&) = delete;
 
-private:
-
-	boundmethod m_method;
-	const char* m_name;
-	const char* m_returnSpelling;
-	const char* m_argSpellings;
+	const boundmethod m_method;
+	const char* const m_name;
+	const char* const m_returnSpelling;
+	const char* const m_argSpellings;
 	const unsigned int m_numArgs;
 	const unsigned int m_isConst : 1;
 	const unsigned int m_isVolatile : 1;
 	const unsigned int m_isStatic : 1;
 #ifndef NO_RTTI
 	const ::std::type_info& m_returnType;
-	::std::vector<const ::std::type_info*> m_argumentTypes;
+	const ::std::vector<const ::std::type_info*> m_argumentTypes;
 #endif
 };
 

@@ -13,6 +13,7 @@ public:
 	void testConstAttribute();
 	void testStaticAttribute();
 	void testLuaAPI();
+	void testHash();
 };
 
 

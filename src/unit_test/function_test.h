@@ -23,6 +23,7 @@ public:
 	void testLuaParameterByValue();
 	void testLuaParameterByReference();
 	void testLuaParameterByConstReference();
+	void testFunctionHash();
 };
 
 

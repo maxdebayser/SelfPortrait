@@ -299,3 +299,24 @@ void ClassTestSuite::testLuaAPI()
 	//TS_ASSERT_EQUALS(i, b);
 	LuaUtils::callFunc<bool>(L, "testClass");
 }
+
+
+void ClassTestSuite::testClassHash()
+{
+	using namespace std;
+
+	unordered_map<Class, int> cmap;
+
+	Class test = Class::lookup("ClassTest::Test1");
+	Class testBase1 = Class::lookup("ClassTest::TestBase1");
+	Class testBase2 = Class::lookup("ClassTest::TestBase2");
+
+	cmap[test] = 1;
+	cmap[testBase1] = 2;
+	cmap[testBase2] = 3;
+
+	TS_ASSERT_EQUALS(cmap[test], 1);
+	TS_ASSERT_EQUALS(cmap[testBase1], 2);
+	TS_ASSERT_EQUALS(cmap[testBase2], 3);
+
+}

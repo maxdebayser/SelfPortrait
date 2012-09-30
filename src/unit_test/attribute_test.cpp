@@ -134,8 +134,26 @@ void AttributeTestSuite::testLuaAPI()
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
 	}
 
-	int i = 3;
-	int b = 4;
-	//TS_ASSERT_EQUALS(i, b);
 	LuaUtils::callFunc<bool>(L, "testAttribute");
+}
+
+
+void AttributeTestSuite::testHash()
+{
+	using namespace std;
+	unordered_map<Attribute, int> amap;
+
+	Class test = Class::lookup("AttributeTest::Test");
+	auto it = test.attributes().begin();
+	Attribute a1 = *it++;
+	Attribute a2 = *it++;
+	Attribute a3 = *it++;
+
+	amap[a1] = 1;
+	amap[a2] = 2;
+	amap[a3] = 3;
+
+	TS_ASSERT_EQUALS(amap[a1], 1);
+	TS_ASSERT_EQUALS(amap[a2], 2);
+	TS_ASSERT_EQUALS(amap[a3], 3);
 }

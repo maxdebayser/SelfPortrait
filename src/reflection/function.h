@@ -94,17 +94,16 @@ public:
 	FunctionImpl& operator=(const FunctionImpl&) = delete;
 	FunctionImpl& operator=(FunctionImpl&&) = delete;
 
-private:
-	const char* m_name;
-	const char* m_returnSpelling;
-	unsigned int m_numArgs;
-	const char* m_argSpellings;
+	const char* const m_name;
+	const char* const m_returnSpelling;
+	const unsigned int m_numArgs;
+	const char* const m_argSpellings;
 
 #ifndef NO_RTTI
 	const ::std::type_info& m_returnType;
-	::std::vector<const ::std::type_info*> m_argumentTypes;
+	const ::std::vector<const ::std::type_info*> m_argumentTypes;
 #endif
-	boundfunction m_f;
+	const boundfunction m_f;
 };
 
 

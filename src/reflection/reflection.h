@@ -9,6 +9,8 @@
 #include <typeinfo>
 #endif
 
+#include <map>
+
 // All user front-end classes
 
 inline void emplace(std::vector<VariantValue>& v )
@@ -85,7 +87,25 @@ private:
 	friend Attribute make_attribute(const char* name, A ptr, const char* arg);
 	template<class C, class A>
 	friend Attribute make_static_attribute(const char* name, A ptr, const char* arg);
+
+	friend struct std::hash<Attribute>;
 };
+
+namespace std {
+	template<>
+	struct hash<Attribute> {
+		size_t operator()(const Attribute& a) const;
+	};
+}
+
+inline bool operator==(const Attribute& a1, const Attribute& a2) {
+	std::hash<Attribute> h;
+	return h(a1) == h(a2);
+}
+
+inline bool operator!=(const Attribute& a1, const Attribute& a2) {
+	return !(a1 == a2);
+}
 
 class ConstructorImpl;
 
@@ -125,8 +145,25 @@ private:
 	ConstructorImpl* m_impl;
 	
 	friend class Class;
-
+	friend struct std::hash<Constructor>;
 };
+
+namespace std {
+	template<>
+	struct hash<Constructor> {
+		size_t operator()(const Constructor& c) const;
+	};
+}
+
+inline bool operator==(const Constructor& c1, const Constructor& c2) {
+	std::hash<Constructor> h;
+	return h(c1) == h(c2);
+}
+
+inline bool operator!=(const Constructor& c1, const Constructor& c2) {
+	return !(c1 == c2);
+}
+
 
 class MethodImpl;
 
@@ -202,9 +239,29 @@ private:
 	
 	template<class M> friend Method make_method(boundmethod m, const char* name, const char* rString, const char* argString);
 	template<class C, class M> friend Method make_static_method(boundmethod m, const char* name, const char* rString, const char* argString);
+	friend struct std::hash<Method>;
 };
 
 
+namespace std {
+
+	template<>
+	struct hash<Method>{
+		size_t operator()(const Method& m) const;
+	};
+}
+
+inline bool operator==(const Method& m1, const Method& m2)
+{
+	std::hash<Method> h;
+	return h(m1) == h(m2);
+}
+
+
+inline bool operator!=(const Method& m1, const Method& m2)
+{
+	return !(m1 == m2);
+}
 
 class ClassImpl;
 
@@ -262,13 +319,23 @@ private:
 	ClassImpl* m_impl;
 	
 	template<class T> friend Class ClassOf();
-	friend bool operator==(const Class& c1, const Class& c2);
+	friend struct std::hash<Class>;
 };
+
+
+namespace std {
+	template<>
+	struct hash<::Class> {
+		size_t operator()(const Class& c) const {
+			return reinterpret_cast<std::size_t>(c.m_impl);
+		}
+	};
+}
 
 inline bool operator==(const Class& c1, const Class& c2)
 {
-	// The address should be equal
-	return c1.m_impl == c2.m_impl;
+	std::hash<Class> h;
+	return h(c1) == h(c2);
 }
 
 inline bool operator!=(const Class& c1, const Class& c2)
@@ -324,7 +391,24 @@ private:
 
 	template<class FuncPtr>
 	friend Function make_function(boundfunction bf, const char* name, const char* rString, const char* argString);
+	friend struct std::hash<Function>;
 };
+
+namespace std {
+	template<>
+	struct hash<::Function> {
+		size_t operator()(const Function& f) const;
+	};
+}
+
+inline bool operator==(const Function& f1, const Function& f2) {
+	std::hash<Function> h;
+	return h(f1) == h(f2);
+}
+
+inline bool operator!=(const Function& f1, const Function& f2) {
+	return !(f1 == f2);
+}
 
 
 #endif /* REFLECTION_H */

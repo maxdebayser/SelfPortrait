@@ -391,3 +391,21 @@ void FunctionTestSuite::testLuaParameterByConstReference()
 	LuaUtils::callFunc<bool>(L, "testParameterByConstReference");
 }
 
+
+void FunctionTestSuite::testFunctionHash()
+{
+	using namespace std;
+	unordered_map<Function, int> fmap;
+
+	std::list<Function> functions = Function::findFunctions("FunctionTest::globalFunction");
+	auto it = functions.begin();
+
+	Function f1 = *it++;
+	Function f2 = *it++;
+
+	fmap[f1] = 1;
+	fmap[f2] = 2;
+
+	TS_ASSERT_EQUALS(fmap[f1], 1);
+	TS_ASSERT_EQUALS(fmap[f2], 2);
+}

@@ -198,8 +198,6 @@ public:
 #endif
 			  )
 		, m_ptr(ptr) {}
-	
-
 
 	virtual VariantValue get(const VariantValue& object) const override {
 		bool success = false;

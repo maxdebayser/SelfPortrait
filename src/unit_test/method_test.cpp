@@ -180,3 +180,24 @@ void MethodTestSuite::testLuaAPI()
 	}
 	LuaUtils::callFunc<bool>(L, "testMethod");
 }
+
+
+void MethodTestSuite::testMethodHash()
+{
+	using namespace std;
+	unordered_map<Method, int> mmap;
+
+	Class test = Class::lookup("MethodTest::Test1");
+	auto it = test.methods().begin();
+	Method m1 = *it++;
+	Method m2 = *it++;
+	Method m3 = *it++;
+
+	mmap[m1] = 1;
+	mmap[m2] = 2;
+	mmap[m3] = 3;
+
+	TS_ASSERT_EQUALS(mmap[m1], 1);
+	TS_ASSERT_EQUALS(mmap[m2], 2);
+	TS_ASSERT_EQUALS(mmap[m3], 3);
+}
