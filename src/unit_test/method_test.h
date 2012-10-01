@@ -17,6 +17,7 @@ public:
 	void testLuaAPI();
 	void testMethodHash();
 	void testClassRef();
+	void testFullName();
 };
 
 

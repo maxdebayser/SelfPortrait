@@ -214,8 +214,7 @@ namespace LuaUtils {
 	}
 
 	template<class R, class... Args>
-	R callFunc(lua_State* L, const std::string& name, const Args... args) {
-		lua_getglobal(L, name.c_str());
+	R callFuncPriv(lua_State* L, const std::string& name, const Args... args) {
 		luaL_checktype(L, -1, LUA_TFUNCTION);
 
 		const int size = pushArgs(L, args...);
@@ -228,6 +227,17 @@ namespace LuaUtils {
 		}
 		popper p(L, LuaValue<R>::size());
 		return LuaValue<R>::getStackValue(L, -1);
+	}
+
+	template<class R, class... Args>
+	R callFunc(lua_State* L, const std::string& name, const Args... args) {
+		lua_getglobal(L, name.c_str());
+		return callFuncPriv<R, Args...>(L, name, args...);
+	}
+
+	template<class R, class... Args>
+	R callStackedFunc(lua_State* L, const Args... args) {
+		return callFuncPriv<R, Args...>(L, "anonymous", args...);
 	}
 
 

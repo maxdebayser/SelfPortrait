@@ -8,6 +8,7 @@
 #include "reflection_impl.h"
 
 #include <algorithm>
+#include <sstream>
 
 //--------attribute-----------------------------------------------
 
@@ -111,9 +112,14 @@ namespace std {
 
 //--------class---------------------------------------------------
 
+bool Class::isValid() const
+{
+	return m_impl != nullptr;
+}
+
 void Class::check_valid() const
 {
-	if (m_impl == nullptr) {
+	if (!isValid()) {
 		throw std::runtime_error("Invalid use of uninitialized Class handle");
 	}
 }
@@ -171,9 +177,57 @@ const Class::MethodList& Class::methods() const {
 	return m_impl->methods();
 }
 
+namespace {
+
+	template<class T, class C>
+	T findFirst(std::function<bool(const T& m)> criteria, const C& coll) {
+		for(const T& c: coll) {
+			if (criteria(c)) {
+				return c;
+			}
+		}
+		return T();
+	}
+
+	template<class T, class C>
+	C findAll(std::function<bool(const T& m)> criteria, const C& coll) {
+		C ret;
+		for(const T& c: coll) {
+			if (criteria(c)) {
+				ret.push_back(c);
+			}
+		}
+		return ret;
+	}
+}
+
+Method Class::findMethod(std::function<bool(const Method& m)> criteria) const
+{
+	check_valid();
+	return findFirst(criteria, m_impl->methods());
+}
+
+Class::MethodList Class::findAllMethods(std::function<bool(const Method& m)> criteria) const
+{
+	check_valid();
+	return findAll(criteria, m_impl->methods());
+}
+
 const Class::ConstructorList& Class::constructors() const {
 	check_valid();
 	return m_impl->constructors();
+}
+
+Constructor Class::findConstructor(std::function<bool(const Constructor& m)> criteria) const
+{
+	check_valid();
+	return findFirst(criteria, m_impl->constructors());
+}
+
+Class::ConstructorList Class::findAllConstructors(std::function<bool(const Constructor& m)> criteria) const
+{
+	check_valid();
+	return findAll(criteria, m_impl->constructors());
 }
 
 const Class::AttributeList& Class::attributes() const {
@@ -181,18 +235,39 @@ const Class::AttributeList& Class::attributes() const {
 	return m_impl->attributes();
 }
 
-Attribute Class::getAttribute(const std::string& name) const {
-	check_valid();
+Attribute Class::getAttribute(const std::string& name) const
+{
+	return findAttribute([&](const Attribute& a){ return a.name() == name; });
+}
 
-	for (const Attribute& attr: m_impl->attributes()) {
-		if (attr.name() == name) return attr;
-	}
-	return Attribute();
+Attribute Class::findAttribute(std::function<bool(const Attribute& m)> criteria) const
+{
+	check_valid();
+	return findFirst(criteria, m_impl->attributes());
+}
+
+Class::AttributeList Class::findAllAttributes(std::function<bool(const Attribute& m)> criteria) const
+{
+	check_valid();
+	return findAll(criteria, m_impl->attributes());
 }
 
 const Class::ClassList& Class::superclasses() const {
 	check_valid();
 	return m_impl->superclasses();
+}
+
+
+Class Class::findSuperClass(std::function<bool(const Class& m)> criteria) const
+{
+	check_valid();
+	return findFirst(criteria, m_impl->superclasses());
+}
+
+Class::ClassList Class::findAllSuperClasses(std::function<bool(const Class& m)> criteria) const
+{
+	check_valid();
+	return findAll(criteria, m_impl->superclasses());
 }
 
 Class Class::lookup(const ::std::string& name)
@@ -224,10 +299,14 @@ ClassRegistry& ClassRegistry::instance()
 
 //--------constructor---------------------------------------------
 
+bool Constructor::isValid() const
+{
+	return m_impl != nullptr;
+}
 
 void Constructor::check_valid() const
 {
-	if (m_impl == nullptr) {
+	if (!isValid()) {
 		throw std::runtime_error("Invalid use of uninitialized Constructor handle");
 	}
 }
@@ -291,10 +370,48 @@ namespace std {
 
 //--------method---------------------------------------------
 
+bool Method::isValid() const
+{
+	return m_impl != nullptr;
+}
+
+std::string Method::fullName() const
+{
+	std::stringstream ss;
+	if (isStatic()) {
+		ss << "static ";
+	}
+	ss << returnSpelling() <<
+		  " " <<
+		  getClass().fullyQualifiedName() <<
+		  "::" <<
+		  name() <<
+			"(";
+
+	bool first = true;
+	for(const std::string& s: argumentSpellings()) {
+		if (!first) {
+			ss << ", ";
+		}
+		first = false;
+		ss << s;
+	}
+	ss << ")";
+
+	if (isConst()) {
+		ss << " const";
+	}
+
+	if (isVolatile()) {
+		ss << " volatile";
+	}
+
+	return ss.str();
+}
 
 void Method::check_valid() const
 {
-	if (m_impl == nullptr) {
+	if (!isValid()) {
 		throw std::runtime_error("Invalid use of uninitialized Method handle");
 	}
 }
@@ -418,10 +535,14 @@ namespace std {
 
 //--------function---------------------------------------------
 
+bool Function::isValid() const
+{
+	return m_impl != nullptr;
+}
 
 void Function::check_valid() const
 {
-	if (m_impl == nullptr) {
+	if (!isValid()) {
 		throw std::runtime_error("Invalid use of uninitialized Function handle");
 	}
 }

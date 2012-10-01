@@ -76,10 +76,10 @@ void ClassImpl::registerSuperClass(Class c)
 	assert_open();
 	m_superclasses.push_back(c);
 	for (const Method& m : c.methods()) {
-		registerMethod(m);
+		m_methods.push_back(m);
 	}
 	for (const Attribute& a: c.attributes()) {
-		registerAttribute(a);
+		m_attributes.push_back(a);
 	}
 	for(Class s: c.superclasses()) {
 		registerSuperClass(s);

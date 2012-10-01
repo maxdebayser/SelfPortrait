@@ -53,7 +53,7 @@ function testClass()
     local testConstructors = Test1Class:constructors()
     local testAttributes   = Test1Class:attributes()
 
-    TS_ASSERT [[#testAttributes == 1]]
+    TS_ASSERT [[#testAttributes == 2]]
     local attr = testAttributes[1]
 
     TS_ASSERT [[attr:typeSpelling() == "int"]]
@@ -128,6 +128,10 @@ function testClass()
     TS_ASSERT [[staticMethod:returnSpelling() == "double"]]
     TS_ASSERT [[staticMethod:numberOfArguments() == 0]]
     TS_ASSERT [[staticMethod:call() == 3.14]]
+
+    local searched = Test1Class:findSuperClass(function(c) return c:simpleName() == "TestBase1" end)
+    TS_ASSERT(searched)
+    TS_ASSERT[[searched:simpleName() == "TestBase1"]]
 
     return false
 end

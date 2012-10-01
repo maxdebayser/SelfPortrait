@@ -12,6 +12,44 @@
 using namespace std;
 
 
+static void stackDump(lua_State *L)
+{
+	int top = lua_gettop(L);
+	for (int i = 1; i <= top; i++) {
+		int t = lua_type(L, i);
+		switch (t) {
+			case LUA_TSTRING:
+				printf("%d: lua_string: %s\n", i, lua_tostring(L, i));
+				break;
+			case LUA_TBOOLEAN:
+				printf("%d: lua_boolean: %d\n", i, lua_toboolean(L, i));
+				break;
+			case LUA_TNUMBER:
+				printf("%d: lua_number: %f\n", i, lua_tonumber(L, i));
+				break;
+			case LUA_TNIL:
+				printf("%d: lua_nil\n", i);
+				break;
+			case LUA_TTABLE:
+				printf("%d: lua_table\n", i);
+				break;
+			case LUA_TFUNCTION:
+				printf("%d: lua_function\n", i);
+				break;
+			case LUA_TUSERDATA:
+				printf("%d: lua_user_data\n", i);
+				break;
+			case LUA_TTHREAD:
+				printf("%d: lua_thread\n", i);
+				break;
+			default:
+				printf("%d: unkonwn type\n", i);
+				break;
+		}
+	}
+}
+
+
 typedef map<string, lua_CFunction> MethodTable;
 
 struct Foo {
@@ -200,9 +238,23 @@ public:
 	static int getConstructors(lua_State* L);
 	static int getAttributes(lua_State* L);
 	static int getSuperClasses(lua_State* L);
+	static int findAttribute(lua_State* L);
+	static int findAllAttributes(lua_State* L);
+	static int findConstructor(lua_State* L);
+	static int findAllConstructors(lua_State* L);
+	static int findMethod(lua_State* L);
+	static int findAllMethods(lua_State* L);
+	static int findSuperClass(lua_State* L);
+	static int findAllSuperClasses(lua_State* L);
 
 	static void initialize();
 	static Lua_Class* checkUserData(lua_State* L) { return (Lua_Class*)luaL_checkudata(L, 1, Lua_Class::metatableName); }
+
+	template<class Elem, class MPtr>
+	static int findFirst(lua_State* L, MPtr ptr);
+
+	template<class ElemList, class MPtr>
+	static int findAll(lua_State* L, MPtr ptr);
 
 	static const char * metatableName;
 	static const char * userDataName;
@@ -223,6 +275,7 @@ public:
 
 	static int call(lua_State* L);
 	static int name(lua_State* L);
+	static int fullName(lua_State* L);
 	static int numberOfArguments(lua_State* L);
 	static int returnSpelling(lua_State* L);
 	static int argumentSpellings(lua_State* L);
@@ -321,7 +374,33 @@ private:
 	friend class LuaAdapter<Lua_Function>;
 };
 
+template<class Entity>
+struct binding_mapper;
 
+template<>
+struct binding_mapper<Class> {
+	typedef Lua_Class type;
+};
+
+template<>
+struct binding_mapper<Attribute> {
+	typedef Lua_Attribute type;
+};
+
+template<>
+struct binding_mapper<Method> {
+	typedef Lua_Method type;
+};
+
+template<>
+struct binding_mapper<Constructor> {
+	typedef Lua_Constructor type;
+};
+
+template<>
+struct binding_mapper<Function> {
+	typedef Lua_Function type;
+};
 
 
 
@@ -523,6 +602,14 @@ void Lua_Class::initialize()
 	methods["constructors"] = &getConstructors;
 	methods["attributes"] = &getAttributes;
 	methods["superclasses"] = &getSuperClasses;
+	methods["findAttribute"] = &findAttribute;
+	methods["findAllAttributes"] = &findAllAttributes;
+	methods["findConstructor"] = &findConstructor;
+	methods["findAllConstructors"] = &findAllConstructors;
+	methods["findMethod"] = &findMethod;
+	methods["findAllMethods"] = &findAllMethods;
+	methods["findSuperClass"] = &findSuperClass;
+	methods["findAllSuperClasses"] = &findAllSuperClasses;
 }
 
 int Lua_Class::lookup(lua_State* L)
@@ -626,6 +713,111 @@ int Lua_Class::getSuperClasses(lua_State* L)
 	return 1;
 }
 
+template<class Elem, class MPtr>
+int Lua_Class::findFirst(lua_State* L, MPtr ptr)
+{
+	Lua_Class* c = checkUserData(L);
+
+	Elem a = (c->m_class.*ptr)([&](const Elem& a) {
+		luaL_checktype(L, -1, LUA_TFUNCTION);
+		lua_pushvalue(L, -1);
+		binding_mapper<Elem>::type::create(L, a);
+
+		if (lua_pcall(L, 1, 1, 0) != 0) {
+			lua_pushfstring(L, "Error running anonymous function");
+			lua_insert(L, -2);
+			lua_concat(L, 2);
+			lua_error(L);
+		}
+		luaL_checktype(L, -1, LUA_TBOOLEAN);
+		bool ret = lua_toboolean(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	});
+	if (a.isValid()) {
+		binding_mapper<Elem>::type::create(L, a);
+		return 1;
+	}
+	lua_pop(L, 1);
+	return 0;
+}
+
+
+template<class ElemList, class MPtr>
+int Lua_Class::findAll(lua_State* L, MPtr ptr)
+{
+	Lua_Class* c = checkUserData(L);
+	typedef typename ElemList::value_type Elem;
+
+	ElemList l = (c->m_class.*ptr)([&](const Elem& a) {
+		luaL_checktype(L, -1, LUA_TFUNCTION);
+		lua_pushvalue(L, -1);
+		binding_mapper< Elem >::type::create(L, a);
+
+		if (lua_pcall(L, 1, 1, 0) != 0) {
+			lua_pushfstring(L, "Error running anonymous function");
+			lua_insert(L, -2);
+			lua_concat(L, 2);
+			lua_error(L);
+		}
+		luaL_checktype(L, -1, LUA_TBOOLEAN);
+		bool ret = lua_toboolean(L, -1);
+		lua_pop(L, 1);
+		return ret;
+	});
+
+	lua_createtable(L, l.size(), 0);
+
+	int i = 0;
+	for (auto it = l.begin(); it != l.end(); ++it) {
+		binding_mapper< Elem >::type::create(L, *it);
+		lua_rawseti(L, -2, ++i);
+	}
+	return 1;
+}
+
+
+int Lua_Class::findAttribute(lua_State* L)
+{
+	return findFirst<Attribute>(L, &Class::findAttribute);
+}
+
+int Lua_Class::findAllAttributes(lua_State* L)
+{
+	return findAll<Class::AttributeList>(L, &Class::findAllAttributes);
+}
+
+int Lua_Class::findConstructor(lua_State* L)
+{
+	return findFirst<Constructor>(L, &Class::findConstructor);
+}
+
+int Lua_Class::findAllConstructors(lua_State* L)
+{
+	return findAll<Class::ConstructorList>(L, &Class::findAllConstructors);
+}
+
+int Lua_Class::findMethod(lua_State* L)
+{
+	return findFirst<Method>(L, &Class::findMethod);
+}
+
+int Lua_Class::findAllMethods(lua_State* L)
+{
+	return findAll<Class::MethodList>(L, &Class::findAllMethods);
+}
+
+int Lua_Class::findSuperClass(lua_State* L)
+{
+	return findFirst<Class>(L, &Class::findSuperClass);
+}
+
+int Lua_Class::findAllSuperClasses(lua_State* L)
+{
+	return findAll<Class::ClassList>(L, &Class::findAllSuperClasses);
+}
+
+
 
 //---------------Method---------------------------------------------------------
 
@@ -641,6 +833,7 @@ const struct luaL_Reg Lua_Method::lib_f[] = {
 void Lua_Method::initialize()
 {
 	methods["name"]              = &name;
+	methods["fullName"]              = &fullName;
 	methods["call"]              = &call;
 	methods["numberOfArguments"] = &numberOfArguments;
 	methods["returnSpelling"]    = &returnSpelling;
@@ -657,6 +850,12 @@ int Lua_Method::name(lua_State* L)
 	return 1;
 }
 
+int Lua_Method::fullName(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	LuaUtils::LuaValue<std::string>::pushValue(L, c->m_method.fullName());
+	return 1;
+}
 
 int Lua_Method::numberOfArguments(lua_State* L)
 {

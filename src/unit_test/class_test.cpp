@@ -43,20 +43,20 @@ namespace ClassTest {
 
 		int attribute1;
 
+		const double attribute2;
+
 		static double staticMethod() {
 			return 3.14;
 		}
 
-		Test1() : attribute1(3) {}
+		Test1() : attribute1(3), attribute2(3.14) {}
 
-		Test1(int arg1) : attribute1(arg1) {}
+		Test1(int arg1) : attribute1(arg1), attribute2(3.14) {}
 
-		Test1(const Test1& rhs) : attribute1(rhs.attribute1) {}
+		Test1(const Test1& rhs) : attribute1(rhs.attribute1), attribute2(rhs.attribute2) {}
 
 		Test1& operator=(const Test1& rhs) { attribute1 = rhs.attribute1; return *this; }
 	};
-
-
 }
 
 REFL_BEGIN_CLASS(ClassTest::TestBase1)
@@ -77,6 +77,7 @@ REFL_BEGIN_CLASS(ClassTest::Test1)
 	REFL_METHOD(method2, double, double)
 	REFL_STATIC_METHOD(staticMethod, double)
 	REFL_ATTRIBUTE(attribute1, int)
+	REFL_ATTRIBUTE(attribute2, double)
 	REFL_DEFAULT_CONSTRUCTOR()
 	REFL_CONSTRUCTOR(int)
 	REFL_CONSTRUCTOR(const ClassTest::Test1&)
@@ -154,7 +155,7 @@ void ClassTestSuite::testClass()
 	Class::ConstructorList testConstructors = test.constructors();
 	Class::AttributeList   attributes       = test.attributes();
 
-	TS_ASSERT_EQUALS(attributes.size(), 1);
+	TS_ASSERT_EQUALS(attributes.size(), 2);
 	Attribute attr = attributes.front();
 
 	WITH_RTTI(TS_ASSERT(attr.type() == typeid(int)));
@@ -319,4 +320,103 @@ void ClassTestSuite::testClassHash()
 	TS_ASSERT_EQUALS(cmap[testBase1], 2);
 	TS_ASSERT_EQUALS(cmap[testBase2], 3);
 
+}
+
+
+void ClassTestSuite::testMethodSearch()
+{
+	Class test = Class::lookup("ClassTest::Test1");
+
+	auto retDouble = test.findAllMethods([&](const Method& m) {
+		return m.returnSpelling() == "double";
+	});
+
+	TS_ASSERT_EQUALS(retDouble.size(), 3);
+
+	auto retDoubleStrict = test.findAllMethods([&](const Method& m) {
+		return m.returnSpelling() == "double" && m.getClass() == test; //filter out inherited methods
+	});
+
+	TS_ASSERT_EQUALS(retDoubleStrict.size(), 2);
+
+	auto constMethods = test.findAllMethods([&](const Method& m) {
+		return m.isConst();
+	});
+
+	TS_ASSERT_EQUALS(constMethods.size(), 2);
+
+	Method m = test.findMethod([&](const Method& m) {
+			   return m.name() == "method1";
+		   });
+
+	TS_ASSERT(m.isValid());
+	TS_ASSERT(m.isConst());
+	TS_ASSERT_EQUALS(m.returnSpelling(), "std::string");
+
+
+	Method m30 = test.findMethod([&](const Method& m) {
+			   return m.name() == "method30";
+		   });
+
+	TS_ASSERT(!m30.isValid());
+	TS_ASSERT_THROWS_ANYTHING(m30.isConst());
+}
+
+
+
+void ClassTestSuite::testAttributeSearch()
+{
+	Class test = Class::lookup("ClassTest::Test1");
+
+	auto attrs = test.findAllAttributes([&](const Attribute& a) {
+		return a.isConst();
+	});
+
+	TS_ASSERT_EQUALS(attrs.size(), 1);
+	TS_ASSERT(attrs.front().isConst());
+	TS_ASSERT_EQUALS(attrs.front().name(), "attribute2");
+
+	Attribute a1 = test.findAttribute([](const Attribute& a){
+		return a.name() == "attribute1";
+	});
+	TS_ASSERT(a1.isValid());
+	TS_ASSERT(!a1.isConst());
+	TS_ASSERT_EQUALS(a1.typeSpelling(), "int");
+
+	Attribute a3 = test.findAttribute([](const Attribute& a){
+		return a.name() == "attribute3";
+	});
+	TS_ASSERT(!a3.isValid());
+	TS_ASSERT_THROWS_ANYTHING(a3.isConst());
+}
+
+
+void ClassTestSuite::testConstructorSearch()
+{
+	Class test = Class::lookup("ClassTest::Test1");
+
+	Constructor defaultCons = test.findConstructor([](const Constructor& c) {
+		return c.numberOfArguments() == 0;
+	});
+
+	TS_ASSERT(defaultCons.isValid());
+
+	Constructor copyCons = test.findConstructor([](const Constructor& c) {
+		return c.numberOfArguments() == 1 && c.argumentSpellings()[0] == "const ClassTest::Test1 &";
+	});
+	TS_ASSERT(copyCons.isValid());
+}
+
+
+void ClassTestSuite::testSuperClassSearch()
+{
+	Class test = Class::lookup("ClassTest::Test1");
+	Class base1 = Class::lookup("ClassTest::TestBase1");
+
+	Class ret = test.findSuperClass([](const Class& c) {
+		return c.fullyQualifiedName() == "ClassTest::TestBase1";
+	});
+
+	TS_ASSERT(ret.isValid());
+	TS_ASSERT_EQUALS(base1, ret);
 }

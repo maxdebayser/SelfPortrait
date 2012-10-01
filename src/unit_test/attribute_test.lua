@@ -10,7 +10,6 @@ function testAttribute()
     TS_ASSERT [[TestClass:simpleName() == "Test"]]
     TS_ASSERT [[TestClass:fullyQualifiedName() == "AttributeTest::Test"]]
 
-
     local testConstructors = TestClass:constructors()
 
     TS_ASSERT [[ #testConstructors > 0 ]]
@@ -93,6 +92,15 @@ function testAttribute()
     if pcall( function() attr4:set(204) end ) then
        TS_FAIL("expected exception when setting const static attribute")
     end
+
+
+    local searched = TestClass:findAttribute(function(a) return a:name() == "attr1" end)
+    TS_ASSERT(searched)
+    TS_ASSERT[[searched:name() == "attr1"]]
+
+    local constAttributes = TestClass:findAllAttributes(function(a) return a:isConst() end)
+    TS_ASSERT(constAttributes)
+    TS_ASSERT[[#constAttributes == 2]]
 
     return true
 end

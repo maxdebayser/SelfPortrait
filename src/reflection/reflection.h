@@ -10,6 +10,7 @@
 #endif
 
 #include <map>
+#include <functional>
 
 // All user front-end classes
 
@@ -128,6 +129,8 @@ public:
 	Constructor& operator=(const Constructor& rhs);
 	Constructor(Constructor&& rhs);
 	Constructor& operator=(Constructor&& rhs);
+
+	bool isValid() const;
 
 	::std::size_t numberOfArguments() const;
 	::std::vector< ::std::string> argumentSpellings() const;
@@ -249,6 +252,9 @@ public:
 
 	Method(MethodImpl* impl);
 
+	bool isValid() const;
+
+	std::string fullName() const;
 
 private:
 
@@ -306,6 +312,8 @@ public:
 	Class(Class&& rhs);
 
 	Class& operator=(Class&& rhs);
+
+	bool isValid() const;
 		
 	std::string simpleName() const;
 	
@@ -323,14 +331,30 @@ public:
 	bool isSubClassOf(const Class& rhs) const;
 		
 	const MethodList& methods() const;
+
+	Method findMethod(std::function<bool(const Method& m)> criteria) const;
+
+	MethodList findAllMethods(std::function<bool(const Method& m)> criteria) const;
 	
 	const ConstructorList& constructors() const;
+
+	Constructor findConstructor(std::function<bool(const Constructor& m)> criteria) const;
+
+	ConstructorList findAllConstructors(std::function<bool(const Constructor& m)> criteria) const;
 	
 	const AttributeList& attributes() const;
 
 	Attribute getAttribute(const std::string& name) const;
+
+	Attribute findAttribute(std::function<bool(const Attribute& m)> criteria) const;
+
+	AttributeList findAllAttributes(std::function<bool(const Attribute& m)> criteria) const;
 	
 	const ClassList& superclasses() const;
+
+	Class findSuperClass(std::function<bool(const Class& m)> criteria) const;
+
+	ClassList findAllSuperClasses(std::function<bool(const Class& m)> criteria) const;
 
 	static Class lookup(const ::std::string& name);
 	
@@ -385,6 +409,8 @@ public:
 	Function(Function&& rhs);
 	Function& operator=(const Function& rhs);
 	Function& operator=(Function&& rhs);
+
+	bool isValid() const;
 
 	::std::string name() const;
 

@@ -12,6 +12,10 @@ public:
 	void testOverload();
 	void testLuaAPI();
 	void testClassHash();
+	void testMethodSearch();
+	void testAttributeSearch();
+	void testConstructorSearch();
+	void testSuperClassSearch();
 };
 
 

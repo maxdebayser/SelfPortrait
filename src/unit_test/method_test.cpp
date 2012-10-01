@@ -227,3 +227,29 @@ void MethodTestSuite::testClassRef()
 
 	TS_ASSERT_DIFFERS(m1.getClass(), test2);
 }
+
+void MethodTestSuite::testFullName()
+{
+	Class test = Class::lookup("MethodTest::Test1");
+
+	Method m1 = test.findMethod([](const Method& m){ return m.name() == "method1";});
+	Method m2 = test.findMethod([](const Method& m){ return m.name() == "method2";});
+	Method m3 = test.findMethod([](const Method& m){ return m.name() == "method3";});
+	Method m41 = test.findMethod([](const Method& m){ return m.name() == "method4" && m.numberOfArguments() == 1;});
+	Method m42 = test.findMethod([](const Method& m){ return m.name() == "method4" && m.numberOfArguments() == 2;});
+	Method m5 = test.findMethod([](const Method& m){ return m.name() == "method5";});
+
+	TS_ASSERT(m1.isValid());
+	TS_ASSERT(m2.isValid());
+	TS_ASSERT(m3.isValid());
+	TS_ASSERT(m41.isValid());
+	TS_ASSERT(m42.isValid());
+	TS_ASSERT(m5.isValid());
+
+	TS_ASSERT_EQUALS(m1.fullName(), "int MethodTest::Test1::method1(int)");
+	TS_ASSERT_EQUALS(m2.fullName(), "int MethodTest::Test1::method2(int) const");
+	TS_ASSERT_EQUALS(m3.fullName(), "int MethodTest::Test1::method3(int) volatile");
+	TS_ASSERT_EQUALS(m41.fullName(), "int MethodTest::Test1::method4(int) const volatile");
+	TS_ASSERT_EQUALS(m42.fullName(), "int MethodTest::Test1::method4(int, int) const volatile");
+	TS_ASSERT_EQUALS(m5.fullName(), "static int MethodTest::Test1::method5(int)");
+}

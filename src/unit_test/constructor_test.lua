@@ -68,5 +68,8 @@ function testConstructor()
     TS_ASSERT[[ attr1:get(v4) == 44 ]]
     TS_ASSERT[[ attr2:get(v4) == 88 ]]
 
+    local searched = TestClass:findConstructor(function(c) return c:numberOfArguments() == 1 end)
+    TS_ASSERT(searched)
+
     return true
 end
