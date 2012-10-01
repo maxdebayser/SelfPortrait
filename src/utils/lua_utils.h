@@ -12,6 +12,8 @@
 
 namespace LuaUtils {
 
+	void stackDump(lua_State *L);
+
 	struct popper {
 		popper(lua_State* L, int size = 1) : m_L(L), m_size(size) {}
 		~popper() { if (m_size > 0) lua_pop(m_L, m_size); }

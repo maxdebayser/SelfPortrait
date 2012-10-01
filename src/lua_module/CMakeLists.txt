@@ -6,5 +6,12 @@ set(SOURCES
 )
 
 
+set(LIBS
+    reflection
+    lua
+    utils
+)
+
+
 add_library(luacppreflect SHARED ${HEADERS} ${SOURCES})
-target_link_libraries(luacppreflect reflection lua)
+target_link_libraries(luacppreflect ${LIBS})
