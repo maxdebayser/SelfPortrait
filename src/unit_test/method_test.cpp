@@ -25,6 +25,21 @@ namespace MethodTest {
 
 	class Test2 {};
 
+
+	class Base {
+	public:
+		virtual ~Base() {}
+		virtual int method1() { return 555; }
+		int method2() { return 666; }
+	};
+
+	class Derived: public Base {
+	public:
+		virtual ~Derived() {}
+		virtual int method1() { return 556; }
+		int method2() { return 667; }
+	};
+
 }
 
 REFL_BEGIN_CLASS(MethodTest::Test1)
@@ -39,6 +54,20 @@ REFL_END_CLASS
 
 
 REFL_BEGIN_CLASS(MethodTest::Test2)
+REFL_END_CLASS
+
+
+REFL_BEGIN_CLASS(MethodTest::Base)
+	REFL_DEFAULT_CONSTRUCTOR()
+	REFL_METHOD(method1, int)
+	REFL_METHOD(method2, int)
+REFL_END_CLASS
+
+REFL_BEGIN_CLASS(MethodTest::Derived)
+	REFL_SUPER_CLASS(MethodTest::Base)
+	REFL_DEFAULT_CONSTRUCTOR()
+	REFL_METHOD(method1, int)
+	REFL_METHOD(method2, int)
 REFL_END_CLASS
 
 
@@ -252,4 +281,66 @@ void MethodTestSuite::testFullName()
 	TS_ASSERT_EQUALS(m41.fullName(), "int MethodTest::Test1::method4(int) const volatile");
 	TS_ASSERT_EQUALS(m42.fullName(), "int MethodTest::Test1::method4(int, int) const volatile");
 	TS_ASSERT_EQUALS(m5.fullName(), "static int MethodTest::Test1::method5(int)");
+}
+
+
+void MethodTestSuite::testMethodOverriding()
+{
+	Class base = Class::lookup("MethodTest::Base");
+	Class derived = Class::lookup("MethodTest::Derived");
+
+	TS_ASSERT(base.isValid());
+	TS_ASSERT(derived.isValid());
+
+	Method bm1 = derived.findMethod([&](const Method& m) { return m.name() == "method1" && m.getClass() == base; });
+	Method bm2 = derived.findMethod([&](const Method& m) { return m.name() == "method2" && m.getClass() == base; });
+
+
+	Method dm1 = derived.findMethod([&](const Method& m) { return m.name() == "method1" && m.getClass() == derived; });
+	Method dm2 = derived.findMethod([&](const Method& m) { return m.name() == "method2" && m.getClass() == derived; });
+
+	TS_ASSERT(bm1.isValid());
+	TS_ASSERT(bm2.isValid());
+	TS_ASSERT(dm1.isValid());
+	TS_ASSERT(dm2.isValid());
+
+	TS_ASSERT_DIFFERS(bm1, dm1);
+	TS_ASSERT_DIFFERS(bm2, dm2);
+
+	Constructor bc = base.findConstructor([](const Constructor& c){ return c.isDefaultConstructor(); });
+	Constructor dc = derived.findConstructor([](const Constructor& c){ return c.isDefaultConstructor(); });
+
+	TS_ASSERT(bc.isValid());
+	TS_ASSERT(dc.isValid());
+
+
+	VariantValue binst = bc.call();
+	VariantValue dinst = dc.call();
+
+	TS_ASSERT(binst.isValid());
+	TS_ASSERT(dinst.isValid());
+
+	VariantValue r1 = bm1.call(binst);
+	TS_ASSERT(r1.isA<int>());
+	TS_ASSERT_EQUALS(r1.value<int>(), 555);
+
+	VariantValue r2 = bm2.call(binst);
+	TS_ASSERT(r2.isA<int>());
+	TS_ASSERT_EQUALS(r2.value<int>(), 666);
+
+	VariantValue r3 = bm1.call(dinst);
+	TS_ASSERT(r3.isA<int>());
+	TS_ASSERT_EQUALS(r3.value<int>(), 556);
+
+	VariantValue r4 = bm2.call(dinst);
+	TS_ASSERT(r4.isA<int>());
+	TS_ASSERT_EQUALS(r4.value<int>(), 666);
+
+	VariantValue r5 = dm1.call(dinst);
+	TS_ASSERT(r5.isA<int>());
+	TS_ASSERT_EQUALS(r5.value<int>(), 556);
+
+	VariantValue r6 = dm2.call(dinst);
+	TS_ASSERT(r6.isA<int>());
+	TS_ASSERT_EQUALS(r6.value<int>(), 667);
 }

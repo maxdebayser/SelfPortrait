@@ -18,6 +18,7 @@ public:
 	void testMethodHash();
 	void testClassRef();
 	void testFullName();
+	void testMethodOverriding();
 };
 
 
