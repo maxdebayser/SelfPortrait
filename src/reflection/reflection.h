@@ -1,6 +1,7 @@
 #ifndef REFLECTION_H
 #define REFLECTION_H
 
+#include "collection_utils.h"
 #include "variant.h"
 
 #include <set>
@@ -11,20 +12,10 @@
 
 #include <map>
 #include <functional>
+#include <initializer_list>
 
 // All user front-end classes
 
-inline void emplace(std::vector<VariantValue>& v )
-{
-	// nothing to do
-}
-
-template<class T, class... U>
-inline void emplace(std::vector<VariantValue>& v, T&& t, U&&... u )
-{
-	v.emplace_back(t);
-	emplace(v, u...);
-}
 
 class ClassImpl;
 class Class;
@@ -357,6 +348,8 @@ public:
 	ClassList findAllSuperClasses(std::function<bool(const Class& m)> criteria) const;
 
 	static Class lookup(const ::std::string& name);
+
+	bool isInterface() const;
 	
 private:
 
@@ -371,12 +364,13 @@ private:
 	friend class Constructor;
 	friend class Attribute;
 	friend class Method;
+	friend class Proxy;
 };
 
 
 namespace std {
 	template<>
-	struct hash<::Class> {
+	struct hash< ::Class> {
 		size_t operator()(const Class& c) const {
 			return reinterpret_cast<std::size_t>(c.m_impl);
 		}
@@ -449,7 +443,7 @@ private:
 
 namespace std {
 	template<>
-	struct hash<::Function> {
+	struct hash< ::Function> {
 		size_t operator()(const Function& f) const;
 	};
 }
@@ -463,5 +457,51 @@ inline bool operator!=(const Function& f1, const Function& f2) {
 	return !(f1 == f2);
 }
 
+class ProxyImpl;
+
+class Proxy {
+public:
+
+	// deep copy
+	Proxy(const Proxy& that);
+
+	void swap(Proxy& that);
+
+	Proxy& operator=(Proxy that) {
+		swap(that);
+		return *this;
+	}
+
+	Proxy(Proxy&& that);
+
+	~Proxy();
+
+	typedef std::list<Class> IFaceList;
+	typedef std::function<VariantValue(const std::vector<VariantValue>&)> MethodHandler;
+
+	Proxy(Class iface);
+
+	Proxy(std::initializer_list<Class> ifaces);
+
+	Proxy(std::vector<Class> ifaces);
+
+	IFaceList interfaces() const;
+
+	void addImplementation(const Method& m, MethodHandler);
+
+	bool hasImplementation(const Method& m) const;
+
+	VariantValue reference(const Class& c) const;
+
+private:
+
+	std::unique_ptr<ProxyImpl> m_impl;
+};
+
+namespace std {
+	inline void swap(Proxy& p1, Proxy& p2) {
+		p1.swap(p2);
+	}
+}
 
 #endif /* REFLECTION_H */

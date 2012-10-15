@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <string>
 #include <list>
+#include <memory>
 #ifndef NO_RTTI
 #include <typeinfo>
 #endif
@@ -13,6 +14,8 @@
 #include "variant.h"
 
 #include "reflection.h"
+
+class Interface;
 
 
 class ClassImpl: public Annotated {
@@ -63,6 +66,12 @@ public:
 	template<class T>
 	static ClassImpl* inst();
 
+	bool isInterface() const;
+
+	std::unique_ptr<Interface> newInterface() const;
+
+	void registerInterface(Interface* i);
+
 private:
 	void assert_open() const;
 	::std::string m_fqn = "error, meta-class uninitialized";
@@ -71,6 +80,8 @@ private:
 	ClassList m_superclasses;
 	AttributeList m_attributes;
 	bool m_open;
+
+	Interface* m_iface;
 
 #ifndef NO_RTTI
 	const std::type_info* m_typeInfo;

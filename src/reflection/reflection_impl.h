@@ -6,6 +6,7 @@
 #include "constructor.h"
 #include "function.h"
 #include "method.h"
+#include "proxy.h"
 #include "reflection.h"
 #include <map>
 #include <list>
@@ -254,6 +255,10 @@ instance.registerMethod(Method(&impl));\
 #define REFL_CONSTRUCTOR(...) \
 	instance.registerConstructor(make_constructor<ThisClass, __VA_ARGS__>(#__VA_ARGS__));
 
+
+#define REFL_STUB(STUBCLASS) \
+	static STUBCLASS impl##STUBCLASS;\
+	instance.registerInterface(&impl##STUBCLASS);
 
 
 class FunctionRegistry {

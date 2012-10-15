@@ -4,6 +4,7 @@ set(HEADERS
 	constructor_test.h
 	function_test.h
 	method_test.h
+        proxy_test.h
 	test_utils.h
 	utilities_test.h
 	variant_test.h
@@ -15,18 +16,20 @@ set(SOURCES
 	constructor_test.cpp
 	function_test.cpp
 	method_test.cpp
+        proxy_test.cpp
 	test_utils.cpp
 	utilities_test.cpp
 	variant_test.cpp
 )
 
 set(LUA_SOURCES
-    attribute_test.lua
-    class_test.lua
+        attribute_test.lua
+        class_test.lua
 	constructor_test.lua
 	function_test.lua
 	method_test.lua
-    cxxtest.lua
+        proxy_test.lua
+        cxxtest.lua
 )
 
 

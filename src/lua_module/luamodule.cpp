@@ -85,6 +85,8 @@ public:
 		luaL_newmetatable(L, Adapted::metatableName);
 		luaL_register(L, NULL, Adapted::lib_m);
 
+		lua_newtable(L);
+		lua_replace(L, LUA_ENVIRONINDEX);
 		luaL_register(L, Adapted::userDataName, Adapted::lib_f);
 	}
 
@@ -112,7 +114,7 @@ public:
 	template<class... Args>
 	static void create(lua_State* L, Args&&... args) {
 		void * f = lua_newuserdata(L, sizeof(Adapted));
-		Adapted * lc = new(f) Adapted(args...);
+		Adapted * lc = new(f) Adapted(std::forward<Args>(args)...);
 		luaL_getmetatable(L, Adapted::metatableName);
 		lua_setmetatable(L, -2);
 	}
@@ -196,6 +198,7 @@ public:
 
 	static int fullyQualifiedName(lua_State* L);
 	static int simpleName(lua_State* L);
+	static int isInterface(lua_State* L);
 	static int getMethods(lua_State* L);
 	static int getConstructors(lua_State* L);
 	static int getAttributes(lua_State* L);
@@ -210,7 +213,7 @@ public:
 	static int findAllSuperClasses(lua_State* L);
 
 	static void initialize();
-	static Lua_Class* checkUserData(lua_State* L) { return (Lua_Class*)luaL_checkudata(L, 1, Lua_Class::metatableName); }
+	static Lua_Class* checkUserData(lua_State* L, int pos = 1) { return (Lua_Class*)luaL_checkudata(L, pos, Lua_Class::metatableName); }
 
 	template<class Elem, class MPtr>
 	static int findFirst(lua_State* L, MPtr ptr);
@@ -220,6 +223,8 @@ public:
 
 	static const char * metatableName;
 	static const char * userDataName;
+
+	const Class& getClass() const { return m_class; }
 
 private:
 	Class m_class;
@@ -246,10 +251,13 @@ public:
 	static int isStatic(lua_State* L);
 
 	static void initialize();
-	static Lua_Method* checkUserData(lua_State* L) { return (Lua_Method*)luaL_checkudata(L, 1, Lua_Method::metatableName); }
+	static Lua_Method* checkUserData(lua_State* L, int pos = 1) { return (Lua_Method*)luaL_checkudata(L, pos, Lua_Method::metatableName); }
 
 	static const char * metatableName;
 	static const char * userDataName;
+
+
+	const Method& getMethod() const { return m_method; }
 
 private:
 	Method m_method;
@@ -334,6 +342,33 @@ private:
 	static MethodTable methods;
 	static const struct luaL_Reg lib_f[];
 	friend class LuaAdapter<Lua_Function>;
+};
+
+//---------------Proxy----------------------------------------------------------
+
+class Lua_Proxy: public LuaAdapter<Lua_Proxy> {
+public:
+	Lua_Proxy(Proxy&& p) : m_proxy(std::move(p)) {}
+
+	static int create(lua_State* L);
+
+	static int interfaces(lua_State* L);
+	static int addImplementation(lua_State* L);
+	static int hasImplementation(lua_State* L);
+	static int reference(lua_State* L);
+
+	static void initialize();
+	static Lua_Proxy* checkUserData(lua_State* L, int pos = 1) { return (Lua_Proxy*)luaL_checkudata(L, pos, Lua_Proxy::metatableName); }
+
+	static const char * metatableName;
+	static const char * userDataName;
+
+private:
+	Proxy m_proxy;
+	static MethodTable methods;
+	static const struct luaL_Reg lib_f[];
+	static const struct luaL_Reg lib_m[];
+	friend class LuaAdapter<Lua_Proxy>;
 };
 
 template<class Entity>
@@ -560,6 +595,7 @@ void Lua_Class::initialize()
 {
 	methods["fullyQualifiedName"] = &fullyQualifiedName;
 	methods["simpleName"] = &simpleName;
+	methods["isInterface"] = &isInterface;
 	methods["methods"] = &getMethods;
 	methods["constructors"] = &getConstructors;
 	methods["attributes"] = &getAttributes;
@@ -605,6 +641,14 @@ int Lua_Class::simpleName(lua_State* L)
 	Lua_Class* c = checkUserData(L);
 
 	lua_pushstring(L, c->m_class.simpleName().c_str());
+	return 1;
+}
+
+int Lua_Class::isInterface(lua_State* L)
+{
+	Lua_Class* c = checkUserData(L);
+
+	lua_pushboolean(L, c->m_class.isInterface());
 	return 1;
 }
 
@@ -1189,6 +1233,144 @@ int Lua_Function::lookup(lua_State* L)
 	return 1;
 }
 
+//---------------Proxy----------------------------------------------------------
+
+const char * Lua_Proxy::metatableName = "IoC.Proxy";
+const char * Lua_Proxy::userDataName  = "Proxy";
+MethodTable Lua_Proxy::methods;
+
+
+const struct luaL_Reg Lua_Proxy::lib_f[] = {
+	{ "create", create },
+	{ NULL, NULL }
+};
+
+const struct luaL_Reg Lua_Proxy::lib_m[] = {
+	{ "__gc", gc },
+	{ "__index", index },
+	{ NULL, NULL }
+};
+
+void Lua_Proxy::initialize()
+{
+	methods["interfaces"] = &interfaces;
+	methods["addImplementation"] = &addImplementation;
+	methods["hasImplementation"] = &hasImplementation;
+	methods["reference"] = &reference;
+}
+
+int Lua_Proxy::create(lua_State* L)
+{
+	const int args = lua_gettop(L);
+	if (args == 0) {
+		luaL_error(L, "Expected at least one class to create a proxy");
+	}
+	std::vector<Class> ifaces(args);
+
+	for (int i = args; i > 0; --i) {
+		Lua_Class* c = Lua_Class::checkUserData(L, i);
+		ifaces[args-i] = c->getClass();
+	}
+	Proxy p(ifaces);
+
+	try {
+		LuaAdapter<Lua_Proxy>::create(L, std::move(p));
+	} catch (std::exception& ex) {
+		luaL_error(L, ex.what());
+	} catch (...) {
+		luaL_error(L, "unknown error in creation of proxy");
+	}
+	return 1;
+}
+
+int Lua_Proxy::interfaces(lua_State* L)
+{
+	Lua_Proxy* p = checkUserData(L);
+
+	Proxy::IFaceList  il = p->m_proxy.interfaces();
+
+	lua_createtable(L, il.size(), 0);
+
+	int i = 0;
+
+	for (auto it = il.begin(); it != il.end(); ++it) {
+		Lua_Class::create(L, *it);
+		lua_rawseti(L, -2, ++i);
+	}
+
+	return 1;
+}
+
+
+namespace {
+	struct LuaClosureWrapper {
+		lua_State * const L;
+		const int envIndex;
+		LuaClosureWrapper() = default;
+		LuaClosureWrapper(const LuaClosureWrapper&) = default;
+
+		~LuaClosureWrapper() {
+			luaL_unref(L, LUA_ENVIRONINDEX, envIndex);
+		}
+
+		LuaClosureWrapper(lua_State* ls, int index) : L(ls), envIndex(index) {}
+
+		VariantValue operator()(const std::vector<VariantValue>& vargs) const {
+
+			lua_rawgeti(L, LUA_REGISTRYINDEX, envIndex);
+			luaL_checktype(L, -1, LUA_TFUNCTION);
+
+			for(const VariantValue& v: vargs) {
+				Lua_Variant::create(L, v);
+			}
+
+			if (lua_pcall(L, vargs.size(), 1, 0) != 0) {
+				lua_pushfstring(L, "Error running proxy method handler");
+				lua_insert(L, -2);
+				lua_concat(L, 2);
+				lua_error(L);
+			}
+			VariantValue ret = Lua_Variant::getFromStack(L, -1);
+			lua_pop(L, 1);
+
+			return ret;
+		}
+	};
+}
+
+
+int Lua_Proxy::addImplementation(lua_State* L)
+{
+	Lua_Proxy* p = checkUserData(L,1);
+	Lua_Method* m = Lua_Method::checkUserData(L,2);
+	luaL_checktype(L, 3, LUA_TFUNCTION);
+
+	const int ref = luaL_ref(L, LUA_REGISTRYINDEX); // ja fez o push da funcao
+
+	p->m_proxy.addImplementation(m->getMethod(), LuaClosureWrapper(L, ref));
+
+	return 0;
+}
+
+
+int Lua_Proxy::hasImplementation(lua_State* L)
+{
+	Lua_Proxy* p = checkUserData(L,1);
+	Lua_Method* m = Lua_Method::checkUserData(L,2);
+	lua_pushboolean(L, p->m_proxy.hasImplementation(m->getMethod()));
+	return 1;
+}
+
+
+int Lua_Proxy::reference(lua_State* L)
+{
+	Lua_Proxy* p = checkUserData(L,1);
+	Lua_Class* c = Lua_Class::checkUserData(L,2);
+
+	Lua_Variant::create(L, p->m_proxy.reference(c->getClass()));
+
+	return 1;
+}
 
 
 
@@ -1203,6 +1385,7 @@ extern "C" {
 		Lua_Constructor::_register(L);
 		Lua_Variant::_register(L);
 		Lua_Function::_register(L);
+		Lua_Proxy::_register(L);
 		return 1;
 	}
 }

@@ -6,6 +6,7 @@
 #include "constructor.h"
 #include "class.h"
 #include "reflection_impl.h"
+#include "proxy.h"
 
 #include <algorithm>
 #include <sstream>
@@ -522,6 +523,10 @@ Class Method::getClass() const {
 	return Class(m_class);
 }
 
+bool Class::isInterface() const {
+	return m_impl->isInterface();
+}
+
 namespace std {
 
 	size_t hash<Method>::operator()(const Method& m) const {
@@ -650,4 +655,70 @@ namespace std {
 			return reinterpret_cast<size_t>(f.m_impl->m_f);
 		}
 	}
+}
+
+//--------proxy------------------------------------------------
+
+Proxy::~Proxy() {}
+
+Proxy::Proxy(Proxy&& that)
+	: m_impl(std::move(that.m_impl))
+{}
+
+
+Proxy::Proxy(const Proxy& that)
+	: m_impl(new ProxyImpl(*that.m_impl))
+{}
+
+void Proxy::swap(Proxy& that)
+{
+	std::swap(m_impl, that.m_impl);
+}
+
+Proxy::Proxy(std::initializer_list<Class> ifaces)
+	: Proxy(std::vector<Class>(ifaces))
+{}
+
+Proxy::Proxy(std::vector<Class> ifaces)
+	: m_impl(new ProxyImpl())
+{
+	for(Class clazz: ifaces) {
+		if (!clazz.m_impl->isInterface()) {
+			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which is not an interface", clazz.fullyQualifiedName()));
+		}
+		m_impl->registerInterface(clazz.m_impl);
+	}
+}
+
+Proxy::Proxy(Class iface)
+	: Proxy{iface}
+{}
+
+
+Proxy::IFaceList Proxy::interfaces() const
+{
+	Proxy::IFaceList ret;
+	auto ifaces = m_impl->interfaces();
+	for (auto it = ifaces.begin(); it != ifaces.end(); ++it) {
+		ret.push_back(Class(*it));
+	}
+	return std::move(ret);
+}
+
+void Proxy::addImplementation(const Method& m, MethodHandler handler)
+{
+	std::hash<Method> h;
+	m_impl->registerHandler(h(m), handler);
+}
+
+bool Proxy::hasImplementation(const Method& m) const
+{
+	std::hash<Method> h;
+	return m_impl->hasHandler(h(m));
+}
+
+
+VariantValue Proxy::reference(const Class& c) const
+{
+	return m_impl->ref(c.m_impl);
 }

@@ -1,6 +1,7 @@
 set(HEADERS
 	attribute.h
 	call_utils.h
+        collection_utils.h
 	class.h
 	constructor.h
 	function.h
@@ -12,6 +13,7 @@ set(HEADERS
 	typelist.h
 	typeutils.h
 	variant.h
+	proxy.h
 )
 
 set(SOURCES
@@ -22,6 +24,7 @@ set(SOURCES
 	reflection.cpp
 	str_utils.cpp
 	variant.cpp
+        proxy.cpp
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")

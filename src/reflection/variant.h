@@ -585,7 +585,7 @@ public:
 			return *ptr;
 		}
 
-		ValueType val = Select< ::std::is_integral<ValueType>::value,
+		return Select< ::std::is_integral<ValueType>::value,
 				integralConversion<ValueType>,
 				typename Select< ::std::is_floating_point<ValueType>::value,
 					floatConversion<ValueType>,
@@ -608,12 +608,14 @@ public:
 		}
 
 		return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value,
-				integralConversion<ValueType>,
-				typename Select< ::std::is_floating_point<ValueType>::value,
-					floatConversion<ValueType>,
-					typename Select< ::std::is_same<ValueType, ::std::string>::value,
-						stringConversion<ValueType>,
-						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl, success));
+										 integralConversion<ValueType>,
+										 typename Select< ::std::is_floating_point<ValueType>::value,
+											 floatConversion<ValueType>,
+											 typename Select< ::std::is_same<ValueType, ::std::string>::value,
+												 stringConversion<ValueType>,
+												 typename Select< ::std::is_pointer<ValueType>::value,
+														 pointerConversion<ValueType>,
+														 impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl, success));
 	}
 
 	template<class ValueType>
@@ -627,12 +629,14 @@ public:
 		}
 
 		return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value,
-				integralConversion<ValueType>,
-				typename Select< ::std::is_floating_point<ValueType>::value,
-					floatConversion<ValueType>,
-					typename Select< ::std::is_same<ValueType, ::std::string>::value,
-						stringConversion<ValueType>,
-						impossibleConversion<ValueType>>::type>::type>::type::value(m_impl));
+										 integralConversion<ValueType>,
+										 typename Select< ::std::is_floating_point<ValueType>::value,
+											 floatConversion<ValueType>,
+											 typename Select< ::std::is_same<ValueType, ::std::string>::value,
+												 stringConversion<ValueType>,
+												 typename Select< ::std::is_pointer<ValueType>::value,
+														 pointerConversion<ValueType>,
+														 impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl));
 	}
 
 	template<class ValueType>

@@ -7,5 +7,9 @@ set(SOURCES
 )
 
 
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
+
 add_library(utils STATIC ${HEADERS} ${SOURCES})
 target_link_libraries(utils lua)

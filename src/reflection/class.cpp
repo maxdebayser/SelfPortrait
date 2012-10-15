@@ -1,5 +1,5 @@
 #include "class.h"
-
+#include "proxy.h"
 
 const std::string& ClassImpl::fullyQualifiedName() const
 {
@@ -42,6 +42,7 @@ void ClassImpl::assert_open() const
 
 ClassImpl::ClassImpl()
 	: m_open(true)
+	, m_iface(nullptr)
 {}
 
 void ClassImpl::setFullyQualifiedName(const ::std::string& fqn)
@@ -96,5 +97,25 @@ void ClassImpl::setTypeInfo(const std::type_info& info)
 {
 	m_typeInfo = &info;
 }
+
+bool ClassImpl::isInterface() const
+{
+	return m_iface != nullptr;
+}
+
+std::unique_ptr<Interface> ClassImpl::newInterface() const
+{
+	if (m_iface == nullptr) {
+		return InterfacePtr();
+	} else {
+		return InterfacePtr(m_iface->clone());
+	}
+}
+
+void ClassImpl::registerInterface(Interface* i)
+{
+	m_iface = i;
+}
+
 #endif
 
