@@ -31,16 +31,11 @@ namespace ProxyTest {
 }
 
 
-class TestStub: public virtual ProxyTest::Test, public virtual Interface {
-public:
-	virtual Interface* clone() const { return new TestStub(); }
-	virtual VariantValue refToBase() { VariantValue ret; ret.construct<ProxyTest::Test&>(*this); return ret; }
 
-	int method1(int i1, int i2) override {
-		return call(reinterpret_cast<size_t>(&method_type<int(ProxyTest::Test::*)(int, int)>::bindcall<&ProxyTest::Test::method1>), i1, i2).moveValueThrow<int>();
-	}
 
-};
+REFL_BEGIN_STUB(ProxyTest::Test, TestStub)
+REFL_STUB_METHOD(method1, int, int, int)
+REFL_END_STUB
 
 
 REFL_BEGIN_CLASS(ProxyTest::Test)
