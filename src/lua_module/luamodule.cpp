@@ -406,7 +406,7 @@ struct binding_mapper<Function> {
 
 //---------------Variant--------------------------------------------------------
 
-const char * Lua_Variant::metatableName = "IoC.Variant";
+const char * Lua_Variant::metatableName = "SelfPortraitVariant";
 const char * Lua_Variant::userDataName  = "Variant";
 MethodTable Lua_Variant::methods;
 
@@ -574,7 +574,7 @@ int Lua_Variant::alignOf(lua_State* L)
 
 //---------------Class----------------------------------------------------------
 
-const char * Lua_Class::metatableName = "IoC.Class";
+const char * Lua_Class::metatableName = "SelfPortrait.Class";
 const char * Lua_Class::userDataName  = "Class";
 MethodTable Lua_Class::methods;
 
@@ -827,7 +827,7 @@ int Lua_Class::findAllSuperClasses(lua_State* L)
 
 //---------------Method---------------------------------------------------------
 
-const char * Lua_Method::metatableName = "IoC.Method";
+const char * Lua_Method::metatableName = "SelfPortrait.Method";
 const char * Lua_Method::userDataName  = "Method";
 MethodTable Lua_Method::methods;
 
@@ -956,7 +956,7 @@ int Lua_Method::call(lua_State* L)
 
 //---------------Constructor----------------------------------------------------
 
-const char * Lua_Constructor::metatableName = "IoC.Constructor";
+const char * Lua_Constructor::metatableName = "SelfPortrait.Constructor";
 const char * Lua_Constructor::userDataName = "Constructor";
 MethodTable Lua_Constructor::methods;
 const struct luaL_Reg Lua_Constructor::lib_f[] = {
@@ -1016,7 +1016,7 @@ int Lua_Constructor::isDefaultConstructor(lua_State* L)
 
 //---------------Attribute------------------------------------------------------
 
-const char * Lua_Attribute::metatableName = "IoC.Attribute";
+const char * Lua_Attribute::metatableName = "SelfPortrait.Attribute";
 const char * Lua_Attribute::userDataName  = "Attribute";
 
 MethodTable Lua_Attribute::methods;
@@ -1124,7 +1124,7 @@ int Lua_Attribute::isStatic(lua_State* L)
 
 //---------------Function-------------------------------------------------------
 
-const char * Lua_Function::metatableName = "IoC.Function";
+const char * Lua_Function::metatableName = "SelfPortrait.Function";
 const char * Lua_Function::userDataName  = "Function";
 MethodTable Lua_Function::methods;
 
@@ -1235,7 +1235,7 @@ int Lua_Function::lookup(lua_State* L)
 
 //---------------Proxy----------------------------------------------------------
 
-const char * Lua_Proxy::metatableName = "IoC.Proxy";
+const char * Lua_Proxy::metatableName = "SelfPortrait.Proxy";
 const char * Lua_Proxy::userDataName  = "Proxy";
 MethodTable Lua_Proxy::methods;
 
