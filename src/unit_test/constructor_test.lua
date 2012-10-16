@@ -27,6 +27,7 @@ function testConstructor()
 
     local default = cons[""]
     TS_ASSERT (default)
+	TS_ASSERT [[default:getClass() == TestClass ]]
     TS_ASSERT[[ default:numberOfArguments() == 0 ]]
 
     local attr1 = attrs["attr1"]

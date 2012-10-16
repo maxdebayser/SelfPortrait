@@ -12,6 +12,8 @@
 
 namespace LuaUtils {
 
+	bool isudata (lua_State *L, int ud, const char *tname);
+
 	void stackDump(lua_State *L);
 
 	struct popper {

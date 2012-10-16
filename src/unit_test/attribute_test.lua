@@ -35,6 +35,7 @@ function testAttribute()
     local attr1 = attrs["attr1"]
 
     TS_ASSERT(attr1)
+	TS_ASSERT[[ attr1:getClass() == TestClass ]]
     TS_ASSERT[[ attr1:typeSpelling() == 'int' ]]
     TS_ASSERT(not attr1:isConst())
     TS_ASSERT(not attr1:isStatic())

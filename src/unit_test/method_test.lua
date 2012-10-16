@@ -50,6 +50,13 @@ function testMethod()
     TS_ASSERT(m5)
     TS_ASSERT(not m99)
 
+	TS_ASSERT[[m1:getClass() == TestClass]]
+	TS_ASSERT[[m2:getClass() == TestClass]]
+	TS_ASSERT[[m3:getClass() == TestClass]]
+	TS_ASSERT[[m41:getClass() == TestClass]]
+	TS_ASSERT[[m42:getClass() == TestClass]]
+	TS_ASSERT[[m5:getClass() == TestClass]]
+
     TS_ASSERT[[m1:fullName() == "int MethodTest::Test1::method1(int)"]]
     TS_ASSERT[[m2:fullName() == "int MethodTest::Test1::method2(int) const"]]
     TS_ASSERT[[m3:fullName() == "int MethodTest::Test1::method3(int) volatile"]]

@@ -498,6 +498,16 @@ private:
 	std::unique_ptr<ProxyImpl> m_impl;
 };
 
+
+inline bool operator==(const Proxy& p1, const Proxy& p2) {
+	// an instance is equal only to itself
+	return &p1 == &p2;
+}
+
+inline bool operator!=(const Proxy& p1, const Proxy& p2) {
+	return !(p1 == p2);
+}
+
 namespace std {
 	inline void swap(Proxy& p1, Proxy& p2) {
 		p1.swap(p2);

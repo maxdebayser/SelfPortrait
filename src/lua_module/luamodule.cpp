@@ -96,6 +96,27 @@ public:
 		return 0;
 	}
 
+
+	static int eq(lua_State* L){
+
+		const int nargs = lua_gettop(L);
+		if (nargs != 2) {
+			luaL_error(L, "expected exactly two arguments to __eq but %d were provided", nargs);
+		}
+
+		if (Adapted::isUserData(L, 1) && Adapted::isUserData(L, 2)) {
+			Adapted* a1 = Adapted::checkUserData(L, 1);
+			Adapted* a2 = Adapted::checkUserData(L, 2);
+
+			lua_pushboolean(L, a1->wrapped() == a2->wrapped());
+
+		} else {
+			lua_pushboolean(L, false);
+		}
+
+		return 1;
+	}
+
 	static int index(lua_State* L) {
 		Adapted* c = Adapted::checkUserData(L);
 		const char * index = luaL_checkstring(L, 2);
@@ -110,6 +131,9 @@ public:
 		}
 		return 0;
 	}
+
+	static Adapted* checkUserData(lua_State* L, int pos = 1) { return (Adapted*)luaL_checkudata(L, pos, Adapted::metatableName); }
+	static bool isUserData(lua_State* L, int pos = 1) { return LuaUtils::isudata(L, pos, Adapted::metatableName); }
 
 	template<class... Args>
 	static void create(lua_State* L, Args&&... args) {
@@ -141,9 +165,7 @@ public:
 
 	static void initialize();
 
-	static Lua_Variant* checkVariant(lua_State* L, int idx = 1) { return (Lua_Variant*)luaL_checkudata(L, idx, Lua_Variant::metatableName); }
 
-	static Lua_Variant* checkUserData(lua_State* L) { return checkVariant(L); }
 
 	static VariantValue getFromStack(lua_State* L, int idx = 1);
 
@@ -177,6 +199,8 @@ public:
 		luaL_getmetatable(L, Adapted::metatableName);
 		lua_setmetatable(L, -2);
 	}
+
+	const VariantValue& wrapped() const { return m_variant; }
 
 private:
 	VariantValue m_variant;
@@ -213,7 +237,6 @@ public:
 	static int findAllSuperClasses(lua_State* L);
 
 	static void initialize();
-	static Lua_Class* checkUserData(lua_State* L, int pos = 1) { return (Lua_Class*)luaL_checkudata(L, pos, Lua_Class::metatableName); }
 
 	template<class Elem, class MPtr>
 	static int findFirst(lua_State* L, MPtr ptr);
@@ -224,7 +247,7 @@ public:
 	static const char * metatableName;
 	static const char * userDataName;
 
-	const Class& getClass() const { return m_class; }
+	const Class& wrapped() const { return m_class; }
 
 private:
 	Class m_class;
@@ -249,15 +272,14 @@ public:
 	static int isConst(lua_State* L);
 	static int isVolatile(lua_State* L);
 	static int isStatic(lua_State* L);
+	static int getClass(lua_State* L);
 
 	static void initialize();
-	static Lua_Method* checkUserData(lua_State* L, int pos = 1) { return (Lua_Method*)luaL_checkudata(L, pos, Lua_Method::metatableName); }
 
 	static const char * metatableName;
 	static const char * userDataName;
 
-
-	const Method& getMethod() const { return m_method; }
+	const Method& wrapped() const { return m_method; }
 
 private:
 	Method m_method;
@@ -277,12 +299,14 @@ public:
 	static int numberOfArguments(lua_State* L);
 	static int argumentSpellings(lua_State* L);
 	static int isDefaultConstructor(lua_State* L);
+	static int getClass(lua_State* L);
 
 	static void initialize();
-	static Lua_Constructor* checkUserData(lua_State* L) { return (Lua_Constructor*)luaL_checkudata(L, 1, Lua_Constructor::metatableName); }
 
 	static const char * metatableName;
 	static const char * userDataName;
+
+	const Constructor& wrapped() const { return m_constructor; }
 
 private:
 	Constructor m_constructor;
@@ -303,12 +327,14 @@ public:
 	static int typeSpelling(lua_State* L);
 	static int isConst(lua_State* L);
 	static int isStatic(lua_State* L);
+	static int getClass(lua_State* L);
 
 	static void initialize();
-	static Lua_Attribute* checkUserData(lua_State* L) { return (Lua_Attribute*)luaL_checkudata(L, 1, Lua_Attribute::metatableName); }
 
 	static const char * metatableName;
 	static const char * userDataName;
+
+	const Attribute& wrapped() const { return m_attribute; }
 
 private:
 	Attribute m_attribute;
@@ -332,10 +358,11 @@ public:
 	static int lookup(lua_State* L);
 
 	static void initialize();
-	static Lua_Function* checkUserData(lua_State* L) { return (Lua_Function*)luaL_checkudata(L, 1, Lua_Function::metatableName); }
 
 	static const char * metatableName;
 	static const char * userDataName;
+
+	const Function& wrapped() const { return m_function; }
 
 private:
 	Function m_function;
@@ -358,10 +385,11 @@ public:
 	static int reference(lua_State* L);
 
 	static void initialize();
-	static Lua_Proxy* checkUserData(lua_State* L, int pos = 1) { return (Lua_Proxy*)luaL_checkudata(L, pos, Lua_Proxy::metatableName); }
 
 	static const char * metatableName;
 	static const char * userDataName;
+
+	const Proxy& wrapped() const { return m_proxy; }
 
 private:
 	Proxy m_proxy;
@@ -420,6 +448,7 @@ const struct luaL_Reg Lua_Variant::lib_m[] = {
 	{ "__gc", gc },
 	{ "__index", index },
 	{ "__tostring", tostring },
+	{ "__eq", eq },
 	{ NULL, NULL }
 };
 
@@ -588,6 +617,7 @@ const struct luaL_Reg Lua_Class::lib_m[] = {
 	{ "__gc", gc },
 	{ "__index", index },
 	{ "__tostring", fullyQualifiedName },
+	{ "__eq", eq },
 	{ NULL, NULL }
 };
 
@@ -847,6 +877,7 @@ void Lua_Method::initialize()
 	methods["isConst"]           = &isConst;
 	methods["isVolatile"]        = &isVolatile;
 	methods["isStatic"]          = &isStatic;
+	methods["getClass"]          = &getClass;
 }
 
 int Lua_Method::name(lua_State* L)
@@ -954,6 +985,15 @@ int Lua_Method::call(lua_State* L)
 	}
 }
 
+
+int Lua_Method::getClass(lua_State* L)
+{
+	Lua_Method* c = checkUserData(L);
+	Lua_Class::create(L, c->m_method.getClass());
+	return 1;
+}
+
+
 //---------------Constructor----------------------------------------------------
 
 const char * Lua_Constructor::metatableName = "SelfPortrait.Constructor";
@@ -969,6 +1009,7 @@ void Lua_Constructor::initialize()
 	methods["numberOfArguments"] = &numberOfArguments;
 	methods["argumentSpellings"] = &argumentSpellings;
 	methods["isDefaultConstructor"] = &isDefaultConstructor;
+	methods["getClass"]          = &getClass;
 }
 
 
@@ -1014,6 +1055,13 @@ int Lua_Constructor::isDefaultConstructor(lua_State* L)
 	return 1;
 }
 
+int Lua_Constructor::getClass(lua_State* L)
+{
+	Lua_Constructor* c = checkUserData(L);
+	Lua_Class::create(L, c->m_constructor.getClass());
+	return 1;
+}
+
 //---------------Attribute------------------------------------------------------
 
 const char * Lua_Attribute::metatableName = "SelfPortrait.Attribute";
@@ -1033,6 +1081,7 @@ void Lua_Attribute::initialize()
 	methods["typeSpelling"] = &typeSpelling;
 	methods["isConst"]      = &isConst;
 	methods["isStatic"]     = &isStatic;
+	methods["getClass"]          = &getClass;
 }
 
 int Lua_Attribute::get(lua_State* L)
@@ -1119,6 +1168,13 @@ int Lua_Attribute::isStatic(lua_State* L)
 {
 	Lua_Attribute* c = checkUserData(L);
 	LuaUtils::LuaValue<bool>::pushValue(L, c->m_attribute.isStatic());
+	return 1;
+}
+
+int Lua_Attribute::getClass(lua_State* L)
+{
+	Lua_Attribute* c = checkUserData(L);
+	Lua_Class::create(L, c->m_attribute.getClass());
 	return 1;
 }
 
@@ -1248,6 +1304,7 @@ const struct luaL_Reg Lua_Proxy::lib_f[] = {
 const struct luaL_Reg Lua_Proxy::lib_m[] = {
 	{ "__gc", gc },
 	{ "__index", index },
+	{ "__eq", eq },
 	{ NULL, NULL }
 };
 
@@ -1269,7 +1326,7 @@ int Lua_Proxy::create(lua_State* L)
 
 	for (int i = args; i > 0; --i) {
 		Lua_Class* c = Lua_Class::checkUserData(L, i);
-		ifaces[args-i] = c->getClass();
+		ifaces[args-i] = c->wrapped();
 	}
 	Proxy p(ifaces);
 
@@ -1347,7 +1404,7 @@ int Lua_Proxy::addImplementation(lua_State* L)
 
 	const int ref = luaL_ref(L, LUA_REGISTRYINDEX); // ja fez o push da funcao
 
-	p->m_proxy.addImplementation(m->getMethod(), LuaClosureWrapper(L, ref));
+	p->m_proxy.addImplementation(m->wrapped(), LuaClosureWrapper(L, ref));
 
 	return 0;
 }
@@ -1357,7 +1414,7 @@ int Lua_Proxy::hasImplementation(lua_State* L)
 {
 	Lua_Proxy* p = checkUserData(L,1);
 	Lua_Method* m = Lua_Method::checkUserData(L,2);
-	lua_pushboolean(L, p->m_proxy.hasImplementation(m->getMethod()));
+	lua_pushboolean(L, p->m_proxy.hasImplementation(m->wrapped()));
 	return 1;
 }
 
@@ -1367,7 +1424,7 @@ int Lua_Proxy::reference(lua_State* L)
 	Lua_Proxy* p = checkUserData(L,1);
 	Lua_Class* c = Lua_Class::checkUserData(L,2);
 
-	Lua_Variant::create(L, p->m_proxy.reference(c->getClass()));
+	Lua_Variant::create(L, p->m_proxy.reference(c->wrapped()));
 
 	return 1;
 }

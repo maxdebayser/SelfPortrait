@@ -9,6 +9,12 @@ function testClass()
     TS_ASSERT [[Test1Class:simpleName() == "Test1"]]
     TS_ASSERT [[Test1Class:fullyQualifiedName() == "ClassTest::Test1"]]
 
+	TS_ASSERT [[ Test1Class == Test1Class ]]
+
+	local second = Class.lookup("ClassTest::Test1")
+	TS_ASSERT [[ Test1Class == second ]]
+	TS_ASSERT [[ Test1Class ~= 1 ]]
+
     local Superclasses = Test1Class:superclasses()
 	if (#Superclasses ~= 2) then return false end
 
@@ -19,6 +25,7 @@ function testClass()
     TS_ASSERT [=[sups["TestBase2"]]=]
 
     local Base1 = sups["TestBase1"]
+	TS_ASSERT [[ Test1Class ~= Base1 ]]
     local Base1Cons = Base1:constructors()
 
     TS_ASSERT [[Base1Cons and #Base1Cons == 1]]
