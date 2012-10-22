@@ -98,7 +98,6 @@ public:
 
 
 	static int eq(lua_State* L){
-
 		const int nargs = lua_gettop(L);
 		if (nargs != 2) {
 			luaL_error(L, "expected exactly two arguments to __eq but %d were provided", nargs);
@@ -150,6 +149,7 @@ template<class T>
 const struct luaL_Reg LuaAdapter<T>::lib_m[] = {
 	{ "__gc", gc },
 	{ "__index", index },
+	{ "__eq", eq },
 	{ NULL, NULL }
 };
 
@@ -999,6 +999,7 @@ int Lua_Method::getClass(lua_State* L)
 const char * Lua_Constructor::metatableName = "SelfPortrait.Constructor";
 const char * Lua_Constructor::userDataName = "Constructor";
 MethodTable Lua_Constructor::methods;
+
 const struct luaL_Reg Lua_Constructor::lib_f[] = {
 	{ NULL, NULL }
 };

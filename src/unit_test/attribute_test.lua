@@ -98,6 +98,8 @@ function testAttribute()
     local searched = TestClass:findAttribute(function(a) return a:name() == "attr1" end)
     TS_ASSERT(searched)
     TS_ASSERT[[searched:name() == "attr1"]]
+	TS_ASSERT[[ searched == attr1 ]]
+	TS_ASSERT[[ searched ~= attr2 ]]
 
     local constAttributes = TestClass:findAllAttributes(function(a) return a:isConst() end)
     TS_ASSERT(constAttributes)

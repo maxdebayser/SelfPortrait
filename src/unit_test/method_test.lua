@@ -50,6 +50,10 @@ function testMethod()
     TS_ASSERT(m5)
     TS_ASSERT(not m99)
 
+	TS_ASSERT[[ m5 == method5 ]]
+	TS_ASSERT[[ m3 ~= method5 ]]
+	TS_ASSERT[[ m5 ~= m41 ]]
+
 	TS_ASSERT[[m1:getClass() == TestClass]]
 	TS_ASSERT[[m2:getClass() == TestClass]]
 	TS_ASSERT[[m3:getClass() == TestClass]]
