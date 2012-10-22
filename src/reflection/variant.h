@@ -298,7 +298,7 @@ template <class T>
 class ValueHolder<T&>: public IValueHolder {
 public:
 	typedef T& RefType;
-	typedef typename strip_reference<T&>::type ValueType;
+	typedef typename normalize_type<T&>::type ValueType;
 private:
 
 	template<class Dummy,bool OK>
@@ -445,11 +445,11 @@ public:
 private:
 
 	template<class ValueType>
-	typename strip_reference<ValueType>::ptr_type isAPriv() const {
+	typename normalize_type<ValueType>::ptr_type isAPriv() const {
 		if (isValid()) {
 			try {
 				m_impl->throwCast();
-			} catch(typename strip_reference<ValueType>::ptr_type ptr) {
+			} catch(typename normalize_type<ValueType>::ptr_type ptr) {
 				return ptr;
 			} catch (...) {
 				return nullptr;

@@ -19,7 +19,14 @@ void VariantTestSuite::testValue() {
 	TS_ASSERT_EQUALS(v2.value<double>(), 3.3);
 	
 	VariantValue v3("hello");
+	TS_ASSERT(v3.isA<const char*>());
 	TS_ASSERT_EQUALS(v3.value<const char*>(), "hello");
+	TS_ASSERT(v3.isA<decltype("hello")>());
+	TS_ASSERT(v3.isA<const char[]>());
+	TS_ASSERT(v3.isA<const char(&)[]>());
+	TS_ASSERT(!v3.isA<char[]>());
+
+
 
 	VariantValue v4(3);
 	TS_ASSERT_EQUALS(v1,v4);

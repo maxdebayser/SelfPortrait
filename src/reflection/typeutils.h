@@ -41,37 +41,136 @@ struct comparable {
 	enum { value = comparable_impl::test<T>::value };
 };
 
+
 template<class T>
-struct strip_reference {
+struct normalize_type {
 	typedef T type;
 	typedef T* ptr_type;
 };
 
 template<class T>
-struct strip_reference<T&> {
+struct normalize_type<T&> {
 	typedef T type;
 	typedef T* ptr_type;
 };
 
 
 template<class T>
-struct strip_reference<const T&> {
+struct normalize_type<const T&> {
 	typedef T type;
 	typedef const T* ptr_type;
 
 };
 
 template<class T>
-struct strip_reference<volatile T&> {
+struct normalize_type<volatile T&> {
 	typedef T type;
 	typedef volatile T* ptr_type;
 };
 
 
 template<class T>
-struct strip_reference<const volatile T&> {
+struct normalize_type<const volatile T&> {
 	typedef T type;
 	typedef const volatile T* ptr_type;
+};
+
+
+template<class T>
+struct normalize_type<T[]> {
+	typedef T type;
+	typedef T** ptr_type;
+};
+
+template<class T>
+struct normalize_type<const T[]> {
+	typedef T type;
+	typedef const T** ptr_type;
+};
+
+template<class T>
+struct normalize_type<volatile T[]> {
+	typedef T type;
+	typedef volatile T** ptr_type;
+};
+
+template<class T>
+struct normalize_type<const volatile T[]> {
+	typedef T type;
+	typedef const volatile T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<T[N]> {
+	typedef T type;
+	typedef T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<const T[N]> {
+	typedef T type;
+	typedef const T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<volatile T[N]> {
+	typedef T type;
+	typedef volatile T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<const volatile T[N]> {
+	typedef T type;
+	typedef const volatile T** ptr_type;
+};
+
+
+template<class T>
+struct normalize_type<T(&)[]> {
+	typedef T type;
+	typedef T** ptr_type;
+};
+
+template<class T>
+struct normalize_type<const T(&)[]> {
+	typedef T type;
+	typedef const T** ptr_type;
+};
+
+template<class T>
+struct normalize_type<volatile T(&)[]> {
+	typedef T type;
+	typedef volatile T** ptr_type;
+};
+
+template<class T>
+struct normalize_type<const volatile T(&)[]> {
+	typedef T type;
+	typedef const volatile T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<T(&)[N]> {
+	typedef T type;
+	typedef T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<const T(&)[N]> {
+	typedef T type;
+	typedef const T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<volatile T(&)[N]> {
+	typedef T type;
+	typedef volatile T** ptr_type;
+};
+
+template<class T, std::size_t N>
+struct normalize_type<const volatile T(&)[N]> {
+	typedef T type;
+	typedef const volatile T** ptr_type;
 };
 
 
