@@ -1,4 +1,3 @@
-package.cpath = package.cpath..";../lua_module/?.so"
 require "libluacppreflect"
 require "cxxtest"
 

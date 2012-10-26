@@ -9,6 +9,8 @@
 
 #include "lua_utils.h"
 
+#include "str_conversion.h"
+
 namespace LuaUtils {
 
 	int atPanicThrow(lua_State* L);
@@ -18,17 +20,8 @@ namespace LuaUtils {
 	int ts_trace(lua_State* L);
 
 	struct LuaStateHolder {
-		explicit LuaStateHolder(lua_State* L) : m_L(L) {
-			lua_atpanic(m_L, atPanicThrow);
-			luaL_openlibs(m_L);
-			lua_pushcfunction(m_L, ts_fail);
-			lua_setglobal(L, "TS_FAIL");
-			lua_pushcfunction(m_L, ts_trace);
-			lua_setglobal(L, "TS_TRACE");
-			lua_pushcfunction(m_L, ts_warn);
-			lua_setglobal(L, "TS_WARN");
-		}
-		LuaStateHolder() : LuaStateHolder(luaL_newstate()) {}
+		explicit LuaStateHolder(lua_State* L);
+		LuaStateHolder();
 		~LuaStateHolder() {
 			lua_close(m_L);
 		}
@@ -37,6 +30,15 @@ namespace LuaUtils {
 		lua_State* m_L;
 	};
 
+}
+
+
+inline std::string binpath() {
+	return UNIT_BIN;
+}
+
+inline std::string srcpath() {
+	return UNIT_SRC;
 }
 
 #endif /* TEST_UTILS */

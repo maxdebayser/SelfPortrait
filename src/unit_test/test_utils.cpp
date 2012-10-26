@@ -5,6 +5,46 @@
 
 
 namespace LuaUtils {
+
+	LuaStateHolder::LuaStateHolder(lua_State* L)
+		: m_L(L)
+	{
+		lua_atpanic(m_L, atPanicThrow);
+		luaL_openlibs(m_L);
+		lua_pushcfunction(m_L, ts_fail);
+		lua_setglobal(L, "TS_FAIL");
+		lua_pushcfunction(m_L, ts_trace);
+		lua_setglobal(L, "TS_TRACE");
+		lua_pushcfunction(m_L, ts_warn);
+		lua_setglobal(L, "TS_WARN");
+
+		lua_getglobal(L, "package");
+		luaL_checktype(L, 1, LUA_TTABLE);
+
+		// for cxxtest.lua
+		lua_getfield(L, 1, "path");
+		lua_pushstring(L, ";");
+		lua_pushstring(L, srcpath().c_str());
+		lua_pushstring(L, "/?.lua");
+		lua_concat(L, 4);
+		lua_setfield(L, 1, "path");
+
+		// for libluacppreflect
+		lua_getfield(L, 1, "cpath");
+		lua_pushstring(L, ";");
+		lua_pushstring(L, binpath().c_str());
+		lua_pushstring(L, "/../lua_module/?.so");
+		lua_pushstring(L, ";");
+		lua_pushstring(L, binpath().c_str());
+		lua_pushstring(L, "/../lua_module/?.dll"); // don't want to mess with platform DEFINEs
+		lua_concat(L, 7);
+		lua_setfield(L, 1, "cpath");
+
+	}
+
+	LuaStateHolder::LuaStateHolder()
+		: LuaStateHolder(luaL_newstate()) {}
+
 	int atPanicThrow(lua_State* L) {
 		throw std::runtime_error(fmt_str("Error during execution of Lua code:\n%1", lua_tostring(L, -1)));
 		return 0;

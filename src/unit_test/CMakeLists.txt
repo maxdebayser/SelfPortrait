@@ -24,16 +24,6 @@ set(SOURCES
 	variant_test.cpp
 )
 
-set(LUA_SOURCES
-        attribute_test.lua
-        class_test.lua
-	constructor_test.lua
-	function_test.lua
-	method_test.lua
-        proxy_test.lua
-        cxxtest.lua
-)
-
 
 set(LIBS
     reflection
@@ -68,14 +58,6 @@ add_custom_command(
 
 add_executable(unit_test ${HEADERS} ${SOURCES} runner.cpp)
 
-# horrible...
-foreach(lua_source ${LUA_SOURCES})
-    ADD_CUSTOM_TARGET("${lua_source}_dependency"
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${lua_source}" "${CMAKE_CURRENT_BINARY_DIR}"
-        DEPENDS ${LUA_FILES}
-    )
-    add_dependencies(unit_test "${lua_source}_dependency")
-endforeach()
 
 target_link_libraries(unit_test ${LIBS})
 

@@ -1,8 +1,8 @@
-package.cpath = package.cpath..";../lua_module/?.so"
 require "libluacppreflect"
 require "cxxtest"
 
 function testAttribute()
+
 
     local TestClass = Class.lookup("AttributeTest::Test")
 

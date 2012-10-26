@@ -211,7 +211,7 @@ void MethodTestSuite::testLuaAPI()
 {
 	LuaUtils::LuaStateHolder L;
 
-	if (luaL_loadfile(L, "method_test.lua") || lua_pcall(L,0,0,0)) {
+	if (luaL_loadfile(L, fmt_str("%1/method_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
 	}
 	LuaUtils::callFunc<bool>(L, "testMethod");

@@ -5,6 +5,7 @@
 #include <cctype>
 #include <vector>
 #include <type_traits>
+#include <stdexcept>
 
 namespace {
 
