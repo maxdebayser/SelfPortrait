@@ -4,7 +4,8 @@ set(HEADERS
 	constructor_test.h
 	function_test.h
 	method_test.h
-        proxy_test.h
+	parser_test.h
+	proxy_test.h
 	test_utils.h
 	utilities_test.h
 	variant_test.h
@@ -16,7 +17,8 @@ set(SOURCES
 	constructor_test.cpp
 	function_test.cpp
 	method_test.cpp
-        proxy_test.cpp
+	parser_test.cpp
+	proxy_test.cpp
 	test_utils.cpp
 	utilities_test.cpp
 	variant_test.cpp
@@ -38,6 +40,16 @@ set(LIBS
     lua
 	utils
 )
+
+SET(UNIT_SRC_DEF "\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+add_definitions(-DUNIT_SRC=${UNIT_SRC_DEF})
+
+
+SET(UNIT_BIN_DEF "\"${CMAKE_CURRENT_BINARY_DIR}\"")
+add_definitions(-DUNIT_BIN=${UNIT_BIN_DEF})
+
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/parser_test_data")
 
 add_definitions(-DCXXTEST_HAVE_STD -DCXXTEST_HAVE_EH)
 
