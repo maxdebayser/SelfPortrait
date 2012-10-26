@@ -16,6 +16,7 @@ public:
 	void testAttributeSearch();
 	void testConstructorSearch();
 	void testSuperClassSearch();
+	void testPrivateDestructor();
 };
 
 

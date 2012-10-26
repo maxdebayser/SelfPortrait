@@ -26,7 +26,7 @@ struct constructor_type {
 	template<class Ind>
 	struct call_helper<true, Ind> {
 		static VariantValue call(const ::std::vector<VariantValue>& args) {
-			throw ::std::runtime_error("Class declares pure virtual members");
+			throw ::std::runtime_error("Class declares pure virtual members or has a private destructor");
 		}
 	};
 
@@ -41,7 +41,7 @@ struct constructor_type {
 	};
 
 	static VariantValue bindcall(const ::std::vector<VariantValue>& args) {
-		return call_helper< ::std::is_abstract<Clazz>::value, typename make_indices<sizeof...(Args)>::type>::call(args);
+		return call_helper< ::std::is_abstract<Clazz>::value || !::std::is_destructible<Clazz>::value, typename make_indices<sizeof...(Args)>::type>::call(args);
 	}
 };
 

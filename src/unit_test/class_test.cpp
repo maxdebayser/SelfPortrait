@@ -57,6 +57,13 @@ namespace ClassTest {
 
 		Test1& operator=(const Test1& rhs) { attribute1 = rhs.attribute1; return *this; }
 	};
+
+	class Test2 {
+	private:
+		~Test2() {}
+	public:
+		void method1() {}
+	};
 }
 
 REFL_BEGIN_CLASS(ClassTest::TestBase1)
@@ -84,7 +91,10 @@ REFL_BEGIN_CLASS(ClassTest::Test1)
 	REFL_METHOD(operator=, ClassTest::Test1&, const ClassTest::Test1&)
 REFL_END_CLASS
 
-
+REFL_BEGIN_CLASS(ClassTest::Test2)
+	REFL_METHOD(method1, void)
+	REFL_DEFAULT_CONSTRUCTOR()
+REFL_END_CLASS
 
 
 using namespace ClassTest;
@@ -419,4 +429,20 @@ void ClassTestSuite::testSuperClassSearch()
 
 	TS_ASSERT(ret.isValid());
 	TS_ASSERT_EQUALS(base1, ret);
+}
+
+
+void ClassTestSuite::testPrivateDestructor()
+{
+	Class test = Class::lookup("ClassTest::Test2");
+
+	TS_ASSERT(test.isValid());
+
+	Constructor c = test.findConstructor([](const Constructor& c) {
+		return c.isDefaultConstructor();
+	});
+
+
+
+	TS_ASSERT_THROWS_ANYTHING(c.call());
 }
