@@ -2,20 +2,13 @@
 
 #include <stdlib.h>
 
-#include "str_conversion.h"
+#include "test_utils.h"
+
 #include <fstream>
 #include <iostream>
 using namespace std;
 
 namespace {
-
-	string binpath() {
-		return UNIT_BIN;
-	}
-
-	string srcpath() {
-		return UNIT_SRC;
-	}
 
 	string input_file(const string& name) {
 		return fmt_str("%1/parser_data/input/%2", srcpath(), name);
