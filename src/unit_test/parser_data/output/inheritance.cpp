@@ -66,4 +66,3 @@ REFL_METHOD(operator=, Derived6 &, const Derived6 &)
 REFL_METHOD(operator=, Derived6 &, Derived6 &&)
 REFL_END_CLASS
 
-

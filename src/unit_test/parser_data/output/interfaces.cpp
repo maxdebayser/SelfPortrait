@@ -9,9 +9,9 @@ REFL_METHOD(operator=, Interface1 &, const Interface1 &)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(Interface2)
-REFL_METHOD(method1, int)
 REFL_DEFAULT_CONSTRUCTOR()
 REFL_CONSTRUCTOR(int)
+REFL_METHOD(method1, int)
 REFL_METHOD(operator=, Interface2 &, const Interface2 &)
 REFL_END_CLASS
 
@@ -37,14 +37,18 @@ REFL_METHOD(operator=, NotAnInterface3 &, const NotAnInterface3 &)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(NotAnInterface4)
-REFL_METHOD(method2, int)
 REFL_ATTRIBUTE(attr2, int)
+REFL_METHOD(method2, int)
 REFL_METHOD(operator=, NotAnInterface4 &, const NotAnInterface4 &)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(NotAnInterface5)
 REFL_METHOD(method2, int)
 REFL_METHOD(operator=, NotAnInterface5 &, const NotAnInterface5 &)
+REFL_END_CLASS
+
+REFL_BEGIN_CLASS(NotAnInterface5::Inner)
+REFL_ATTRIBUTE(i1, int)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(NotAnInterface6)
@@ -96,9 +100,4 @@ REFL_BEGIN_CLASS(Impl4)
 REFL_SUPER_CLASS(NS::Interface1)
 REFL_METHOD(operator=, Impl4 &, const Impl4 &)
 REFL_END_CLASS
-
-REFL_BEGIN_CLASS(NotAnInterface5::Inner)
-REFL_ATTRIBUTE(i1, int)
-REFL_END_CLASS
-
 

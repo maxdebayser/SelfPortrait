@@ -34,6 +34,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
+#include <unordered_map>
+
+#include "definitions.h"
+using namespace definitions;
 
 using namespace std;
 using namespace clang;
@@ -68,14 +73,12 @@ std::string join(const Container<Args...>& container, const std::string& separat
 
 class MyASTConsumer
 {
-	bool m_inClass = false;
-	list<CXXRecordDecl*> m_visitLater;
-	stringstream out;
-	set<string> m_sourceFiles;
+	TranslationUnit m_tu;
+	TranslationUnitBuilder m_builder;
+
 	SourceManager* m_sourceManager;
 	PrintingPolicy m_printPol;
 	set<Decl*> m_visited;
-	ASTContext* m_context;
 	Sema& m_sema;
 	bool m_instantiateTemplates;
 
@@ -140,7 +143,7 @@ class MyASTConsumer
 
 		AccessSpecifier as = AS_public;
 
-		if (const TypedefType* tt = dyn_cast<TypedefType>(type)) {
+		if (const auto* tt = dyn_cast<TypedefType>(type)) {
 			// If it is a privately defined typedef, we ignore it
 			if (TypedefNameDecl* tnd = tt->getDecl()) {
 				as = tnd->getAccess();
@@ -168,7 +171,7 @@ class MyASTConsumer
 				if (TypedefNameDecl* tnd = tt->getDecl()) {
 					return treatType(tnd->getUnderlyingType(), ::std::move(range));
 				}
-			} else if (const TemplateSpecializationType* tt = dyn_cast<TemplateSpecializationType>(type)) {
+			} else if (const auto* tt = dyn_cast<TemplateSpecializationType>(type)) {
 				if (m_instantiateTemplates) {
 					if (ClassTemplateDecl* td = dyn_cast<ClassTemplateDecl>(tt->getTemplateName().getAsTemplateDecl())) {
 						for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
@@ -176,7 +179,7 @@ class MyASTConsumer
 							if (!spec->hasDefinition()) {
 								m_sema.InstantiateClassTemplateSpecialization(range.getBegin(), spec, TSK_ImplicitInstantiation, false);
 								if (spec->hasDefinition()) {
-									m_visitLater.push_back(spec->getDefinition());
+									handleDecl(spec->getDefinition());
 								}
 							}
 						}
@@ -189,43 +192,41 @@ class MyASTConsumer
 
 			throw IncompleteType{t, range};
 		}
-
 		return t.getCanonicalType();
 	}
 
 public:
 
 	MyASTConsumer(SourceManager* sm, ASTContext& astContext, Sema& sema, bool instantiateTemplates = true)
-		: m_sourceManager(sm)
+		: m_builder(m_tu)
+		, m_sourceManager(sm)
 		, m_printPol(astContext.getLangOpts())
-		, m_context(&astContext)
 		, m_sema(sema)
 		, m_instantiateTemplates(instantiateTemplates)
 	{
 		m_printPol.Bool = 1;
 		FileID mainID = sm->getMainFileID();
 		const FileEntry* entry = sm->getFileEntryForID(mainID);
-		m_sourceFiles.insert(entry->getName());
+
+		m_tu.include_directives.push_back("#include \"reflection_impl.h\"");
+		m_tu.include_directives.push_back(std::string("#include \"") + entry->getName() + "\"");
 	}
 
 	ostream& print(ostream& os) {
 
-		os << "#include \"reflection_impl.h\"" << endl;
-
-		for(const string& filename: m_sourceFiles) {
-			os << "#include \"" << filename << "\"" << endl;
-		}
-
-		os << endl << out.str() << endl;
+		definitions::print(m_tu, os);
 		return os;
 	}
 
-	void handleDelayed() {
-		while( !m_visitLater.empty() ) {
-			CXXRecordDecl* nested = m_visitLater.front();
-			m_visitLater.pop_front();
-			handleDecl(nested);
+	Access convertClangsAccessSpec(AccessSpecifier as) const {
+		if (as == AS_none) {
+			throw std::logic_error("stumbled upon an AS_none, figure out what it means in this context");
 		}
+		return (as == AS_public) ?
+					Public :
+					(as == AS_protected) ?
+						Protected :
+						Private;
 	}
 
 	void handleDecl(Decl* decl)
@@ -242,12 +243,6 @@ public:
 				return;
 			}
 
-			AccessSpecifier as = decl->getAccess();
-
-			if (as == AS_protected || as == AS_private) {
-				return;
-			}
-
 			if (NamespaceDecl* nd = dyn_cast<NamespaceDecl>(decl)) {
 				if (nd->isAnonymousNamespace()) {
 					return; // no interest in hidden symbols
@@ -260,47 +255,56 @@ public:
 
 			} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
 				QualType t = treatType(fd->getType(), fd->getSourceRange());
-				out << "REFL_ATTRIBUTE(" << fd->getDeclName().getAsString() << ", " <<  printType(t) << ")" << endl;
+				Access access = convertClangsAccessSpec(decl->getAccess());
+				m_builder.addAttribute({fd->getDeclName().getAsString(), printType(t), access});
+
 			} else if (RecordDecl* rd = dyn_cast<RecordDecl>(decl)) {
 
 				if (CXXRecordDecl* crd = dyn_cast<CXXRecordDecl>(rd)) {
+
+					if (m_instantiateTemplates) {
+						// maybe we can force the definition to exist
+
+						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
+							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
+							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
+						}
+
+						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd->getDeclContext())) {
+							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
+							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
+							return;
+						}
+					}
+
 					if (crd->hasDefinition()) {
 
 						CXXRecordDecl* definition = crd->getDefinition();
 
-						if (m_inClass) {
-							m_visited.erase(crd);
-							m_visitLater.push_back(definition);
-							return;
-						}
-
-						crd = definition;
-						m_visited.insert(crd);
+						m_visited.insert(definition);
 
 						string name;
-						crd->getNameForDiagnostic(name, m_printPol, true);
+						definition->getNameForDiagnostic(name, m_printPol, true);
 
 
-						m_inClass = true;
+						m_builder.pushClass({printType(name)});
 
-						out << "REFL_BEGIN_CLASS(" << printType(name) << ")" << endl;
 
-						for (auto it = crd->bases_begin(); it != crd->bases_end(); ++it) {
+						for (auto it = definition->bases_begin(); it != definition->bases_end(); ++it) {
+							Access access = convertClangsAccessSpec(it->getAccessSpecifier());
 							QualType t = treatType(it->getType(), it->getSourceRange());
-							out << "REFL_SUPER_CLASS(" << printType(t) << ")" << endl;
+							string classname = printType(t);
+							m_builder.addInheritance(classname, access);
 						}
 
 						// recurse
-						for (DeclContext::decl_iterator it = crd->decls_begin(); it != crd->decls_end(); ++it) {
+						for (DeclContext::decl_iterator it = definition->decls_begin(); it != definition->decls_end(); ++it) {
 							clang::Decl* subdecl = *it;
 							handleDecl(subdecl);
 						}
+						m_builder.popClass();
 
-						m_inClass = false;
-						out << "REFL_END_CLASS" << endl << endl;
-
-
-					} else if (m_instantiateTemplates) {
+					} /*else if (m_instantiateTemplates) {
 						// maybe we can force the definition to exist
 						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
 							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
@@ -313,8 +317,6 @@ public:
 
 						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd->getDeclContext())) {
 							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
-
-
 							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
 
 							if (crd->hasDefinition()) {
@@ -322,8 +324,7 @@ public:
 								handleDecl(crd->getDefinition());
 							}
 						}
-
-					}
+					}*/
 				} /*else {
 				// don't know what to do with this, the only possibility left are unions, right?
 			}*/
@@ -361,22 +362,24 @@ public:
 
 				if (CXXMethodDecl* md = dyn_cast<CXXMethodDecl>(decl)) {
 
-					if (!m_inClass) {
+					if (!m_builder.inClass()) {
 						// out-of-class definitions are of no interest to us
 						return;
 					}
 
 					if (dyn_cast<CXXConstructorDecl>(decl)) {
-						if (args.empty()) {
-							out << "REFL_DEFAULT_CONSTRUCTOR()" << endl;
-						} else {
-							out << "REFL_CONSTRUCTOR(" << argstr << ")" << endl;
-						}
+						Access access = convertClangsAccessSpec(decl->getAccess());
+						m_builder.addConstructor({argstr, access});
 					} else if (dyn_cast<CXXConversionDecl>(decl)) {
+						// TODO
 						// ex: operator bool();
 						// dont't know what to do with this yet
 					} else if (dyn_cast<CXXDestructorDecl>(decl)) {
-						// this is pretty much expected :)
+						const bool isVirtual  = md->isVirtual();
+						Access access = convertClangsAccessSpec(decl->getAccess());
+						if (access == Public && isVirtual) {
+							m_builder.currentClass().destructor_is_public_virtual = true;
+						}
 					} else {
 
 						QualType mqt = treatType(md->getType(), md->getSourceRange());
@@ -386,27 +389,23 @@ public:
 
 						Qualifiers quals = Qualifiers::fromCVRMask(proto->getTypeQuals());
 
-						const bool isStatic   = md->isStatic();
-						const bool isVirtual  = md->isVirtual();
-						const bool isConst    = quals.hasConst();
-						const bool isVolatile = quals.hasVolatile();
-
-						if (isVirtual && (md->size_overridden_methods() > 0)) {
-							return; // we don't need to repeat this
-						}
+						const bool isStatic      = md->isStatic();
+						const bool isPureVirtual = md->isPure();
+						const bool isConst       = quals.hasConst();
+						const bool isVolatile    = quals.hasVolatile();
 
 						string a = string(args.empty() ? "" : ", ") + argstr;
-
+						Access access = convertClangsAccessSpec(decl->getAccess());
 						if (isStatic) {
-							out << "REFL_STATIC_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							m_builder.addMethod({name, returnType, argstr, false, false, false, true, access});
 						} else if (isConst && isVolatile) {
-							out << "REFL_CONST_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							m_builder.addMethod({name, returnType, argstr, true, true, isPureVirtual, false, access});
 						} else if (isConst) {
-							out << "REFL_CONST_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							m_builder.addMethod({name, returnType, argstr, true, false, isPureVirtual, false, access});
 						} else if (isVolatile) {
-							out << "REFL_VOLATILE_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							m_builder.addMethod({name, returnType, argstr, false, true, isPureVirtual, false, access});
 						} else {
-							out << "REFL_METHOD(" << name << ", " << returnType << a << ")" << endl;
+							m_builder.addMethod({name, returnType, argstr, false, false, isPureVirtual, false, access});
 						}
 					}
 				} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
@@ -414,14 +413,19 @@ public:
 					string nameWithNamespace;
 					fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
 					string a = string(args.empty() ? "" : ", ") + argstr;
-					out << "REFL_FUNCTION(" << nameWithNamespace << ", " << returnType << a << ")" << endl << endl;
-				}
+					m_tu.functions.push_back({nameWithNamespace, returnType, argstr});
+					}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 				if (m_instantiateTemplates) {
 					for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
 						//specializations are classes too
-						clang::ClassTemplateSpecializationDecl* spec = *it;
-						handleDecl(spec);
+						handleDecl(*it);
+					}
+				}
+			} else if (clang::FunctionTemplateDecl* td = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl)) {
+				if (m_instantiateTemplates) {
+					for (clang::FunctionTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
+						handleDecl(*it);
 					}
 				}
 			}
@@ -514,7 +518,6 @@ int main(int argc, const char* argv[])
 	ASTContext& astContext = unit->getASTContext();
 	MyASTConsumer astConsumer(&unit->getSourceManager(), astContext, unit->getSema());
 
-
 	for (auto it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
 		Decl* subdecl = *it;
 		SourceLocation location = subdecl->getLocation();
@@ -523,8 +526,6 @@ int main(int argc, const char* argv[])
 			astConsumer.handleDecl(subdecl);
 		}
 	}
-	astConsumer.handleDelayed();
-
 
 	std::ofstream out;
 	if (output != "-") {

@@ -17,4 +17,3 @@ REFL_FUNCTION(NS::function2, int, double)
 
 REFL_FUNCTION(NS::NestedNS::function2, int, double)
 
-

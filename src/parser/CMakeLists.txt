@@ -1,8 +1,10 @@
 SET(HEADERS
+	definitions.h
 )
 
 SET(SOURCES
 	parser.cpp
+	definitions.cpp
 )
 
 

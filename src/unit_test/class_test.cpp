@@ -78,7 +78,7 @@ REFL_BEGIN_CLASS(ClassTest::TestBase2)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(ClassTest::Test1)
-	REFL_SUPER_CLASS(class ClassTest::TestBase1)
+	REFL_SUPER_CLASS(ClassTest::TestBase1)
 	REFL_SUPER_CLASS(ClassTest::TestBase2)
 	REFL_CONST_METHOD(method1, std::string)
 	REFL_METHOD(method2, double, double)
