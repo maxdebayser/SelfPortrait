@@ -1,6 +1,7 @@
 #include "definitions.h"
 #include <stdexcept>
 using namespace std;
+#include <iostream>
 
 namespace {
 	using namespace definitions;
@@ -12,22 +13,28 @@ namespace {
 
 namespace definitions {
 
-	bool Class::is_interface(std::stringstream& diag) const
+	bool Class::is_interface(std::ostream& diag) const
 	{
 		bool is = true;
 
 		if (!attributes.empty()) {
 			is = false;
-			diag << "class " << name << "has attributes" << endl;
+			diag << "class " << name << " has attributes" << endl;
 		}
 
 		if (!destructor_is_public_virtual) {
 			is = false;
-			diag << "class " << name << "has no public destructor" << endl;
+			diag << "class " << name << " has no public destructor" << endl;
 		}
 
 		// Only public pure virtual methods
 		for (const Method& m: methods) {
+
+			if (!m.isUserProvided) {
+				// let's not force the user to definite harmless implicit methods
+				continue;
+			}
+
 			if (!m.is_pure_virtual) {
 				is = false;
 				diag << "method " << m << " of class " << name << " is not pure virtual" << endl;
@@ -44,7 +51,8 @@ namespace definitions {
 			}
 		}
 
-		bool found_default =  false;
+		bool found_default = constructors.empty();
+		//bool found_default = constructors.empty();
 		for (const Constructor& c: constructors) {
 			if (c.is_default()) {
 				found_default = true;
@@ -54,7 +62,7 @@ namespace definitions {
 
 		if (!found_default) {
 			is = false;
-			diag << "class " << name << "has no public default constructor" << endl;
+			diag << "class " << name << " has no public default constructor" << endl;
 		}
 
 
@@ -71,14 +79,23 @@ namespace definitions {
 
 		if (!inner.empty()) {
 			is = false;
-			diag << "class " << name << "has inner class definitions" << endl;
+			diag << "class " << name << " has inner class definitions" << endl;
 		}
 
 		return is;
 	}
 
 
-	void print(const TranslationUnit& u, std::ostream& o) {
+	void print(const Class& c, std::ostream& o, bool diagOn);
+	void print(const Inheritance& i, std::ostream& o);
+	void print(const Method& m, std::ostream& o);
+	void printAsStub(const Method& m, std::ostream& o);
+	void print(const Function& f, std::ostream& o);
+	void print(const Attribute& a, std::ostream& o);
+	void print(const Constructor& c, std::ostream& o);
+
+
+	void print(const TranslationUnit& u, std::ostream& o, bool diagOn) {
 		for(const auto& x: u.include_directives) {
 			o << x << "\n";
 		}
@@ -89,13 +106,39 @@ namespace definitions {
 		}
 
 		for (const auto& x: u.classes) {
-			print(*x, o);
+			print(*x, o, diagOn);
 			o << "\n";
 		}
 	}
 
-	void print(const Class& c, std::ostream& o) {
+	void print(const Class& c, std::ostream& o, bool diagOn) {
+
+		stringstream devnull;
+
+		ostream& diagOut = diagOn ? std::cerr : devnull;
+
+		bool isInterface = c.is_interface(diagOut);
+
+		string stubname = c.name;
+		for (size_t i = 0; i < stubname.size(); ++i) {
+			if (stubname.at(i) == ':')  {
+				stubname.at(i) = '_';
+			}
+		}
+		stubname.append("Stub");
+
+		if (isInterface) {
+			o << "REFL_BEGIN_STUB(" << c.name << ", " << stubname << ")\n";
+			for (const auto& x: c.methods) {
+				printAsStub(x, o);
+			}
+			o << "REFL_END_STUB\n\n";
+		}
+
 		o << "REFL_BEGIN_CLASS(" << c.name << ")\n";
+		if (isInterface) {
+			o << "REFL_STUB(" << stubname << ")\n";
+		}
 
 
 		for (const auto& x: c.inherited) {
@@ -143,6 +186,28 @@ namespace definitions {
 				o << "REFL_CONST_VOLATILE_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
 			}
 
+		}
+	}
+
+	void printAsStub(const Method& m, std::ostream& o) {
+
+		if (!m.is_pure_virtual && !m.isUserProvided) {
+			return;
+		}
+
+		if (m.access != Public || m.is_static) {
+			throw std::logic_error("stub method is static or not public, this is an internal error");
+		}
+
+		const string argstr = (m.argument_type_spellings.empty() ? "" : ", ") + m.argument_type_spellings;
+		if (!m.is_const && !m.is_volatile) {
+			o << "REFL_STUB_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+		} else if (m.is_const && !m.is_volatile) {
+			o << "REFL_STUB_CONST_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+		} else if (!m.is_const && m.is_volatile) {
+			o << "REFL_STUB_VOLATILE_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+		} else {
+			o << "REFL_STUB_CONST_VOLATILE_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
 		}
 	}
 

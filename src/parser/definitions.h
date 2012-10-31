@@ -71,6 +71,8 @@ namespace definitions {
 
 		Access access;
 
+		bool isUserProvided;
+
 	};
 
 	struct Class;
@@ -109,7 +111,7 @@ namespace definitions {
 		 * Other constuctors are allowed.
 		 */
 		// Should we restrict overloaded methods?
-		bool is_interface(std::stringstream& diag) const;
+		bool is_interface(std::ostream& diag) const;
 
 	};
 
@@ -151,13 +153,7 @@ namespace definitions {
 	};
 
 
-	void print(const TranslationUnit& u, std::ostream& o);
-	void print(const Class& c, std::ostream& o);
-	void print(const Inheritance& i, std::ostream& o);
-	void print(const Method& m, std::ostream& o);
-	void print(const Function& f, std::ostream& o);
-	void print(const Attribute& a, std::ostream& o);
-	void print(const Constructor& c, std::ostream& o);
+	void print(const TranslationUnit& u, std::ostream& o, bool diagOn = false);
 
 }
 

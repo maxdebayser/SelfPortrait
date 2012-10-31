@@ -212,9 +212,9 @@ public:
 		m_tu.include_directives.push_back(std::string("#include \"") + entry->getName() + "\"");
 	}
 
-	ostream& print(ostream& os) {
+	ostream& print(ostream& os, bool diagsOn = false) {
 
-		definitions::print(m_tu, os);
+		definitions::print(m_tu, os, diagsOn);
 		return os;
 	}
 
@@ -295,6 +295,11 @@ public:
 							QualType t = treatType(it->getType(), it->getSourceRange());
 							string classname = printType(t);
 							m_builder.addInheritance(classname, access);
+						}
+
+						// recurse
+						if (definition->needsImplicitDefaultConstructor()) {
+							m_builder.addConstructor({"", Public});
 						}
 
 						// recurse
@@ -396,16 +401,17 @@ public:
 
 						string a = string(args.empty() ? "" : ", ") + argstr;
 						Access access = convertClangsAccessSpec(decl->getAccess());
+						const bool user = md->isUserProvided();
 						if (isStatic) {
-							m_builder.addMethod({name, returnType, argstr, false, false, false, true, access});
+							m_builder.addMethod({name, returnType, argstr, false, false, false, true, access, user});
 						} else if (isConst && isVolatile) {
-							m_builder.addMethod({name, returnType, argstr, true, true, isPureVirtual, false, access});
+							m_builder.addMethod({name, returnType, argstr, true, true, isPureVirtual, false, access, user});
 						} else if (isConst) {
-							m_builder.addMethod({name, returnType, argstr, true, false, isPureVirtual, false, access});
+							m_builder.addMethod({name, returnType, argstr, true, false, isPureVirtual, false, access, user});
 						} else if (isVolatile) {
-							m_builder.addMethod({name, returnType, argstr, false, true, isPureVirtual, false, access});
+							m_builder.addMethod({name, returnType, argstr, false, true, isPureVirtual, false, access, user});
 						} else {
-							m_builder.addMethod({name, returnType, argstr, false, false, isPureVirtual, false, access});
+							m_builder.addMethod({name, returnType, argstr, false, false, isPureVirtual, false, access, user});
 						}
 					}
 				} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
@@ -440,11 +446,17 @@ public:
 int main(int argc, const char* argv[])
 {
 	vector<const char*> args;
+	set<int> skip;
 	bool foundCpp = false;
 	bool foundCpp11 = false;
 	bool foundSpellChecking = false;
+	bool iFaceDiags = false;
+	bool forceTemplates = true;
 	string output;
 
+	args.push_back(argv[0]);
+	args.push_back("-I/usr/lib/clang/3.2/include"); // why can't clang find this from the resource path?
+	args.push_back("-Qunused-arguments"); // why do I keep getting warnings about the unused linker if I'm only creating an ASTunit
 
 	for (int i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "-std=c++11") == 0) {
@@ -470,6 +482,12 @@ int main(int argc, const char* argv[])
 				}
 				output = argv[i+1];
 			}
+		} else if (strcmp(argv[i], "--interface-diagnostics") == 0) {
+			iFaceDiags = true;
+			skip.insert(i);
+		} else if (strcmp(argv[i], "--no-force-templates") == 0) {
+			forceTemplates = false;
+			skip.insert(i);
 		}
 	}
 
@@ -478,7 +496,6 @@ int main(int argc, const char* argv[])
 		exit(1);
 	}
 
-	args.push_back(argv[0]);
 
 	if (!foundCpp) {
 		args.push_back("-xc++");
@@ -492,11 +509,10 @@ int main(int argc, const char* argv[])
 		args.push_back("-fno-spell-checking");
 	}
 
-	args.push_back("-I/usr/lib/clang/3.2/include"); // why can't clang find this from the resource path?
-	args.push_back("-Qunused-arguments"); // why do I keep getting warnings about the unused linker if I'm only creating an ASTunit
-
 	for (int i = 1; i < argc; ++i) {
-		args.push_back(argv[i]);
+		if (!contains(skip, i)) {
+			args.push_back(argv[i]);
+		}
 	}
 
 	DiagnosticOptions options;
@@ -516,7 +532,7 @@ int main(int argc, const char* argv[])
 	}
 
 	ASTContext& astContext = unit->getASTContext();
-	MyASTConsumer astConsumer(&unit->getSourceManager(), astContext, unit->getSema());
+	MyASTConsumer astConsumer(&unit->getSourceManager(), astContext, unit->getSema(), forceTemplates);
 
 	for (auto it = astContext.getTranslationUnitDecl()->decls_begin(); it != astContext.getTranslationUnitDecl()->decls_end(); ++it) {
 		Decl* subdecl = *it;
@@ -540,7 +556,7 @@ int main(int argc, const char* argv[])
 		out.basic_ios<char>::rdbuf(std::cout.rdbuf());
 	}
 
-	astConsumer.print(out);
+	astConsumer.print(out, iFaceDiags);
 
 	return 0;
 }

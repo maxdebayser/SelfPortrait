@@ -2,6 +2,7 @@
 #include "../input/simple_class.h"
 
 REFL_BEGIN_CLASS(POCO)
+REFL_DEFAULT_CONSTRUCTOR()
 REFL_ATTRIBUTE(a, int)
 REFL_ATTRIBUTE(b, char)
 REFL_END_CLASS

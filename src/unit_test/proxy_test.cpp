@@ -31,12 +31,9 @@ namespace ProxyTest {
 }
 
 
-
-
 REFL_BEGIN_STUB(ProxyTest::Test, TestStub)
 REFL_STUB_METHOD(method1, int, int, int)
 REFL_END_STUB
-
 
 REFL_BEGIN_CLASS(ProxyTest::Test)
 	REFL_DEFAULT_CONSTRUCTOR()

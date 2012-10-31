@@ -547,6 +547,18 @@ struct FuncRegHelper {
 		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
+#define REFL_STUB_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) volatile override {\
+		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+	}
+
+
+#define REFL_STUB_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const volatile override {\
+		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+	}
+
+
 #define REFL_END_STUB };}
 
 #endif /* REFLECTION_IMPL_H */
