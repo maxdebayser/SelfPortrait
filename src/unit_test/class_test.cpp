@@ -56,6 +56,7 @@ namespace ClassTest {
 		Test1(const Test1& rhs) : attribute1(rhs.attribute1), attribute2(rhs.attribute2) {}
 
 		Test1& operator=(const Test1& rhs) { attribute1 = rhs.attribute1; return *this; }
+		Test1& operator=(Test1&& rhs) { attribute1 = rhs.attribute1; return *this; }
 	};
 
 	class Test2 {
@@ -89,6 +90,7 @@ REFL_BEGIN_CLASS(ClassTest::Test1)
 	REFL_CONSTRUCTOR(int)
 	REFL_CONSTRUCTOR(const ClassTest::Test1&)
 	REFL_METHOD(operator=, ClassTest::Test1&, const ClassTest::Test1&)
+	REFL_METHOD(operator=, ClassTest::Test1&, ClassTest::Test1&&)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(ClassTest::Test2)

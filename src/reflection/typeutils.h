@@ -54,6 +54,12 @@ struct normalize_type<T&> {
 	typedef T* ptr_type;
 };
 
+template<class T>
+struct normalize_type<T&&> {
+	typedef T type;
+	typedef T* ptr_type;
+};
+
 
 template<class T>
 struct normalize_type<const T&> {
