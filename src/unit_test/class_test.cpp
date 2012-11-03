@@ -57,6 +57,8 @@ namespace ClassTest {
 
 		Test1& operator=(const Test1& rhs) { attribute1 = rhs.attribute1; return *this; }
 		Test1& operator=(Test1&& rhs) { attribute1 = rhs.attribute1; return *this; }
+
+		TestBase1& returnsRefToAbstract() { return *this; }
 	};
 
 	class Test2 {
@@ -91,6 +93,7 @@ REFL_BEGIN_CLASS(ClassTest::Test1)
 	REFL_CONSTRUCTOR(const ClassTest::Test1&)
 	REFL_METHOD(operator=, ClassTest::Test1&, const ClassTest::Test1&)
 	REFL_METHOD(operator=, ClassTest::Test1&, ClassTest::Test1&&)
+	REFL_METHOD(returnsRefToAbstract, ClassTest::TestBase1&)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(ClassTest::Test2)
@@ -205,7 +208,7 @@ void ClassTestSuite::testClass()
 
 	Class::MethodList methods = test.methods();
 
-	TS_ASSERT_EQUALS(methods.size(), 7);
+	TS_ASSERT_EQUALS(methods.size(), 9);
 
 	Method base1Method1;
 	Method method1;

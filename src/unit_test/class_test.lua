@@ -87,7 +87,7 @@ function testClass()
 
     local methods = Test1Class:methods();
 
-    TS_ASSERT [[#methods == 7]]
+	TS_ASSERT [[#methods == 9]]
 
     local base1Method1
     local method1
