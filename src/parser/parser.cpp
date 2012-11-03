@@ -208,7 +208,7 @@ public:
 		FileID mainID = sm->getMainFileID();
 		const FileEntry* entry = sm->getFileEntryForID(mainID);
 
-		m_tu.include_directives.push_back("#include \"reflection_impl.h\"");
+		m_tu.include_directives.push_back("#include <SelfPortrait/reflection_impl.h>");
 		m_tu.include_directives.push_back(std::string("#include \"") + entry->getName() + "\"");
 	}
 
