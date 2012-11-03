@@ -1,0 +1,38 @@
+# Maintainer: Max de Bayser <maxdebayser@gmail.com>
+
+pkgname=SelfPortrait
+pkgver=0.1
+pkgrel=1
+arch=('i686' 'x86_64')
+license=('mit')
+makedepends=('cmake' 'clang-svn')
+options=('!strip' '!buildflags')
+source=()
+
+_gitroot="git://github.com/maxdebayser/SelfPortrait.git"
+
+build() {
+	cd "$srcdir"
+
+	msg2 "Connecting to github..."
+
+	if [ -d sf/.git ]; then
+		(cd sf && git pull ) || warning "Update failed"
+	else
+		git clone $_gitroot sf
+	fi
+
+	cd sf
+
+	[[ -d build ]] && rm -r build
+	mkdir build && cd build
+
+	cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+	make VERBOSE=1
+}
+
+package() {
+	cd "$srcdir/sf/build/"
+	make DESTDIR=$pkgdir install
+}
+
