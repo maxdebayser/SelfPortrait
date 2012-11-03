@@ -31,3 +31,5 @@ SET(LIBS "${CLANG_LIBS}" dl pthread)
 add_executable(selfportraitc ${HEADERS} ${SOURCES})
 
 target_link_libraries(selfportraitc ${LIBS})
+
+install(TARGETS selfportraitc RUNTIME DESTINATION bin)
