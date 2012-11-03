@@ -1,4 +1,4 @@
-require "libluacppreflect"
+require "libluaselfportrait"
 require "cxxtest"
 
 function testClass()

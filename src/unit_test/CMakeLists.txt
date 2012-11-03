@@ -26,7 +26,7 @@ set(SOURCES
 
 
 set(LIBS
-    reflection
+	selfportrait
     lua
 	utils
 )

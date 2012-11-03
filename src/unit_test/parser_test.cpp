@@ -23,7 +23,7 @@ namespace {
 	}
 
 	string parser() {
-		return fmt_str("%1/../parser/parser", binpath());
+		return fmt_str("%1/../parser/selfportraitc", binpath());
 	}
 
 	void runtest(const string& inputName, const string& referenceName, const string& outputName)

@@ -28,6 +28,6 @@ SET(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LLVM_LINKER_FLAGS}
 
 SET(LIBS "${CLANG_LIBS}" dl pthread)
 
-add_executable(parser ${HEADERS} ${SOURCES})
+add_executable(selfportraitc ${HEADERS} ${SOURCES})
 
-target_link_libraries(parser ${LIBS})
+target_link_libraries(selfportraitc ${LIBS})

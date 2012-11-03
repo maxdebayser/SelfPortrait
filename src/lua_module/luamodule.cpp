@@ -1435,7 +1435,7 @@ int Lua_Proxy::reference(lua_State* L)
 
 extern "C" {
 
-	int luaopen_libluacppreflect ( lua_State* L )
+	int luaopen_libluaselfportrait ( lua_State* L )
 	{
 		Lua_Class::_register(L);
 		Lua_Attribute::_register(L);

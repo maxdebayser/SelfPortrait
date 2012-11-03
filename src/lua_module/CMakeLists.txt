@@ -7,11 +7,11 @@ set(SOURCES
 
 
 set(LIBS
-    reflection
+	selfportrait
     lua
     utils
 )
 
 
-add_library(luacppreflect SHARED ${HEADERS} ${SOURCES})
-target_link_libraries(luacppreflect ${LIBS})
+add_library(luaselfportrait SHARED ${HEADERS} ${SOURCES})
+target_link_libraries(luaselfportrait ${LIBS})
