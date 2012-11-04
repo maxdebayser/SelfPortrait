@@ -13,7 +13,7 @@ namespace {
 
 namespace definitions {
 
-	bool Class::is_interface(std::ostream& diag) const
+	bool Class::is_interface(std::ostream& diag, const ClassIndex& index) const
 	{
 		bool is = true;
 
@@ -54,7 +54,7 @@ namespace definitions {
 		bool found_default = constructors.empty();
 		//bool found_default = constructors.empty();
 		for (const Constructor& c: constructors) {
-			if (c.is_default()) {
+			if (c.is_default() && c.access == Public) {
 				found_default = true;
 				break;
 			}
@@ -68,12 +68,20 @@ namespace definitions {
 
 		// Can inherit only from interfaces
 		for (const Inheritance& i: inherited) {
-			if (!i.clazz->is_interface(diag)) {
+
+			auto it = index.find(i.name);
+			if (it == index.end()) {
+				diag << "the defintion for the base class " << i.name << " of class " << name << " could not be found" << endl;
 				is = false;
-				diag << "class " << name << " inherits from " << i.clazz->name << " which is not an interface" << endl;
-			} else if (i.access != Public) {
-				is = false;
-				diag << "inheritance of interface " << i.clazz->name << " by class " << name << " is not public" << endl;
+			} else {
+				std::shared_ptr<Class> clazz = it->second;
+				if (!clazz->is_interface(diag, index)) {
+					is = false;
+					diag << "class " << name << " inherits from " << clazz->name << " which is not an interface" << endl;
+				} else if (i.access != Public) {
+					is = false;
+					diag << "inheritance of interface " << clazz->name << " by class " << name << " is not public" << endl;
+				}
 			}
 		}
 
@@ -86,10 +94,10 @@ namespace definitions {
 	}
 
 
-	void print(const Class& c, std::ostream& o, bool diagOn);
+	void print(const Class& c, std::ostream& o, bool diagOn, const ClassIndex&);
 	void print(const Inheritance& i, std::ostream& o);
 	void print(const Method& m, std::ostream& o);
-	void printAsStub(const Method& m, std::ostream& o);
+	void printAsStub(const Method& m, const std::string& className, std::ostream& o);
 	void print(const Function& f, std::ostream& o);
 	void print(const Attribute& a, std::ostream& o);
 	void print(const Constructor& c, std::ostream& o);
@@ -106,32 +114,52 @@ namespace definitions {
 		}
 
 		for (const auto& x: u.classes) {
-			print(*x, o, diagOn);
+			print(*x, o, diagOn, u.classIndex);
 			o << "\n";
 		}
 	}
 
-	void print(const Class& c, std::ostream& o, bool diagOn) {
-
-		stringstream devnull;
-
-		ostream& diagOut = diagOn ? std::cerr : devnull;
-
-		bool isInterface = c.is_interface(diagOut);
-
-		string stubname = c.name;
+	std::string stubName(const std::string& className) {
+		string stubname = className;
 		for (size_t i = 0; i < stubname.size(); ++i) {
 			if (stubname.at(i) == ':')  {
 				stubname.at(i) = '_';
 			}
 		}
 		stubname.append("Stub");
+		return stubname;
+	}
+
+	void printStubMethods(const Class& c, const ClassIndex& index, std::ostream& o) {
+		for (const auto& x: c.methods) {
+			printAsStub(x, c.name, o);
+		}
+		for (const Inheritance& i: c.inherited) {
+			auto it = index.find(i.name);
+			if (it == index.end()) {
+				throw std::logic_error("no base class can be unresolved at this point");
+			} else {
+				std::shared_ptr<Class> clazz = it->second;
+
+				printStubMethods(*clazz, index, o);
+			}
+		}
+	}
+
+
+	void print(const Class& c, std::ostream& o, bool diagOn, const ClassIndex& index) {
+
+		stringstream devnull;
+
+		ostream& diagOut = diagOn ? std::cerr : devnull;
+
+		bool isInterface = c.is_interface(diagOut, index);
+
+		string stubname = stubName(c.name);
 
 		if (isInterface) {
 			o << "REFL_BEGIN_STUB(" << c.name << ", " << stubname << ")\n";
-			for (const auto& x: c.methods) {
-				printAsStub(x, o);
-			}
+			printStubMethods(c, index, o);
 			o << "REFL_END_STUB\n\n";
 		}
 
@@ -162,7 +190,7 @@ namespace definitions {
 	}
 
 	void print(const Inheritance& i, std::ostream& o) {
-		o << "REFL_SUPER_CLASS(" << i.clazz->name << ")\n";
+		o << "REFL_SUPER_CLASS(" << i.name << ")\n";
 	}
 
 	void print(const Method& m, std::ostream& o) {
@@ -189,7 +217,7 @@ namespace definitions {
 		}
 	}
 
-	void printAsStub(const Method& m, std::ostream& o) {
+	void printAsStub(const Method& m, const std::string& className, std::ostream& o) {
 
 		if (!m.is_pure_virtual && !m.isUserProvided) {
 			return;
@@ -201,13 +229,13 @@ namespace definitions {
 
 		const string argstr = (m.argument_type_spellings.empty() ? "" : ", ") + m.argument_type_spellings;
 		if (!m.is_const && !m.is_volatile) {
-			o << "REFL_STUB_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+			o << "REFL_STUB_METHOD(" << className << ", " << m.name << ", " << m.return_type_spelling << argstr << ")\n";
 		} else if (m.is_const && !m.is_volatile) {
-			o << "REFL_STUB_CONST_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+			o << "REFL_STUB_CONST_METHOD(" << className << ", " << m.name << ", " << m.return_type_spelling << argstr << ")\n";
 		} else if (!m.is_const && m.is_volatile) {
-			o << "REFL_STUB_VOLATILE_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+			o << "REFL_STUB_VOLATILE_METHOD(" << className << ", " << m.name << ", " << m.return_type_spelling << argstr << ")\n";
 		} else {
-			o << "REFL_STUB_CONST_VOLATILE_METHOD(" << m.name << ", " << m.return_type_spelling << argstr << ")\n";
+			o << "REFL_STUB_CONST_VOLATILE_METHOD(" << className << ", " << m.name << ", " << m.return_type_spelling << argstr << ")\n";
 		}
 	}
 
@@ -248,7 +276,7 @@ namespace definitions {
 		m_tu.classes.push_back(c);
 
 		m_cStack.push_back(c);
-		m_cIndex[c->name] = c;
+		m_tu.classIndex[c->name] = c;
 	}
 
 	void TranslationUnitBuilder::popClass() {
@@ -286,11 +314,7 @@ namespace definitions {
 	}
 
 	void TranslationUnitBuilder::addInheritance(const std::string& baseName, Access access) {
-		auto it = m_cIndex.find(baseName);
-		if (it == m_cIndex.end()) {
-			throw std::logic_error("base class was not parsed yet");
-		}
-		currentClass().inherited.push_back({it->second, access});
+		currentClass().inherited.push_back({baseName, access});
 	}
 
 }

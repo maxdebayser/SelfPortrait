@@ -30,6 +30,7 @@ namespace definitions {
 	};
 
 
+
 	struct Attribute {
 
 		//Attribute() = default;
@@ -77,8 +78,10 @@ namespace definitions {
 
 	struct Class;
 
+	typedef std::unordered_map<std::string, std::shared_ptr<Class> > ClassIndex;
+
 	struct Inheritance {
-		std::shared_ptr<Class> clazz;
+		std::string name;
 		Access access;
 	};
 
@@ -111,7 +114,7 @@ namespace definitions {
 		 * Other constuctors are allowed.
 		 */
 		// Should we restrict overloaded methods?
-		bool is_interface(std::ostream& diag) const;
+		bool is_interface(std::ostream& diag, const ClassIndex& index) const;
 
 	};
 
@@ -122,6 +125,8 @@ namespace definitions {
 		std::vector<Function> functions;
 
 		std::vector<std::shared_ptr<Class> > classes;
+
+		ClassIndex classIndex;
 	};
 
 	class TranslationUnitBuilder {
@@ -149,7 +154,6 @@ namespace definitions {
 	private:
 		TranslationUnit& m_tu;
 		std::vector<std::shared_ptr<Class> > m_cStack;
-		std::unordered_map<std::string, std::shared_ptr<Class> > m_cIndex;
 	};
 
 

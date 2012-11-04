@@ -537,25 +537,25 @@ struct FuncRegHelper {
 			virtual Interface* clone() const { return new STUBCLASSNAME(); }\
 			virtual VariantValue refToBase() { VariantValue ret; ret.construct<ThisClass&>(*this); return ret; }
 
-#define REFL_STUB_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_STUB_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__)>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
-#define REFL_STUB_CONST_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_STUB_CONST_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) const>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
-#define REFL_STUB_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_STUB_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) volatile override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
 
-#define REFL_STUB_CONST_VOLATILE_METHOD(METHOD_NAME, RESULT, ...) \
+#define REFL_STUB_CONST_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const volatile override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(ThisClass::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
 
