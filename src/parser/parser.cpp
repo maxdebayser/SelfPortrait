@@ -129,7 +129,7 @@ class MyASTConsumer
 		}
 	}
 
-	QualType treatType(QualType&& t, SourceRange&& range) {
+	QualType treatType(QualType&& t, SourceRange&& range, bool isInMainFile) {
 
 		const Type* orig = t.getTypePtr();
 		const Type* type = nullptr;
@@ -169,7 +169,7 @@ class MyASTConsumer
 
 			if (const TypedefType* tt = dyn_cast<TypedefType>(type)) {
 				if (TypedefNameDecl* tnd = tt->getDecl()) {
-					return treatType(tnd->getUnderlyingType(), ::std::move(range));
+					return treatType(tnd->getUnderlyingType(), ::std::move(range), isInMainFile);
 				}
 			} else if (const auto* tt = dyn_cast<TemplateSpecializationType>(type)) {
 				if (m_instantiateTemplates) {
@@ -179,7 +179,7 @@ class MyASTConsumer
 							if (!spec->hasDefinition()) {
 								m_sema.InstantiateClassTemplateSpecialization(range.getBegin(), spec, TSK_ImplicitInstantiation, false);
 								if (spec->hasDefinition()) {
-									handleDecl(spec->getDefinition());
+									handleDecl(spec->getDefinition(), isInMainFile);
 								}
 							}
 						}
@@ -229,7 +229,7 @@ public:
 						Private;
 	}
 
-	void handleDecl(Decl* decl)
+	void handleDecl(Decl* decl, bool isInMainFile)
 	{
 		try {
 
@@ -250,11 +250,11 @@ public:
 				// recurse
 				for (DeclContext::decl_iterator it = nd->decls_begin(); it != nd->decls_end(); ++it) {
 					clang::Decl* subdecl = *it;
-					handleDecl(subdecl);
+					handleDecl(subdecl, isInMainFile);
 				}
 
 			} else if (FieldDecl *fd = dyn_cast<FieldDecl>(decl)) {
-				QualType t = treatType(fd->getType(), fd->getSourceRange());
+				QualType t = treatType(fd->getType(), fd->getSourceRange(), isInMainFile);
 				Access access = convertClangsAccessSpec(decl->getAccess());
 				m_builder.addAttribute({fd->getDeclName().getAsString(), printType(t), access});
 
@@ -287,12 +287,12 @@ public:
 						definition->getNameForDiagnostic(name, m_printPol, true);
 
 
-						m_builder.pushClass({printType(name)});
+						m_builder.pushClass({printType(name), isInMainFile});
 
 
 						for (auto it = definition->bases_begin(); it != definition->bases_end(); ++it) {
 							Access access = convertClangsAccessSpec(it->getAccessSpecifier());
-							QualType t = treatType(it->getType(), it->getSourceRange());
+							QualType t = treatType(it->getType(), it->getSourceRange(), isInMainFile);
 							string classname = printType(t);
 							m_builder.addInheritance(classname, access);
 						}
@@ -305,7 +305,7 @@ public:
 						// recurse
 						for (DeclContext::decl_iterator it = definition->decls_begin(); it != definition->decls_end(); ++it) {
 							clang::Decl* subdecl = *it;
-							handleDecl(subdecl);
+							handleDecl(subdecl, isInMainFile);
 						}
 						m_builder.popClass();
 
@@ -350,7 +350,7 @@ public:
 				}
 
 				string name = fd->getNameAsString();
-				QualType qt = treatType(fd->getResultType(), fd->getSourceRange());
+				QualType qt = treatType(fd->getResultType(), fd->getSourceRange(), isInMainFile);
 				const string returnType =  printType(qt);
 
 				list<string> args;
@@ -358,7 +358,7 @@ public:
 
 				for (auto it = fd->param_begin(); it != fd->param_end(); ++it) {
 					ParmVarDecl* param = *it;
-					QualType pt = treatType(param->getType(), param->getSourceRange());
+					QualType pt = treatType(param->getType(), param->getSourceRange(), isInMainFile);
 					// if we should need the names, this is how we get them *it)->getDeclName().getAsString(m_printPol)
 					args.push_back(printType(pt));
 				}
@@ -387,7 +387,7 @@ public:
 						}
 					} else {
 
-						QualType mqt = treatType(md->getType(), md->getSourceRange());
+						QualType mqt = treatType(md->getType(), md->getSourceRange(), isInMainFile);
 						// this prints the method type: mqt.getAsString(m_printPol)
 
 						const FunctionProtoType* proto = dyn_cast<const FunctionProtoType>(mqt.getTypePtr());
@@ -415,23 +415,26 @@ public:
 						}
 					}
 				} else if (fd->hasLinkage() && fd->getLinkage() == ExternalLinkage) {
+					if (!isInMainFile) {
+						return;
+					}
 					// is not a method
 					string nameWithNamespace;
 					fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
 					string a = string(args.empty() ? "" : ", ") + argstr;
 					m_tu.functions.push_back({nameWithNamespace, returnType, argstr});
-					}
+				}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 				if (m_instantiateTemplates) {
 					for (clang::ClassTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
 						//specializations are classes too
-						handleDecl(*it);
+						handleDecl(*it, isInMainFile);
 					}
 				}
 			} else if (clang::FunctionTemplateDecl* td = llvm::dyn_cast<clang::FunctionTemplateDecl>(decl)) {
 				if (m_instantiateTemplates) {
 					for (clang::FunctionTemplateDecl::spec_iterator it = td->spec_begin(); it != td->spec_end(); ++it) {
-						handleDecl(*it);
+						handleDecl(*it, isInMainFile);
 					}
 				}
 			}
@@ -538,9 +541,7 @@ int main(int argc, const char* argv[])
 		Decl* subdecl = *it;
 		SourceLocation location = subdecl->getLocation();
 
-		if (unit->isInMainFileID(location)) {
-			astConsumer.handleDecl(subdecl);
-		}
+		astConsumer.handleDecl(subdecl, unit->isInMainFileID(location));
 	}
 
 	std::ofstream out;

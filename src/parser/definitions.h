@@ -87,11 +87,13 @@ namespace definitions {
 
 	struct Class {
 
-		Class(const std::string& n) : name(n), destructor_is_public_virtual(false) {}
+		Class(const std::string& n, bool isInMainFile) : name(n), destructor_is_public_virtual(false), inMainFile(isInMainFile) {}
 
 		std::string name;
 
 		bool destructor_is_public_virtual;
+
+		const bool inMainFile;
 
 		std::vector<Constructor> constructors;
 

@@ -24,7 +24,7 @@ namespace definitions {
 
 		if (!destructor_is_public_virtual) {
 			is = false;
-			diag << "class " << name << " has no public destructor" << endl;
+			diag << "class " << name << " has no public virtual destructor" << endl;
 		}
 
 		// Only public pure virtual methods
@@ -114,8 +114,10 @@ namespace definitions {
 		}
 
 		for (const auto& x: u.classes) {
-			print(*x, o, diagOn, u.classIndex);
-			o << "\n";
+			if (x->inMainFile) {
+				print(*x, o, diagOn, u.classIndex);
+				o << "\n";
+			}
 		}
 	}
 
