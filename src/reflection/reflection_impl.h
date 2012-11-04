@@ -72,7 +72,7 @@ return &instance;\
 }
 
 #define REFL_SUPER_CLASS(CLASS_NAME) \
-instance.registerSuperClass(ClassOf<CLASS_NAME>());
+instance.registerSuperClass(#CLASS_NAME);
 
 
 #ifndef NO_RTTI

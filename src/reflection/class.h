@@ -17,7 +17,6 @@
 
 class Interface;
 
-
 class ClassImpl: public Annotated {
 public:
 	typedef Class::MethodList MethodList;
@@ -35,10 +34,15 @@ public:
 	
 	const AttributeList& attributes() const;
 
+	void registerSuperClass(const char* className);
+
+	void resolveBases();
+
+	bool hasUnresolvedBases() const;
+
 	bool open() const;
 
 	void close();
-
 
 	ClassImpl();
 
@@ -55,7 +59,7 @@ public:
 	
 	void registerAttribute(Attribute attr);
 	
-	void registerSuperClass(Class c);
+
 
 #ifndef NO_RTTI
 	const std::type_info& typeId() const;
@@ -73,10 +77,14 @@ public:
 	void registerInterface(Interface* i);
 
 private:
+
+	void registerSuperClassInternal(Class c);
+
 	void assert_open() const;
 	::std::string m_fqn = "error, meta-class uninitialized";
 	MethodList m_methods;
 	ConstructorList m_constructors;
+	std::list<const char*> m_unresolvedBases;
 	ClassList m_superclasses;
 	AttributeList m_attributes;
 	bool m_open;
@@ -86,6 +94,7 @@ private:
 #ifndef NO_RTTI
 	const std::type_info* m_typeInfo;
 #endif
+
 };
 
 

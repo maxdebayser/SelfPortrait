@@ -350,6 +350,8 @@ public:
 	static Class lookup(const ::std::string& name);
 
 	bool isInterface() const;
+
+	bool hasUnresolvedBases() const;
 	
 private:
 

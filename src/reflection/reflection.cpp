@@ -130,7 +130,12 @@ Class::Class()
 	
 Class::Class(ClassImpl* impl)
 	: AnnotatedFrontend(*impl)
-	, m_impl(impl) {}
+	, m_impl(impl)
+{
+	if (m_impl) {
+		m_impl->resolveBases();
+	}
+}
 
 Class::Class(const Class& rhs)
 	: Class(rhs.m_impl) {}
@@ -527,6 +532,11 @@ bool Class::isInterface() const {
 	return m_impl->isInterface();
 }
 
+bool Class::hasUnresolvedBases() const
+{
+	return m_impl->hasUnresolvedBases();
+}
+
 namespace std {
 
 	size_t hash<Method>::operator()(const Method& m) const {
@@ -685,6 +695,9 @@ Proxy::Proxy(std::vector<Class> ifaces)
 	for(Class clazz: ifaces) {
 		if (!clazz.m_impl->isInterface()) {
 			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which is not an interface", clazz.fullyQualifiedName()));
+		}
+		if (clazz.m_impl->hasUnresolvedBases()) {
+			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which has unresolved base classes", clazz.fullyQualifiedName()));
 		}
 		m_impl->registerInterface(clazz.m_impl);
 	}

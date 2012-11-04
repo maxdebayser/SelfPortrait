@@ -72,9 +72,14 @@ void ClassImpl::registerAttribute(Attribute attr)
 	m_attributes.push_back(attr);
 }
 
-void ClassImpl::registerSuperClass(Class c)
+void ClassImpl::registerSuperClass(const char* className)
 {
 	assert_open();
+	m_unresolvedBases.push_back(className);
+}
+
+void ClassImpl::registerSuperClassInternal(Class c)
+{
 	m_superclasses.push_back(c);
 	for (const Method& m : c.methods()) {
 		m_methods.push_back(m);
@@ -83,7 +88,23 @@ void ClassImpl::registerSuperClass(Class c)
 		m_attributes.push_back(a);
 	}
 	for(Class s: c.superclasses()) {
-		registerSuperClass(s);
+		registerSuperClassInternal(s);
+	}
+}
+
+bool ClassImpl::hasUnresolvedBases() const
+{
+	return !m_unresolvedBases.empty();
+}
+
+void ClassImpl::resolveBases()
+{
+	for (auto it = m_unresolvedBases.begin(); it!= m_unresolvedBases.end(); ++it) {
+		Class c = Class::lookup(*it);
+		if (c.isValid()) {
+			it = m_unresolvedBases.erase(it);
+			registerSuperClassInternal(c);
+		}
 	}
 }
 
