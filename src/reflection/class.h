@@ -15,7 +15,9 @@
 
 #include "reflection.h"
 
-class Interface;
+class ProxyImpl;
+
+typedef VariantValue (*StubCreator)(std::shared_ptr<ProxyImpl>&);
 
 class ClassImpl: public Annotated {
 public:
@@ -59,8 +61,6 @@ public:
 	
 	void registerAttribute(Attribute attr);
 	
-
-
 #ifndef NO_RTTI
 	const std::type_info& typeId() const;
 	void setTypeInfo(const std::type_info& info);
@@ -72,9 +72,9 @@ public:
 
 	bool isInterface() const;
 
-	std::unique_ptr<Interface> newInterface() const;
+	VariantValue newInterface(std::shared_ptr<ProxyImpl>& proxyImpl) const;
 
-	void registerInterface(Interface* i);
+	void registerInterface(StubCreator c);
 
 private:
 
@@ -89,7 +89,7 @@ private:
 	AttributeList m_attributes;
 	bool m_open;
 
-	Interface* m_iface;
+	StubCreator m_stubCreator;
 
 #ifndef NO_RTTI
 	const std::type_info* m_typeInfo;

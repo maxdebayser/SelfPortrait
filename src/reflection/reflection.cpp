@@ -669,21 +669,27 @@ namespace std {
 
 //--------proxy------------------------------------------------
 
-Proxy::~Proxy() {}
+Proxy::~Proxy() {
+	//cout proxy morrendo
+	m_impl->decHandleCount();
+}
 
 Proxy::Proxy(Proxy&& that)
-	: m_impl(std::move(that.m_impl))
-{}
+	: m_impl(that.m_impl)
+{
+	m_impl->incHandleCount();
+}
 
-
-/*Proxy::Proxy(const Proxy& that)
-	: m_impl(new ProxyImpl(*that.m_impl))
-{}
+Proxy::Proxy(const Proxy& that)
+	: m_impl(that.m_impl)
+{
+	m_impl->incHandleCount();
+}
 
 void Proxy::swap(Proxy& that)
 {
 	std::swap(m_impl, that.m_impl);
-}*/
+}
 
 Proxy::Proxy(std::initializer_list<Class> ifaces)
 	: Proxy(std::vector<Class>(ifaces))
@@ -691,7 +697,9 @@ Proxy::Proxy(std::initializer_list<Class> ifaces)
 
 Proxy::Proxy(std::vector<Class> ifaces)
 	: m_impl(new ProxyImpl())
-{
+{	
+	m_impl->incHandleCount();
+	m_impl->weakThis = m_impl;
 	for(Class clazz: ifaces) {
 		if (!clazz.m_impl->isInterface()) {
 			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which is not an interface", clazz.fullyQualifiedName()));
@@ -699,13 +707,15 @@ Proxy::Proxy(std::vector<Class> ifaces)
 		if (clazz.m_impl->hasUnresolvedBases()) {
 			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which has unresolved base classes", clazz.fullyQualifiedName()));
 		}
+
 		m_impl->registerInterface(clazz.m_impl);
 	}
 }
 
 Proxy::Proxy(Class iface)
 	: Proxy{iface}
-{}
+{
+}
 
 
 Proxy::IFaceList Proxy::interfaces() const

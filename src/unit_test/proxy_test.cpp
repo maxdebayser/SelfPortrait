@@ -57,24 +57,27 @@ void ProxyTestSuite::testProxy()
 
 	Method m = test.findMethod([](const Method& m){ return m.name() == "method1"; });
 
-	Proxy proxy(test);
-	Proxy::IFaceList ifaces = proxy.interfaces();
+	VariantValue handle;
+	{ // inner scope
+		Proxy proxy(test);
+		Proxy::IFaceList ifaces = proxy.interfaces();
 
-	TS_ASSERT_EQUALS(ifaces.size(), 1)
-	TS_ASSERT_EQUALS(ifaces.front(), test)
+		TS_ASSERT_EQUALS(ifaces.size(), 1)
+		TS_ASSERT_EQUALS(ifaces.front(), test)
 
-	proxy.addImplementation(m, [](const std::vector<VariantValue>& args){
-		TS_ASSERT(args.size() == 2);
-		TS_ASSERT(args[0].isA<int>());
-		TS_ASSERT(args[1].isA<int>());
-		int first = args[0].value<int>();
-		int second = args[1].value<int>();
-		return VariantValue(first*second);
-	});
+		proxy.addImplementation(m, [](const std::vector<VariantValue>& args){
+			TS_ASSERT(args.size() == 2);
+			TS_ASSERT(args[0].isA<int>());
+			TS_ASSERT(args[1].isA<int>());
+			int first = args[0].value<int>();
+			int second = args[1].value<int>();
+			return VariantValue(first*second);
+		});
 
-	TS_ASSERT(proxy.hasImplementation(m));
+		TS_ASSERT(proxy.hasImplementation(m));
 
-	VariantValue handle = proxy.reference(test);
+		handle = proxy.reference(test);
+	}
 
 	TS_ASSERT(handle.isValid());
 
@@ -109,7 +112,7 @@ void ProxyTestSuite::testClient()
 		TS_ASSERT(args[0].isA<int>());
 		TS_ASSERT(args[1].isA<int>());
 		int first = args[0].value<int>();
-		int second = args[1].value<int>();
+		double second = args[1].value<int>();
 		return VariantValue(first*second);
 	});
 

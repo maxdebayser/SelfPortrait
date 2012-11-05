@@ -42,7 +42,7 @@ void ClassImpl::assert_open() const
 
 ClassImpl::ClassImpl()
 	: m_open(true)
-	, m_iface(nullptr)
+	, m_stubCreator(nullptr)
 {}
 
 void ClassImpl::setFullyQualifiedName(const ::std::string& fqn)
@@ -121,21 +121,21 @@ void ClassImpl::setTypeInfo(const std::type_info& info)
 
 bool ClassImpl::isInterface() const
 {
-	return m_iface != nullptr;
+	return m_stubCreator != nullptr;
 }
 
-std::unique_ptr<Interface> ClassImpl::newInterface() const
+VariantValue ClassImpl::newInterface(std::shared_ptr<ProxyImpl>& proxyImpl) const
 {
-	if (m_iface == nullptr) {
-		return InterfacePtr();
+	if (m_stubCreator == nullptr) {
+		return VariantValue();
 	} else {
-		return InterfacePtr(m_iface->clone());
+		return m_stubCreator(proxyImpl);
 	}
 }
 
-void ClassImpl::registerInterface(Interface* i)
+void ClassImpl::registerInterface(StubCreator sc)
 {
-	m_iface = i;
+	m_stubCreator = sc;
 }
 
 #endif

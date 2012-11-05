@@ -3,39 +3,11 @@
 
 #include <stdexcept>
 
-Interface::~Interface()
-{
-	// if another classe takes ownership of the stub
-	// we detect this situation and avoid a double delete
-	if (m_proxy) {
-		m_proxy->releaseMe(this);
-	}
-}
-
-void Interface::release() {
-	m_proxy = nullptr;
-}
-
-VariantValue Interface::callArgArray(size_t method_hash, const ::std::vector<VariantValue>& vargs) const
-{
-	return m_proxy->call(method_hash, vargs);
-}
-
-ProxyImpl::ProxyImpl(const ProxyImpl& that)
-	: m_map(that.m_map)
-{
-	for (auto it = that.m_interfaces.begin(); it != that.m_interfaces.end(); ++it) {
-		m_interfaces[it->first] = InterfacePtr(it->second->clone());
-	}
-}
-
 
 void ProxyImpl::registerInterface(ClassImpl* iface)
 {
-	InterfacePtr ptr = iface->newInterface();
-	ptr->setProxy(this);
-
-	m_interfaces[iface] = std::move(ptr);
+	std::shared_ptr<ProxyImpl> strongRef(weakThis);
+	m_interfaces[iface] = std::move(iface->newInterface(strongRef));
 }
 
 void ProxyImpl::registerHandler(size_t method_hash, Proxy::MethodHandler mh)
@@ -47,7 +19,7 @@ bool ProxyImpl::hasHandler(size_t method_hash) const {
 	return (m_map.find(method_hash) != m_map.end());
 }
 
-VariantValue ProxyImpl::call(size_t method_hash, const ::std::vector<VariantValue>& vargs) const
+VariantValue ProxyImpl::callArgArray(size_t method_hash, const ::std::vector<VariantValue>& vargs) const
 {
 	auto it = m_map.find(method_hash);
 	if (it == m_map.end()) {
@@ -73,23 +45,22 @@ VariantValue ProxyImpl::ref(ClassImpl* clazz) const
 {
 	auto it = m_interfaces.find(clazz);
 	if (it != m_interfaces.end()) {
-		return it->second->refToBase();
+		return it->second.createReference();
 	}
 	return VariantValue();
 }
 
-ProxyImpl::~ProxyImpl() {
-	for (auto it = m_interfaces.begin(); it != m_interfaces.end(); ++it) {
-		it->second->release();
-	}
+void ProxyImpl::incHandleCount()
+{
+	++m_handleCount;
 }
 
-void ProxyImpl::releaseMe(Interface* i)
+
+void ProxyImpl::decHandleCount()
 {
-	for (auto it = m_interfaces.begin(); it != m_interfaces.end(); ++it) {
-		if (it->second.get() == i) {
-			m_interfaces.erase(it);
-			break;
-		}
+	// if there are no handles we can clear the interfaces
+	// that form a circular reference to this object
+	if (--m_handleCount <= 0) {
+		m_interfaces.clear();
 	}
 }

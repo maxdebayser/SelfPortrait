@@ -257,8 +257,7 @@ instance.registerMethod(Method(&impl));\
 
 
 #define REFL_STUB(STUBCLASS) \
-	static STUBCLASS impl##STUBCLASS;\
-	instance.registerInterface(&impl##STUBCLASS);
+	instance.registerInterface(STUBCLASS::create);
 
 
 class FunctionRegistry {
@@ -531,31 +530,32 @@ struct FuncRegHelper {
 
 #define REFL_BEGIN_STUB(CLASS, STUBCLASSNAME) \
 	namespace {\
-		class STUBCLASSNAME: public CLASS, public Interface {\
+		class STUBCLASSNAME: public CLASS {\
+			std::shared_ptr<ProxyImpl> impl;\
 		public:\
+			STUBCLASSNAME(std::shared_ptr<ProxyImpl>& pi) : impl(pi){}\
 			typedef CLASS ThisClass;\
-			virtual Interface* clone() const { return new STUBCLASSNAME(); }\
-			virtual VariantValue refToBase() { VariantValue ret; ret.construct<ThisClass&>(*this); return ret; }
+			static VariantValue create(std::shared_ptr<ProxyImpl>& pImpl) { VariantValue ret; ret.construct<STUBCLASSNAME>(pImpl); return std::move(ret); }
 
 #define REFL_STUB_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
 #define REFL_STUB_CONST_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
 #define REFL_STUB_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) volatile override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
 
 #define REFL_STUB_CONST_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const volatile override {\
-		return call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
 	}
 
 

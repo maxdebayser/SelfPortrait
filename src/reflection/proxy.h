@@ -14,19 +14,21 @@
 class ProxyImpl;
 class ClassImpl;
 
-// Abstract base class for call-forwarding stubs
-class Interface {
-	// Life cycle is bound to ProxyImpl object
-	ProxyImpl* m_proxy = nullptr;
+
+class ProxyImpl {
 public:
 
-	virtual ~Interface();
+	ProxyImpl() = default;
 
-	virtual Interface* clone() const = 0;
+	ProxyImpl(const ProxyImpl& that) = delete;
 
-	virtual VariantValue refToBase() = 0;
+	void registerInterface(ClassImpl* cimpl);
 
-	void release();
+	void registerHandler(size_t method_hash, Proxy::MethodHandler);
+
+	bool hasHandler(size_t method_hash) const;
+
+	VariantValue callArgArray(size_t method_hash, const ::std::vector<VariantValue>& vargs) const;
 
 	template<class... Args>
 	VariantValue call(size_t method_hash, const Args&... args) const {
@@ -35,44 +37,24 @@ public:
 		return callArgArray(method_hash, vargs );
 	}
 
-	VariantValue callArgArray(size_t method_hash, const ::std::vector<VariantValue>& vargs) const;
-
-	void setProxy(ProxyImpl* pi) { m_proxy = pi; }
-};
-
-typedef std::unique_ptr<Interface> InterfacePtr;
-
-
-class ProxyImpl {
-public:
-	~ProxyImpl();
-
-	ProxyImpl() = default;
-
-	// deep copy
-	ProxyImpl(const ProxyImpl& that);
-
-	void registerInterface(ClassImpl* cimpl);
-
-	void registerHandler(size_t method_hash, Proxy::MethodHandler);
-
-	bool hasHandler(size_t method_hash) const;
-
-	VariantValue call(size_t method_hash, const ::std::vector<VariantValue>& vargs) const;
-
 	VariantValue ref(ClassImpl* clazz) const;
 
 	std::list<ClassImpl*> interfaces() const;
 
-	void releaseMe(Interface* i);
+	std::weak_ptr<ProxyImpl> weakThis;
+
+	void incHandleCount();
+	void decHandleCount();
+
 
 private:
 	typedef size_t hash_t;
 	typedef std::map<hash_t, Proxy::MethodHandler > methmap;
-	typedef std::map<ClassImpl*, InterfacePtr > ifacemap;
+	typedef std::map<ClassImpl*, VariantValue > ifacemap;
 
 	methmap m_map;
 	ifacemap m_interfaces;
+	int m_handleCount = 0;
 };
 
 

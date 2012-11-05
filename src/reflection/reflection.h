@@ -464,15 +464,15 @@ class ProxyImpl;
 class Proxy {
 public:
 
-	// deep copy
-	/*Proxy(const Proxy& that);
+
+	Proxy(const Proxy& that);
 
 	void swap(Proxy& that);
 
 	Proxy& operator=(Proxy that) {
 		swap(that);
 		return *this;
-	}*/
+	}
 
 	Proxy(Proxy&& that);
 
@@ -497,7 +497,7 @@ public:
 
 private:
 
-	std::unique_ptr<ProxyImpl> m_impl;
+	std::shared_ptr<ProxyImpl> m_impl;
 };
 
 
