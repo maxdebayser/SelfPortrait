@@ -430,7 +430,7 @@ public:
 		return *this;
 	}
 
-	VariantValue createReference();
+	VariantValue createReference() const;
 	
 	template<class ValueType>
 	bool isA() const {
@@ -518,9 +518,10 @@ private:
 
 	template<class ValueType>
 	struct impossibleConversion {
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
-			return ValueType();
+			ValueType* ptr = nullptr;
+			return *ptr;
 		}
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
@@ -535,6 +536,18 @@ private:
 			return *ptr;
 		}
 		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder) {
+			throw std::runtime_error("failed conversion");
+		}
+	};
+
+	template<class ValueType>
+	struct impossibleConversion<ValueType&&> {
+		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+			if (success != nullptr) *success = false;
+			ValueType* ptr = nullptr;
+			return *ptr;
+		}
+		static ValueType&& value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -619,7 +632,7 @@ public:
 	}
 
 	template<class ValueType>
-	ValueType&& moveValueThrow() const {
+	ValueType moveValueThrow() const {
 		check_valid();
 
 		auto ptr = isAPriv<ValueType>();

@@ -20,7 +20,7 @@ VariantValue& VariantValue::operator=(VariantValue&& rhs)
 }
 
 
-VariantValue VariantValue::createReference() {
+VariantValue VariantValue::createReference() const {
 	VariantValue ret;
 	ret.m_impl = m_impl;
 	return ::std::move(ret);
