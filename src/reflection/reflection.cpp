@@ -676,14 +676,14 @@ Proxy::Proxy(Proxy&& that)
 {}
 
 
-Proxy::Proxy(const Proxy& that)
+/*Proxy::Proxy(const Proxy& that)
 	: m_impl(new ProxyImpl(*that.m_impl))
 {}
 
 void Proxy::swap(Proxy& that)
 {
 	std::swap(m_impl, that.m_impl);
-}
+}*/
 
 Proxy::Proxy(std::initializer_list<Class> ifaces)
 	: Proxy(std::vector<Class>(ifaces))

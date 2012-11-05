@@ -465,14 +465,14 @@ class Proxy {
 public:
 
 	// deep copy
-	Proxy(const Proxy& that);
+	/*Proxy(const Proxy& that);
 
 	void swap(Proxy& that);
 
 	Proxy& operator=(Proxy that) {
 		swap(that);
 		return *this;
-	}
+	}*/
 
 	Proxy(Proxy&& that);
 
@@ -510,10 +510,10 @@ inline bool operator!=(const Proxy& p1, const Proxy& p2) {
 	return !(p1 == p2);
 }
 
-namespace std {
+/*namespace std {
 	inline void swap(Proxy& p1, Proxy& p2) {
 		p1.swap(p2);
 	}
-}
+}*/
 
 #endif /* REFLECTION_H */
