@@ -286,6 +286,11 @@ inline bool operator!=(const Method& m1, const Method& m2)
 }
 
 
+bool overrides(const Method& m1, const Method& m2);
+
+bool overloads(const Method& m1, const Method& m2);
+
+
 class Class: public AnnotatedFrontend {
 public:
 	
@@ -389,6 +394,12 @@ inline bool operator!=(const Class& c1, const Class& c2)
 {
 	return !(c1 == c2);
 }
+
+bool inheritanceRelation(const Class& c1, const Class& c2);
+
+bool inherits(const Class& c1, const Class& c2);
+
+bool inheritedBy(const Class& c1, const Class& c2);
 
 
 class FunctionImpl;

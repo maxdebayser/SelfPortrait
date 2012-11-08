@@ -281,6 +281,15 @@ Class Class::lookup(const ::std::string& name)
 	return ClassRegistry::instance().forName(name);
 }
 
+bool Class::isInterface() const {
+	return m_impl->isInterface();
+}
+
+bool Class::hasUnresolvedBases() const
+{
+	return m_impl->hasUnresolvedBases();
+}
+
 const Class ClassRegistry::forName(const ::std::string& name) const
 {
 	auto it = m_registry.find(name);
@@ -301,6 +310,50 @@ ClassRegistry& ClassRegistry::instance()
 	static ClassRegistry instance;
 	return instance;
 }
+
+namespace {
+
+	enum CRel {
+		SAME,
+		UNRELATED,
+		MORE_ABSTRACT,
+		LESS_ABSTRACT
+	};
+
+	CRel classifyRelationship(const Class& c1, const Class& c2)
+	{
+		// even if there is no difference in "abstractness" the order is deterministic
+		if (c1 == c2) {
+			return SAME;
+		}
+
+		if (find(c2.superclasses().begin(), c2.superclasses().end(), c1) != c2.superclasses().end()) {
+			return MORE_ABSTRACT;
+		}
+
+		if (find(c1.superclasses().begin(), c1.superclasses().end(), c2) != c1.superclasses().end()) {
+			return LESS_ABSTRACT;
+		}
+
+		return UNRELATED;
+	}
+}
+
+bool inheritanceRelation(const Class& c1, const Class& c2)
+{
+	return classifyRelationship(c1, c2) != UNRELATED;
+}
+
+bool inherits(const Class& c1, const Class& c2)
+{
+	return classifyRelationship(c1, c2) == LESS_ABSTRACT;
+}
+
+bool inheritedBy(const Class& c1, const Class& c2)
+{
+	return classifyRelationship(c1, c2) == MORE_ABSTRACT;
+}
+
 
 
 //--------constructor---------------------------------------------
@@ -528,14 +581,7 @@ Class Method::getClass() const {
 	return Class(m_class);
 }
 
-bool Class::isInterface() const {
-	return m_impl->isInterface();
-}
 
-bool Class::hasUnresolvedBases() const
-{
-	return m_impl->hasUnresolvedBases();
-}
 
 namespace std {
 
@@ -547,6 +593,97 @@ namespace std {
 		}
 	}
 }
+
+bool overrides(const Method& m1, const Method& m2)
+{
+	// cheap tests first
+	if (m1.getClass() == m2.getClass()) return false;
+
+	if (m1.name() != m2.name()) return false;
+
+	if (m1.isStatic() || m2.isStatic()) return false;
+
+	if (m1.numberOfArguments() != m2.numberOfArguments()) return false;
+
+	if (m1.isConst() != m2.isConst()) return false;
+
+	if (m1.isVolatile() != m2.isVolatile()) return false;
+
+	// costly tests
+	if (!inheritanceRelation(m1.getClass(), m2.getClass())) return false;
+
+	// The return value can be difference because of covariance
+	// Fortunately (to us) the compiler doesn't allow overloads base only on return type
+
+#ifndef NO_RTTI
+
+	auto args1 = m1.argumentTypes();
+	auto args2 = m2.argumentTypes();
+
+	auto it1 = begin(args1);
+	auto it2 = begin(args2);
+
+	for (; it1 != end(args1); ++it1, ++it2)
+		if (**it1 != **it2) return false;
+
+#else
+
+	auto args1 = m1.argumentSpellings();
+	auto args2 = m2.argumentSpellings();
+
+	auto it1 = begin(args1);
+	auto it2 = begin(args2);
+
+	for (; it1 != end(args1); ++it1, ++it2)
+		if (*it1 != *it2) return false;
+
+#endif
+
+	// ok, one definitely overrides the other
+	return inherits(m1.getClass(), m2.getClass());
+}
+
+bool overloads(const Method& m1, const Method& m2)
+{
+	// cheap tests first
+	if (m1 == m2) return false;
+
+	if (m1.name() != m2.name()) return false;
+
+	// can a static method overload a non-static one?
+	if (m1.isStatic() != m2.isStatic()) return false;
+
+	// costly tests
+	if (!inheritanceRelation(m1.getClass(), m2.getClass())) return false;
+
+#ifndef NO_RTTI
+
+	auto args1 = m1.argumentTypes();
+	auto args2 = m2.argumentTypes();
+
+	auto it1 = begin(args1);
+	auto it2 = begin(args2);
+
+	for (; it1 != end(args1); ++it1, ++it2)
+		if (**it1 != **it2) return false;
+
+#else
+	// less safe
+	auto args1 = m1.argumentSpellings();
+	auto args2 = m2.argumentSpellings();
+
+	auto it1 = begin(args1);
+	auto it2 = begin(args2);
+
+	for (; it1 != end(args1); ++it1, ++it2)
+		if (*it1 != *it2) return false;
+
+#endif
+
+	// ok, they can only be overloads
+	return true;
+}
+
 
 //--------function---------------------------------------------
 

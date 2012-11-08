@@ -275,6 +275,11 @@ void MethodTestSuite::testFullName()
 	TS_ASSERT(m42.isValid());
 	TS_ASSERT(m5.isValid());
 
+	TS_ASSERT(overloads(m41, m42));
+	TS_ASSERT(overloads(m42, m41));
+	TS_ASSERT(!overrides(m41, m42));
+	TS_ASSERT(!overloads(m1, m2));
+
 	TS_ASSERT_EQUALS(m1.fullName(), "int MethodTest::Test1::method1(int)");
 	TS_ASSERT_EQUALS(m2.fullName(), "int MethodTest::Test1::method2(int) const");
 	TS_ASSERT_EQUALS(m3.fullName(), "int MethodTest::Test1::method3(int) volatile");
@@ -303,6 +308,12 @@ void MethodTestSuite::testMethodOverriding()
 	TS_ASSERT(bm2.isValid());
 	TS_ASSERT(dm1.isValid());
 	TS_ASSERT(dm2.isValid());
+
+	TS_ASSERT(overrides(dm1,bm1));
+	TS_ASSERT(overrides(dm2,bm2));
+
+	TS_ASSERT(!overrides(dm2,dm1));
+	TS_ASSERT(!overloads(dm2,dm1));
 
 	TS_ASSERT_DIFFERS(bm1, dm1);
 	TS_ASSERT_DIFFERS(bm2, dm2);

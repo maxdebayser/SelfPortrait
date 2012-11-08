@@ -134,6 +134,16 @@ void ClassTestSuite::testClass()
 	TS_ASSERT_EQUALS(base2.fullyQualifiedName(), "ClassTest::TestBase2");
 	TS_ASSERT_EQUALS(base2.simpleName(), "TestBase2");
 
+	TS_ASSERT(inheritanceRelation(test, base1));
+	TS_ASSERT(inherits(test, base1));
+	TS_ASSERT(inheritedBy(base1, test));
+
+	TS_ASSERT(inheritanceRelation(test, base2));
+	TS_ASSERT(inherits(test, base2));
+	TS_ASSERT(inheritedBy(base2, test));
+
+	TS_ASSERT(!inheritanceRelation(base1, base2));
+
 	Class::ConstructorList base1Constructors = base1.constructors();
 	TS_ASSERT_EQUALS(base1.constructors().size(), 1);
 
