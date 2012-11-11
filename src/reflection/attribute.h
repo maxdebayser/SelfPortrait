@@ -29,7 +29,7 @@ struct attribute_type<_Type _Clazz::*> {
 		return object.*ptr;
 	}
 	
-	static void set(Clazz& object, ptr_to_attr ptr, VariantValue value) {
+	static void set(Clazz& object, ptr_to_attr ptr, const VariantValue& value) {
 		bool success = false;
 		Type v = value.convertTo<Type>(&success);
 		if (!success) {
@@ -38,7 +38,7 @@ struct attribute_type<_Type _Clazz::*> {
 		object.*ptr = v;
 	}
 	
-	static void set(const Clazz& object, ptr_to_attr, VariantValue) {
+	static void set(const Clazz& object, ptr_to_attr, const VariantValue& ) {
 		throw ::std::runtime_error("cannot change value of an attribute of a const object");
 	}
 };
@@ -57,7 +57,7 @@ struct ptr_type<_Type*> {
 		return *ptr;
 	}
 	
-	static void set(ptr_to_variable ptr, VariantValue value) {
+	static void set(ptr_to_variable ptr, const VariantValue& value) {
 		bool success = false;
 		Type v = value.convertTo<Type>(&success);
 		if (!success) {
@@ -78,7 +78,7 @@ struct ptr_type<const _Type*> {
 		return *ptr;
 	}
 	
-	static void set(ptr_to_variable ptr, VariantValue value) {
+	static void set(ptr_to_variable, const VariantValue& ) {
 		throw ::std::runtime_error("cannot change value of const variable");
 	}
 };
@@ -97,7 +97,7 @@ struct attribute_type<const _Type _Clazz::*> {
 	}
 	
 	// const and non-const references bind to this
-	static void set(const Clazz&, ptr_to_attr, VariantValue) {
+	static void set(const Clazz&, ptr_to_attr, const VariantValue&) {
 		throw ::std::runtime_error("cannot change value of const attribute");
 	}
 };
