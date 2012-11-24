@@ -223,42 +223,14 @@ namespace LuaUtils {
 	R callFuncPriv(lua_State* L, const std::string& name, const Args... args) {
 		luaL_checktype(L, -1, LUA_TFUNCTION);
 
-/*
-		struct Caller {
-
-			Caller(const Args... args) : myArgs(args...) {}
-
-			static int call(lua_State * L) {
-				// caution: this code may longjump but not raise exceptions.
-
-				Caller * p = static_cast<Caller*>(lua_touserdata(L, 1));
-				const int size = pushArgs(L, args...);
-				lua_call(L, size, LuaValue<R>::size());    // can longjump
-				p->result = LuaValue<R>::getStackValue(L, -1);
-				return 0;
-			}
-			R result;
-			std::tuple<Args...> myArgs;
-		};
-
-		Caller c(args...);
-
-		int res = lua_cpcall(L, Caller::call, &c); // never longjumps
-		if (res != 0) {
-			lua_pop(L, 1);
-			throw std::logic_error("lua_error");
-
-		}
-		return c.result;
-*/
 		const int size = pushArgs(L, args...);
-		lua_call(L, size, LuaValue<R>::size());
-		/*if (lua_pcall(L, size, LuaValue<R>::size(), 0) != 0) {
+
+		if (lua_pcall(L, size, LuaValue<R>::size(), 0) != 0) {
 			lua_pushfstring(L, "Error running function %s:\n", name.c_str());
 			lua_insert(L, -2);
 			lua_concat(L, 2);
 			lua_error(L);
-		}*/
+		}
 		popper p(L, LuaValue<R>::size());
 		return LuaValue<R>::getStackValue(L, -1);
 	}

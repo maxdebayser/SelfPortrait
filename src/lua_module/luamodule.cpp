@@ -8,78 +8,31 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <iostream>
-using namespace std;
-
+#include <exception>
 
 typedef map<string, lua_CFunction> MethodTable;
 
-struct Foo {
+class LuaBindingException: public std::exception
+{
+	std::string m_msg;
+public:
+	LuaBindingException(const std::string& msg) : m_msg(msg) { }
+	LuaBindingException() : LuaBindingException("") {}
 
-	Foo(int i) : attr(i) {}
-
-	int attr;
-
-	void print() {
-		cout << "hello world: attr = " << attr << endl;
-	}
-
-	void printArg(int i) {
-		cout << "hello world: attr+1 = " << (attr+i) << endl;
-	}
-
-	static void staticPrint() {
-		cout << "hello world" << endl;
-	}
-
-	static void staticPrintArg(int i) {
-		cout << "hello world " << i << endl;
-	}
-
-	Foo(const Foo&) = delete;
-	Foo& operator=(const Foo&) = delete;
-	Foo(Foo&&) = delete;
-	Foo& operator=(Foo&&) = delete;
+	virtual ~LuaBindingException() noexcept {}
+	virtual const char* what() const noexcept { return m_msg.c_str(); }
 };
 
-int function1(int i) {
-	return i + 3;
-}
 
-double function2(double i) {
-	return i + 3;
-}
 
-double function2(double i, double s) {
-	return i + s;
-}
-
-int getFooAttr(const Foo& foo) {
-	return foo.attr;
-}
-
-REFL_BEGIN_CLASS(Foo)
-REFL_CONSTRUCTOR(int)
-REFL_ATTRIBUTE(attr, int)
-REFL_METHOD(print, void)
-REFL_METHOD(printArg, void, int)
-REFL_STATIC_METHOD(staticPrint, void)
-REFL_STATIC_METHOD(staticPrintArg, void, int)
-REFL_END_CLASS
-
-REFL_FUNCTION(function1, int, int)
-REFL_FUNCTION(function2, double, double)
-REFL_FUNCTION(function2, double, double, double)
-REFL_FUNCTION(getFooAttr, int, const Foo&)
-
-template<int (*func)(lua_State*)>
+/* For an explanation:
+ * http://maxdebayser.blogspot.com.br/2012/11/semi-automatic-conversion-of-c.html
+ */
+template<lua_CFunction func>
 static int exception_translator(lua_State* L)
 {
-	bool error_found = true;
 	try {
-		int retval = func(L);
-		error_found = false;
-		return retval;
+		return func(L);
 	} catch(std::exception& ex) {
 		lua_pushstring(L, "caught C++ exception: ");
 		lua_pushstring(L, ex.what());
@@ -87,12 +40,11 @@ static int exception_translator(lua_State* L)
 	} catch (...) {
 		lua_pushstring(L, "caught unknown C++ exception");
 	}
-	if (error_found) {
-		// call lua_error out of the catch block to make sure
-		// that the exception's destructor is called
-		// this is because lua_error calls longjmp and discards the error
-		lua_error(L);
-	}
+
+	// call lua_error out of the catch block to make sure
+	// that the exception's destructor is called
+	// this is because lua_error calls longjmp and discards the error
+	lua_error(L);
 	return 0; //just to silence warnings
 }
 
@@ -785,10 +737,9 @@ int Lua_Class::findFirst(lua_State* L, MPtr ptr)
 		binding_mapper<Elem>::type::create(L, a);
 
 		if (lua_pcall(L, 1, 1, 0) != 0) {
-			lua_pushfstring(L, "Error running anonymous function");
-			lua_insert(L, -2);
-			lua_concat(L, 2);
-			lua_error(L);
+			std::string msg = fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
+			lua_pop(L, 1);
+			throw LuaBindingException(msg);
 		}
 		luaL_checktype(L, -1, LUA_TBOOLEAN);
 		bool ret = lua_toboolean(L, -1);
@@ -816,10 +767,9 @@ int Lua_Class::findAll(lua_State* L, MPtr ptr)
 		binding_mapper< Elem >::type::create(L, a);
 
 		if (lua_pcall(L, 1, 1, 0) != 0) {
-			lua_pushfstring(L, "Error running anonymous function");
-			lua_insert(L, -2);
-			lua_concat(L, 2);
-			lua_error(L);
+			std::string msg = fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
+			lua_pop(L, 1);
+			throw LuaBindingException(msg);
 		}
 		luaL_checktype(L, -1, LUA_TBOOLEAN);
 		bool ret = lua_toboolean(L, -1);
@@ -1372,10 +1322,9 @@ namespace {
 			}
 
 			if (lua_pcall(L, vargs.size(), 1, 0) != 0) {
-				lua_pushfstring(L, "Error running proxy method handler");
-				lua_insert(L, -2);
-				lua_concat(L, 2);
-				lua_error(L);
+				std::string msg = fmt_str("Error running proxy method handler: %1", lua_tostring(L, -1));
+				lua_pop(L, 1);
+				throw LuaBindingException(msg);
 			}
 			VariantValue ret = Lua_Variant::getFromStack(L, -1);
 			lua_pop(L, 1);
