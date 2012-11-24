@@ -613,7 +613,7 @@ bool overrides(const Method& m1, const Method& m2)
 	if (!inheritanceRelation(m1.getClass(), m2.getClass())) return false;
 
 	// The return value can be difference because of covariance
-	// Fortunately (to us) the compiler doesn't allow overloads base only on return type
+	// Fortunately (to us) the compiler doesn't allow overloads based only on return type
 
 #ifndef NO_RTTI
 
@@ -656,29 +656,47 @@ bool overloads(const Method& m1, const Method& m2)
 	// costly tests
 	if (!inheritanceRelation(m1.getClass(), m2.getClass())) return false;
 
+	bool differenceFound =
+		(m1.isConst() != m2.isConst()) ||
+		(m1.isVolatile() != m2.isVolatile()) ||
+		(m1.numberOfArguments() != m2.numberOfArguments());
+
+	if (!differenceFound) {
+
 #ifndef NO_RTTI
 
-	auto args1 = m1.argumentTypes();
-	auto args2 = m2.argumentTypes();
+		auto args1 = m1.argumentTypes();
+		auto args2 = m2.argumentTypes();
 
-	auto it1 = begin(args1);
-	auto it2 = begin(args2);
+		auto it1 = begin(args1);
+		auto it2 = begin(args2);
 
-	for (; it1 != end(args1); ++it1, ++it2)
-		if (**it1 != **it2) return false;
+		for (; it1 != end(args1); ++it1, ++it2) {
+			if (**it1 != **it2) {
+				differenceFound = true;
+				break;
+			}
+		}
 
 #else
-	// less safe
-	auto args1 = m1.argumentSpellings();
-	auto args2 = m2.argumentSpellings();
+		// less safe
+		auto args1 = m1.argumentSpellings();
+		auto args2 = m2.argumentSpellings();
 
-	auto it1 = begin(args1);
-	auto it2 = begin(args2);
+		auto it1 = begin(args1);
+		auto it2 = begin(args2);
 
-	for (; it1 != end(args1); ++it1, ++it2)
-		if (*it1 != *it2) return false;
+		for (; it1 != end(args1); ++it1, ++it2) {
+			if (*it1 != *it2) {
+				differenceFound = true;
+				break
+			}
+		}
 
 #endif
+
+	}
+
 
 	// ok, they can only be overloads
 	return true;
