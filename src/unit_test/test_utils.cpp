@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include "str_conversion.h"
 #include <cxxtest/TestSuite.h>
+//#include <dlfcn.h>
 
 
 namespace LuaUtils {
@@ -39,6 +40,12 @@ namespace LuaUtils {
 		lua_pushstring(L, "/../lua_module/?.dll"); // don't want to mess with platform DEFINEs
 		lua_concat(L, 7);
 		lua_setfield(L, 1, "cpath");
+
+		// Uncomment this to prevent the unloading of the library
+		// When the library is unloaded valgrind cannot translate function addresses to names
+		// in the stacktrace
+		//std::string library_path = fmt_str("%1/../lua_module/libluaselfportrait.so", binpath());
+		//void* handle = dlopen(library_path.c_str(), RTLD_NOW);
 
 	}
 

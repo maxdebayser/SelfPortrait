@@ -3,7 +3,6 @@ require "cxxtest"
 
 function testAttribute()
 
-
     local TestClass = Class.lookup("AttributeTest::Test")
 
     TS_ASSERT (TestClass)
@@ -46,8 +45,7 @@ function testAttribute()
     attr1:set(v1, 201)
     TS_ASSERT[[ attr1:get(v1) == 201 ]]
 
-
-    if pcall( function() attr1:get() end ) then
+	if pcall( function() attr1:get() end ) then
        TS_FAIL("expected exception when getting non-static attribute without object")
     end
 
@@ -104,6 +102,8 @@ function testAttribute()
     local constAttributes = TestClass:findAllAttributes(function(a) return a:isConst() end)
     TS_ASSERT(constAttributes)
     TS_ASSERT[[#constAttributes == 2]]
+
+	collectgarbage("collect")
 
     return true
 end

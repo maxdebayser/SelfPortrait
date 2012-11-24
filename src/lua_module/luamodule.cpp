@@ -72,6 +72,32 @@ REFL_FUNCTION(function2, double, double)
 REFL_FUNCTION(function2, double, double, double)
 REFL_FUNCTION(getFooAttr, int, const Foo&)
 
+template<int (*func)(lua_State*)>
+static int exception_translator(lua_State* L)
+{
+	bool error_found = true;
+	try {
+		int retval = func(L);
+		error_found = false;
+		return retval;
+	} catch(std::exception& ex) {
+		lua_pushstring(L, "caught C++ exception: ");
+		lua_pushstring(L, ex.what());
+		lua_concat(L,2);
+	} catch (...) {
+		lua_pushstring(L, "caught unknown C++ exception");
+	}
+	if (error_found) {
+		// call lua_error out of the catch block to make sure
+		// that the exception's destructor is called
+		// this is because lua_error calls longjmp and discards the error
+		lua_error(L);
+	}
+	return 0; //just to silence warnings
+}
+
+
+
 //=====================Declarations=============================================
 
 template<class T>
@@ -147,9 +173,9 @@ public:
 
 template<class T>
 const struct luaL_Reg LuaAdapter<T>::lib_m[] = {
-	{ "__gc", gc },
-	{ "__index", index },
-	{ "__eq", eq },
+	{ "__gc", exception_translator<gc> },
+	{ "__index", exception_translator<index> },
+	{ "__eq", exception_translator<eq> },
 	{ NULL, NULL }
 };
 
@@ -440,30 +466,30 @@ MethodTable Lua_Variant::methods;
 
 
 const struct luaL_Reg Lua_Variant::lib_f[] = {
-	{ "new", newInstance },
+	{ "new", exception_translator<newInstance> },
 	{ NULL, NULL }
 };
 
 const struct luaL_Reg Lua_Variant::lib_m[] = {
-	{ "__gc", gc },
-	{ "__index", index },
-	{ "__tostring", tostring },
-	{ "__eq", eq },
+	{ "__gc", exception_translator<gc> },
+	{ "__index", exception_translator<index> },
+	{ "__tostring", exception_translator<tostring> },
+	{ "__eq", exception_translator<eq> },
 	{ NULL, NULL }
 };
 
 void Lua_Variant::initialize()
 {
-	methods["tostring"]        = &tostring;
-	methods["tonumber"]        = &tonumber;
-	methods["isValid"]         = &isValid;
-	methods["isStdString"]     = &isStdString;
-	methods["isIntegral"]      = &isIntegral;
-	methods["isFloatingPoint"] = &isFloatingPoint;
-	methods["isArithmetical"]  = &isArithmetical;
-	methods["isPOD"]           = &isPOD;
-	methods["sizeOf"]          = &sizeOf;
-	methods["alignOf"]         = &alignOf;
+	methods["tostring"]        = exception_translator<tostring>;
+	methods["tonumber"]        = exception_translator<tonumber>;
+	methods["isValid"]         = exception_translator<isValid>;
+	methods["isStdString"]     = exception_translator<isStdString>;
+	methods["isIntegral"]      = exception_translator<isIntegral>;
+	methods["isFloatingPoint"] = exception_translator<isFloatingPoint>;
+	methods["isArithmetical"]  = exception_translator<isArithmetical>;
+	methods["isPOD"]           = exception_translator<isPOD>;
+	methods["sizeOf"]          = exception_translator<sizeOf>;
+	methods["alignOf"]         = exception_translator<alignOf>;
 }
 
 VariantValue Lua_Variant::getFromStack(lua_State* L, int idx)
@@ -609,35 +635,35 @@ MethodTable Lua_Class::methods;
 
 
 const struct luaL_Reg Lua_Class::lib_f[] = {
-	{ "lookup", lookup },
+	{ "lookup", exception_translator<lookup> },
 	{ NULL, NULL }
 };
 
 const struct luaL_Reg Lua_Class::lib_m[] = {
-	{ "__gc", gc },
-	{ "__index", index },
-	{ "__tostring", fullyQualifiedName },
-	{ "__eq", eq },
+	{ "__gc", exception_translator<gc> },
+	{ "__index", exception_translator<index> },
+	{ "__tostring", exception_translator<fullyQualifiedName> },
+	{ "__eq", exception_translator<eq> },
 	{ NULL, NULL }
 };
 
 void Lua_Class::initialize()
 {
-	methods["fullyQualifiedName"] = &fullyQualifiedName;
-	methods["simpleName"] = &simpleName;
-	methods["isInterface"] = &isInterface;
-	methods["methods"] = &getMethods;
-	methods["constructors"] = &getConstructors;
-	methods["attributes"] = &getAttributes;
-	methods["superclasses"] = &getSuperClasses;
-	methods["findAttribute"] = &findAttribute;
-	methods["findAllAttributes"] = &findAllAttributes;
-	methods["findConstructor"] = &findConstructor;
-	methods["findAllConstructors"] = &findAllConstructors;
-	methods["findMethod"] = &findMethod;
-	methods["findAllMethods"] = &findAllMethods;
-	methods["findSuperClass"] = &findSuperClass;
-	methods["findAllSuperClasses"] = &findAllSuperClasses;
+	methods["fullyQualifiedName"]  = exception_translator<fullyQualifiedName>;
+	methods["simpleName"]          = exception_translator<simpleName>;
+	methods["isInterface"]         = exception_translator<isInterface>;
+	methods["methods"]             = exception_translator<getMethods>;
+	methods["constructors"]        = exception_translator<getConstructors>;
+	methods["attributes"]          = exception_translator<getAttributes>;
+	methods["superclasses"]        = exception_translator<getSuperClasses>;
+	methods["findAttribute"]       = exception_translator<findAttribute>;
+	methods["findAllAttributes"]   = exception_translator<findAllAttributes>;
+	methods["findConstructor"]     = exception_translator<findConstructor>;
+	methods["findAllConstructors"] = exception_translator<findAllConstructors>;
+	methods["findMethod"]          = exception_translator<findMethod>;
+	methods["findAllMethods"]      = exception_translator<findAllMethods>;
+	methods["findSuperClass"]      = exception_translator<findSuperClass>;
+	methods["findAllSuperClasses"] = exception_translator<findAllSuperClasses>;
 }
 
 int Lua_Class::lookup(lua_State* L)
@@ -649,10 +675,9 @@ int Lua_Class::lookup(lua_State* L)
 
 	Class c = Class::lookup(name);
 
-	try {
-		c.fullyQualifiedName();
+	if (c.isValid()) {
 		LuaAdapter<Lua_Class>::create(L,c);
-	} catch (...) {
+	} else {
 		lua_pushnil(L);
 	}
 	return 1;
@@ -868,16 +893,16 @@ const struct luaL_Reg Lua_Method::lib_f[] = {
 
 void Lua_Method::initialize()
 {
-	methods["name"]              = &name;
-	methods["fullName"]              = &fullName;
-	methods["call"]              = &call;
-	methods["numberOfArguments"] = &numberOfArguments;
-	methods["returnSpelling"]    = &returnSpelling;
-	methods["argumentSpellings"] = &argumentSpellings;
-	methods["isConst"]           = &isConst;
-	methods["isVolatile"]        = &isVolatile;
-	methods["isStatic"]          = &isStatic;
-	methods["getClass"]          = &getClass;
+	methods["name"]              = exception_translator<name>;
+	methods["fullName"]          = exception_translator<fullName>;
+	methods["call"]              = exception_translator<call>;
+	methods["numberOfArguments"] = exception_translator<numberOfArguments>;
+	methods["returnSpelling"]    = exception_translator<returnSpelling>;
+	methods["argumentSpellings"] = exception_translator<argumentSpellings>;
+	methods["isConst"]           = exception_translator<isConst>;
+	methods["isVolatile"]        = exception_translator<isVolatile>;
+	methods["isStatic"]          = exception_translator<isStatic>;
+	methods["getClass"]          = exception_translator<getClass>;
 }
 
 int Lua_Method::name(lua_State* L)
@@ -961,13 +986,7 @@ int Lua_Method::call(lua_State* L)
 
 	VariantValue ret;
 
-	try {
-		ret = m->m_method.callArgArray(obj, args); // if the method is static, it ignores the first arg
-	} catch (const std::exception& ex) {
-		luaL_error(L, "call threw exception: %s", ex.what());
-	} catch (...) {
-		luaL_error(L, "call threw exception");
-	}
+	ret = m->m_method.callArgArray(obj, args); // if the method is static, it ignores the first arg
 
 	if (ret.isValid()) {
 
@@ -1006,11 +1025,11 @@ const struct luaL_Reg Lua_Constructor::lib_f[] = {
 
 void Lua_Constructor::initialize()
 {
-	methods["call"] = &call;
-	methods["numberOfArguments"] = &numberOfArguments;
-	methods["argumentSpellings"] = &argumentSpellings;
-	methods["isDefaultConstructor"] = &isDefaultConstructor;
-	methods["getClass"]          = &getClass;
+	methods["call"]                 = exception_translator<call>;
+	methods["numberOfArguments"]    = exception_translator<numberOfArguments>;
+	methods["argumentSpellings"]    = exception_translator<argumentSpellings>;
+	methods["isDefaultConstructor"] = exception_translator<isDefaultConstructor>;
+	methods["getClass"]             = exception_translator<getClass>;
 }
 
 
@@ -1025,13 +1044,7 @@ int Lua_Constructor::call(lua_State* L)
 		args.push_back(Lua_Variant::getFromStack(L, i));
 	}
 
-	try {
-		Lua_Variant::create(L, ::std::move(c->m_constructor.callArgArray(args)));
-	} catch (const std::exception& ex) {
-		luaL_error(L, "call threw exception: %s", ex.what());
-	} catch (...) {
-		luaL_error(L, "call threw exception");
-	}
+	Lua_Variant::create(L, ::std::move(c->m_constructor.callArgArray(args)));
 	return 1;
 }
 
@@ -1076,13 +1089,13 @@ const struct luaL_Reg Lua_Attribute::lib_f[] = {
 
 void Lua_Attribute::initialize()
 {
-	methods["get"]          = &get;
-	methods["set"]          = &set;
-	methods["name"]         = &name;
-	methods["typeSpelling"] = &typeSpelling;
-	methods["isConst"]      = &isConst;
-	methods["isStatic"]     = &isStatic;
-	methods["getClass"]          = &getClass;
+	methods["get"]          = exception_translator<get>;
+	methods["set"]          = exception_translator<set>;
+	methods["name"]         = exception_translator<name>;
+	methods["typeSpelling"] = exception_translator<typeSpelling>;
+	methods["isConst"]      = exception_translator<isConst>;
+	methods["isStatic"]     = exception_translator<isStatic>;
+	methods["getClass"]     = exception_translator<getClass>;
 }
 
 int Lua_Attribute::get(lua_State* L)
@@ -1097,22 +1110,16 @@ int Lua_Attribute::get(lua_State* L)
 		}
 		obj = Lua_Variant::getFromStack(L, 2);
 	}
-	try {
 
-		VariantValue ret = c->m_attribute.get(obj);
-		if (ret.isArithmetical()) {
-			lua_pushnumber(L, ret.convertTo<lua_Number>());
-		} else if (ret.isStdString()) {
-			lua_pushstring(L, ret.convertTo<std::string>().c_str());
-		} else {
-			Lua_Variant::create(L, ret);
-		}
-
-	} catch (const std::exception& ex) {
-		luaL_error(L, "call threw exception: %s", ex.what());
-	} catch (...) {
-		luaL_error(L, "call threw exception");
+	VariantValue ret = c->m_attribute.get(obj);
+	if (ret.isArithmetical()) {
+		lua_pushnumber(L, ret.convertTo<lua_Number>());
+	} else if (ret.isStdString()) {
+		lua_pushstring(L, ret.convertTo<std::string>().c_str());
+	} else {
+		Lua_Variant::create(L, ret);
 	}
+
 	return 1;
 }
 
@@ -1136,13 +1143,7 @@ int Lua_Attribute::set(lua_State* L)
 
 	VariantValue val = Lua_Variant::getFromStack(L, begin);
 
-	try {
-		c->m_attribute.set(obj, val);
-	} catch (const std::exception& ex) {
-		luaL_error(L, "call threw exception: %s", ex.what());
-	} catch (...) {
-		luaL_error(L, "call threw exception");
-	}
+	c->m_attribute.set(obj, val);
 	return 0;
 }
 
@@ -1186,18 +1187,18 @@ const char * Lua_Function::userDataName  = "Function";
 MethodTable Lua_Function::methods;
 
 const struct luaL_Reg Lua_Function::lib_f[] = {
-	{ "lookup", lookup },
+	{ "lookup", exception_translator<lookup> },
 	{ NULL, NULL }
 };
 
 
 void Lua_Function::initialize()
 {
-	methods["call"] = &call;
-	methods["name"] = &name;
-	methods["numberOfArguments"] = &numberOfArguments;
-	methods["returnSpelling"]    = &returnSpelling;
-	methods["argumentSpellings"] = &argumentSpellings;
+	methods["call"]              = exception_translator<call>;
+	methods["name"]              = exception_translator<name>;
+	methods["numberOfArguments"] = exception_translator<numberOfArguments>;
+	methods["returnSpelling"]    = exception_translator<returnSpelling>;
+	methods["argumentSpellings"] = exception_translator<argumentSpellings>;
 }
 
 int Lua_Function::name(lua_State* L)
@@ -1221,13 +1222,7 @@ int Lua_Function::call(lua_State* L)
 
 	VariantValue ret;
 
-	try {
-		ret = f->m_function.callArgArray(args);
-	} catch (const std::exception& ex) {
-		luaL_error(L, "call threw exception: %s", ex.what());
-	} catch (...) {
-		luaL_error(L, "call threw exception");
-	}
+	ret = f->m_function.callArgArray(args);
 
 	if (ret.isValid()) {
 
@@ -1298,23 +1293,23 @@ MethodTable Lua_Proxy::methods;
 
 
 const struct luaL_Reg Lua_Proxy::lib_f[] = {
-	{ "create", create },
+	{ "create", exception_translator<create> },
 	{ NULL, NULL }
 };
 
 const struct luaL_Reg Lua_Proxy::lib_m[] = {
-	{ "__gc", gc },
-	{ "__index", index },
-	{ "__eq", eq },
+	{ "__gc", exception_translator<gc> },
+	{ "__index", exception_translator<index> },
+	{ "__eq", exception_translator<eq> },
 	{ NULL, NULL }
 };
 
 void Lua_Proxy::initialize()
 {
-	methods["interfaces"] = &interfaces;
-	methods["addImplementation"] = &addImplementation;
-	methods["hasImplementation"] = &hasImplementation;
-	methods["reference"] = &reference;
+	methods["interfaces"]        = exception_translator<interfaces>;
+	methods["addImplementation"] = exception_translator<addImplementation>;
+	methods["hasImplementation"] = exception_translator<hasImplementation>;
+	methods["reference"]         = exception_translator<reference>;
 }
 
 int Lua_Proxy::create(lua_State* L)
@@ -1331,13 +1326,7 @@ int Lua_Proxy::create(lua_State* L)
 	}
 	Proxy p(ifaces);
 
-	try {
-		LuaAdapter<Lua_Proxy>::create(L, std::move(p));
-	} catch (std::exception& ex) {
-		luaL_error(L, ex.what());
-	} catch (...) {
-		luaL_error(L, "unknown error in creation of proxy");
-	}
+	LuaAdapter<Lua_Proxy>::create(L, std::move(p));
 	return 1;
 }
 
