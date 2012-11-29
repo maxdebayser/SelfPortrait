@@ -8,9 +8,12 @@
 #include "method.h"
 #include "proxy.h"
 #include "reflection.h"
-#include <map>
+#include <unordered_map>
 #include <list>
 
+#ifndef NO_RTTI
+#include <typeindex>
+#endif
 
 #define TOKENPASTE(x, y) x ## y
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
@@ -19,16 +22,23 @@
 
 class ClassRegistry {
 public:
+	void registerClass(const Class& c);
 
 	const Class forName(const ::std::string& name) const;
-	void registerClass(const ::std::string& name, const Class& c);
+
+#ifndef NO_RTTI
+	const Class forTypeId(const ::std::type_info& id) const;
+#endif
 
 	static ClassRegistry& instance();
 
 private:
 	ClassRegistry() {}
 
-	::std::map< ::std::string, Class > m_registry;
+	::std::unordered_map< ::std::string, Class > m_registryByName;
+#ifndef NO_RTTI
+	::std::unordered_map< ::std::type_index, Class > m_registryByTypeId;
+#endif
 };
 
 namespace {
@@ -36,7 +46,7 @@ namespace {
 	template<class Clazz>
 	struct ClassRegHelper {
 		ClassRegHelper( const char* name ) {
-			ClassRegistry::instance().registerClass(name, ClassOf<Clazz>());
+			ClassRegistry::instance().registerClass(ClassOf<Clazz>());
 		}
 	};
 

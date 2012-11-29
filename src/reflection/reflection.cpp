@@ -281,6 +281,13 @@ Class Class::lookup(const ::std::string& name)
 	return ClassRegistry::instance().forName(name);
 }
 
+#ifndef NO_RTTI
+Class Class::lookup(const ::std::type_info& id)
+{
+	return ClassRegistry::instance().forTypeId(id);
+}
+#endif
+
 bool Class::isInterface() const {
 	return m_impl->isInterface();
 }
@@ -292,17 +299,32 @@ bool Class::hasUnresolvedBases() const
 
 const Class ClassRegistry::forName(const ::std::string& name) const
 {
-	auto it = m_registry.find(name);
-	if (it != m_registry.end()) {
+	auto it = m_registryByName.find(name);
+	if (it != m_registryByName.end()) {
 		return it->second;
 	} else {
 		return Class();
 	}
 }
 
-void ClassRegistry::registerClass(const ::std::string& name, const Class& c)
+#ifndef NO_RTTI
+const Class ClassRegistry::forTypeId(const ::std::type_info& id) const
 {
-	m_registry[name] = c;
+	auto it = m_registryByTypeId.find(id);
+	if (it != m_registryByTypeId.end()) {
+		return it->second;
+	} else {
+		return Class();
+	}
+}
+#endif
+
+void ClassRegistry::registerClass(const Class& c)
+{
+	m_registryByName[c.fullyQualifiedName()] = c;
+#ifndef NO_RTTI
+	m_registryByTypeId[c.typeId()] = c;
+#endif
 }
 
 ClassRegistry& ClassRegistry::instance()

@@ -112,6 +112,14 @@ void ClassTestSuite::testClass()
 
 	TS_ASSERT_EQUALS(test.simpleName(), "Test1");
 
+#ifndef NO_RTTI
+	TS_ASSERT(test.describes<ClassTest::Test1>())
+
+	Class test2 = Class::lookup(typeid(ClassTest::Test1));
+	TS_ASSERT_EQUALS(test2.simpleName(), "Test1");
+	TS_ASSERT_EQUALS(test, test2);
+#endif
+
 	Class::ClassList superClasses = test.superclasses();
 
 	TS_ASSERT_EQUALS(superClasses.size(), 2);
@@ -207,6 +215,13 @@ void ClassTestSuite::testClass()
 	VariantValue testInst1 = defaultConstr.call();
 
 	TS_ASSERT(testInst1.isA<Test1>());
+
+
+#ifndef NO_RTTI
+	Class test3 = Class::lookup(testInst1.typeId());
+	TS_ASSERT_EQUALS(test3.simpleName(), "Test1");
+	TS_ASSERT_EQUALS(test, test3);
+#endif
 
 	TS_ASSERT_EQUALS(attr.get(testInst1).value<int>(), 3);
 

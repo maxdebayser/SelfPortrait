@@ -354,6 +354,10 @@ public:
 
 	static Class lookup(const ::std::string& name);
 
+#ifndef NO_RTTI
+	static Class lookup(const ::std::type_info& id);
+#endif
+
 	bool isInterface() const;
 
 	bool hasUnresolvedBases() const;
