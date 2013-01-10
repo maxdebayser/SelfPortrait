@@ -118,7 +118,8 @@ public:
 			bool isIntegral,
 			bool isFloatingPoint,
 			bool isPointer,
-			bool isStdString)
+			bool isStdString,
+			bool isConst)
 		: m_ptrToValue(ptr)
 #ifndef NO_RTTI
 		, m_typeId(typeId)
@@ -130,6 +131,7 @@ public:
 		, m_isFloatingPoint(isFloatingPoint)
 		, m_isPointer(isPointer)
 		, m_isStdString(isStdString)
+		, m_isConst(isConst)
 	{}
 
 	virtual IValueHolder* clone() const = 0;
@@ -161,6 +163,8 @@ public:
 	
 	bool isStdString() const { return m_isStdString; }
 
+	bool isConst() const { return m_isConst; }
+
 	virtual void throwCast() const = 0;
 	
 	virtual ::std::string convertToString() const = 0;
@@ -188,6 +192,7 @@ private:
 	const unsigned int m_isFloatingPoint : 1;
 	const unsigned int m_isPointer : 1;
 	const unsigned int m_isStdString : 1;
+	const unsigned int m_isConst : 1;
 };
 
 namespace {
@@ -244,7 +249,8 @@ public:
 					   ::std::is_integral<ValueType>::value,
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
-					   ::std::is_same< ::std::string, ValueType>::value),
+					   ::std::is_same< ::std::string, ValueType>::value,
+					   ::std::is_const<T>::value),
 		m_value( ::std::forward<Args>(args)...)
 	{
 	}
@@ -348,7 +354,8 @@ public:
 					   ::std::is_integral<ValueType>::value,
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
-					   ::std::is_same< ::std::string, ValueType>::value),
+					   ::std::is_same< ::std::string, ValueType>::value,
+					   ::std::is_const<T>::value),
 		  m_value(v) {}
 
 	~ValueHolder() noexcept {
@@ -447,6 +454,15 @@ private:
 	template<class ValueType>
 	typename normalize_type<ValueType>::ptr_type isAPriv() const {
 		if (isValid()) {
+
+#ifndef NO_RTTI
+			if (m_impl->typeId() == typeid(ValueType)) {
+				if ((m_impl->isConst() && ::std::is_const<ValueType>::value) || !m_impl->isConst()) {
+					return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(m_impl->ptrToValue());
+				}
+			}
+#endif
+
 			try {
 				m_impl->throwCast();
 			} catch(typename normalize_type<ValueType>::ptr_type ptr) {
