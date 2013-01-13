@@ -453,23 +453,21 @@ private:
 
 	template<class ValueType>
 	typename normalize_type<ValueType>::ptr_type isAPriv() const {
-		if (isValid()) {
 
 #ifndef NO_RTTI
-			if (m_impl->typeId() == typeid(ValueType)) {
-				if ((m_impl->isConst() && ::std::is_const<ValueType>::value) || !m_impl->isConst()) {
-					return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(m_impl->ptrToValue());
-				}
+		if (m_impl->typeId() == typeid(ValueType)) {
+			if (!m_impl->isConst() || (m_impl->isConst() && ::std::is_const<ValueType>::value)) {
+				return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(m_impl->ptrToValue());
 			}
+		}
 #endif
 
-			try {
-				m_impl->throwCast();
-			} catch(typename normalize_type<ValueType>::ptr_type ptr) {
-				return ptr;
-			} catch (...) {
-				return nullptr;
-			}
+		try {
+			m_impl->throwCast();
+		} catch(typename normalize_type<ValueType>::ptr_type ptr) {
+			return ptr;
+		} catch (...) {
+			return nullptr;
 		}
 		return nullptr;
 	}
@@ -573,7 +571,7 @@ public:
 	
 	template<class ValueType>
 	ValueType value() const {
-
+		check_valid();
 		auto ptr = isAPriv< ValueType >();
 
 		if (ptr == nullptr) {
@@ -691,7 +689,8 @@ public:
 		}
 	}
 	
-	bool isValid() const;
+
+	bool isValid() const { return m_impl.get() != nullptr; }
 
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
@@ -719,8 +718,12 @@ public:
 	
 private:
 	std::shared_ptr<IValueHolder> m_impl;
-	
-	void check_valid() const;
+
+	void check_valid() const {
+		if (!isValid()) {
+			throw ::std::runtime_error("variant has no value");
+		}
+	}
 	
 	friend bool operator==(const VariantValue& v1, const VariantValue& v2);
 };

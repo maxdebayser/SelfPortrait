@@ -26,10 +26,6 @@ VariantValue VariantValue::createReference() const {
 	return ::std::move(ret);
 }
 
-bool VariantValue::isValid() const
-{
-	return m_impl.get() != nullptr;
-}
 
 #ifndef NO_RTTI
 const ::std::type_info& VariantValue::typeId() const
@@ -89,14 +85,6 @@ const void * VariantValue::ptrToValue() const
 	check_valid();
 	return m_impl->ptrToValue();
 }
-
-void VariantValue::check_valid() const
-{
-	if (!isValid()) {
-		throw ::std::runtime_error("variant has no value");
-	}
-}
-
 
 bool operator==(const VariantValue& v1, const VariantValue& v2)
 {
