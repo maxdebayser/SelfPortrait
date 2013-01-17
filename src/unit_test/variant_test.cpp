@@ -26,8 +26,6 @@ void VariantTestSuite::testValue() {
 	TS_ASSERT(v3.isA<const char(&)[]>());
 	TS_ASSERT(!v3.isA<char[]>());
 
-
-
 	VariantValue v4(3);
 	TS_ASSERT_EQUALS(v1,v4);
 

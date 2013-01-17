@@ -15,6 +15,10 @@
 
 #include "str_conversion.h"
 #include "typeutils.h"
+#include "conversion_cache.h"
+
+#include <iostream>
+using namespace std;
 
 namespace {
 
@@ -250,7 +254,7 @@ public:
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
 					   ::std::is_same< ::std::string, ValueType>::value,
-					   ::std::is_const<T>::value),
+					   normalize_type<T>::is_const),
 		m_value( ::std::forward<Args>(args)...)
 	{
 	}
@@ -355,7 +359,7 @@ public:
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
 					   ::std::is_same< ::std::string, ValueType>::value,
-					   ::std::is_const<T>::value),
+					   normalize_type<T>::is_const),
 		  m_value(v) {}
 
 	~ValueHolder() noexcept {
@@ -451,16 +455,48 @@ public:
 	
 private:
 
+#ifndef NO_RTTI
 	template<class ValueType>
 	typename normalize_type<ValueType>::ptr_type isAPriv() const {
 
-#ifndef NO_RTTI
-		if (m_impl->typeId() == typeid(ValueType)) {
-			if (!m_impl->isConst() || (m_impl->isConst() && ::std::is_const<ValueType>::value)) {
+		const std::type_info& from = m_impl->typeId();
+		const std::type_info& to   = typeid(ValueType);
+
+		if (from == to) {
+			if (!m_impl->isConst() || (m_impl->isConst() && normalize_type<ValueType>::is_const)) {
 				return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(m_impl->ptrToValue());
 			}
 		}
-#endif
+
+		int offset;
+		bool possible;
+		if (conversion_cache::instance().conversionKnown(from, to, offset, possible)) {
+			if (possible) {
+				const bool implConst = m_impl->isConst();
+				if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
+					return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(reinterpret_cast<char*>(m_impl->ptrToValue())+offset);
+				}
+			} else {
+				// conversion is known to fail, we won't even try
+				return nullptr;
+			}
+		}
+
+		try {
+			m_impl->throwCast();
+		} catch(typename normalize_type<ValueType>::ptr_type ptr) {
+			offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(m_impl->ptrToValue());
+			conversion_cache::instance().registerConversion(from, to, offset, true);
+			return ptr;
+		} catch (...) {
+			conversion_cache::instance().registerConversion(from, to, 0, false);
+			return nullptr;
+		}
+		return nullptr;
+	}
+#else
+	template<class ValueType>
+	typename normalize_type<ValueType>::ptr_type isAPriv() const {
 
 		try {
 			m_impl->throwCast();
@@ -471,6 +507,8 @@ private:
 		}
 		return nullptr;
 	}
+#endif
+
 
 	template<class ValueType>
 	struct pointerConversion {

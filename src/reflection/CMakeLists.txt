@@ -1,7 +1,8 @@
 set(HEADERS
 	attribute.h
 	call_utils.h
-        collection_utils.h
+	collection_utils.h
+	conversion_cache.h
 	class.h
 	constructor.h
 	function.h
@@ -19,6 +20,7 @@ set(HEADERS
 set(SOURCES
 	class.cpp
 	constructor.cpp
+	conversion_cache.cpp
 	function.cpp
 	method.cpp
 	reflection.cpp

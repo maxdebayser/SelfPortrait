@@ -46,18 +46,43 @@ template<class T>
 struct normalize_type {
 	typedef T type;
 	typedef T* ptr_type;
+	enum { is_const = false };
+};
+
+template<class T>
+struct normalize_type<const T> {
+	typedef T type;
+	typedef const T* ptr_type;
+	enum { is_const = true };
+};
+
+template<class T>
+struct normalize_type<T*> {
+	typedef T type;
+	typedef T** ptr_type;
+	enum { is_const = false };
+};
+
+template<class T>
+struct normalize_type<const T*> {
+	typedef T type;
+	typedef const T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T>
 struct normalize_type<T&> {
 	typedef T type;
 	typedef T* ptr_type;
+	enum { is_const = false };
 };
+
 
 template<class T>
 struct normalize_type<T&&> {
 	typedef T type;
 	typedef T* ptr_type;
+	enum { is_const = false };
 };
 
 
@@ -65,6 +90,7 @@ template<class T>
 struct normalize_type<const T&> {
 	typedef T type;
 	typedef const T* ptr_type;
+	enum { is_const = true };
 
 };
 
@@ -72,6 +98,7 @@ template<class T>
 struct normalize_type<volatile T&> {
 	typedef T type;
 	typedef volatile T* ptr_type;
+	enum { is_const = false };
 };
 
 
@@ -79,6 +106,7 @@ template<class T>
 struct normalize_type<const volatile T&> {
 	typedef T type;
 	typedef const volatile T* ptr_type;
+	enum { is_const = true };
 };
 
 
@@ -86,48 +114,56 @@ template<class T>
 struct normalize_type<T[]> {
 	typedef T type;
 	typedef T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T>
 struct normalize_type<const T[]> {
 	typedef T type;
 	typedef const T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T>
 struct normalize_type<volatile T[]> {
 	typedef T type;
 	typedef volatile T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T>
 struct normalize_type<const volatile T[]> {
 	typedef T type;
 	typedef const volatile T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<T[N]> {
 	typedef T type;
 	typedef T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<const T[N]> {
 	typedef T type;
 	typedef const T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<volatile T[N]> {
 	typedef T type;
 	typedef volatile T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<const volatile T[N]> {
 	typedef T type;
 	typedef const volatile T** ptr_type;
+	enum { is_const = true };
 };
 
 
@@ -135,53 +171,72 @@ template<class T>
 struct normalize_type<T(&)[]> {
 	typedef T type;
 	typedef T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T>
 struct normalize_type<const T(&)[]> {
 	typedef T type;
 	typedef const T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T>
 struct normalize_type<volatile T(&)[]> {
 	typedef T type;
 	typedef volatile T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T>
 struct normalize_type<const volatile T(&)[]> {
 	typedef T type;
 	typedef const volatile T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<T(&)[N]> {
 	typedef T type;
 	typedef T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<const T(&)[N]> {
 	typedef T type;
 	typedef const T** ptr_type;
+	enum { is_const = true };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<volatile T(&)[N]> {
 	typedef T type;
 	typedef volatile T** ptr_type;
+	enum { is_const = false };
 };
 
 template<class T, std::size_t N>
 struct normalize_type<const volatile T(&)[N]> {
 	typedef T type;
 	typedef const volatile T** ptr_type;
+	enum { is_const = true };
 };
 
 
 // the /dev/null of arguments
 template<class... T>
 inline void sink(T&&... t) {}
+
+
+template<class T>
+struct is_pointer_to_const {
+	enum { value = false };
+};
+
+template<class T>
+struct is_pointer_to_const<const T*> {
+	enum { value = true };
+};
 
 #endif

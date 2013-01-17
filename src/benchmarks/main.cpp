@@ -1924,6 +1924,7 @@ void polyArgRef9Test()
 
 int main()
 {
+
 	std::cout << "0 args function call:" << std::endl;
 
 	noargtest();
