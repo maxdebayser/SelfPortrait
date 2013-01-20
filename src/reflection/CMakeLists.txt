@@ -20,7 +20,6 @@ set(HEADERS
 set(SOURCES
 	class.cpp
 	constructor.cpp
-	conversion_cache.cpp
 	function.cpp
 	method.cpp
 	reflection.cpp

@@ -470,7 +470,7 @@ private:
 
 		int offset;
 		bool possible;
-		if (conversion_cache::instance().conversionKnown(from, to, offset, possible)) {
+		if (conversion_cache<ValueType>::instance().conversionKnown(from, offset, possible)) {
 			if (possible) {
 				const bool implConst = m_impl->isConst();
 				if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
@@ -486,10 +486,10 @@ private:
 			m_impl->throwCast();
 		} catch(typename normalize_type<ValueType>::ptr_type ptr) {
 			offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(m_impl->ptrToValue());
-			conversion_cache::instance().registerConversion(from, to, offset, true);
+			conversion_cache<ValueType>::instance().registerConversion(from, offset, true);
 			return ptr;
 		} catch (...) {
-			conversion_cache::instance().registerConversion(from, to, 0, false);
+			conversion_cache<ValueType>::instance().registerConversion(from, 0, false);
 			return nullptr;
 		}
 		return nullptr;
