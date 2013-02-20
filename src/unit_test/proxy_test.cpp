@@ -65,7 +65,7 @@ void ProxyTestSuite::testProxy()
 		TS_ASSERT_EQUALS(ifaces.size(), 1)
 		TS_ASSERT_EQUALS(ifaces.front(), test)
 
-		proxy.addImplementation(m, [](const std::vector<VariantValue>& args){
+		proxy.addImplementation(m, [](const std::vector<VariantValue>& args) -> VariantValue {
 			TS_ASSERT(args.size() == 2);
 			TS_ASSERT(args[0].isA<int>());
 			TS_ASSERT(args[1].isA<int>());
@@ -107,7 +107,7 @@ void ProxyTestSuite::testClient()
 	TS_ASSERT_EQUALS(ifaces.size(), 1)
 	TS_ASSERT_EQUALS(ifaces.front(), test)
 
-	proxy.addImplementation(m, [](const std::vector<VariantValue>& args){
+	proxy.addImplementation(m, [](const std::vector<VariantValue>& args) -> VariantValue {
 		TS_ASSERT(args.size() == 2);
 		TS_ASSERT(args[0].isA<int>());
 		TS_ASSERT(args[1].isA<int>());

@@ -731,7 +731,7 @@ int Lua_Class::findFirst(lua_State* L, MPtr ptr)
 {
 	Lua_Class* c = checkUserData(L);
 
-	Elem a = (c->m_class.*ptr)([&](const Elem& a) {
+	Elem a = (c->m_class.*ptr)([&](const Elem& a) -> bool {
 		luaL_checktype(L, -1, LUA_TFUNCTION);
 		lua_pushvalue(L, -1);
 		binding_mapper<Elem>::type::create(L, a);
@@ -761,7 +761,7 @@ int Lua_Class::findAll(lua_State* L, MPtr ptr)
 	Lua_Class* c = checkUserData(L);
 	typedef typename ElemList::value_type Elem;
 
-	ElemList l = (c->m_class.*ptr)([&](const Elem& a) {
+	ElemList l = (c->m_class.*ptr)([&](const Elem& a) -> bool {
 		luaL_checktype(L, -1, LUA_TFUNCTION);
 		lua_pushvalue(L, -1);
 		binding_mapper< Elem >::type::create(L, a);
