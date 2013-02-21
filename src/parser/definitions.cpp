@@ -1,7 +1,8 @@
 #include "definitions.h"
 #include <stdexcept>
-using namespace std;
 #include <iostream>
+#include <algorithm>
+using namespace std;
 
 namespace {
 	using namespace definitions;
@@ -9,6 +10,38 @@ namespace {
 		o << m.return_type_spelling << " " << m.name << "(" << m.argument_type_spellings << ")" << (m.is_const ? " const" : m.is_volatile ? " volatile" : "");
 		return o;
 	}
+
+	bool compare_methods(const Method& m1, const Method& m2) {
+		if (m1.name < m2.name) {
+			return true;
+		} else if (m2.name < m1.name) {
+			return false;
+		} else {
+			if (m1.argument_type_spellings < m2.argument_type_spellings) {
+				return true;
+			} else if (m2.argument_type_spellings < m1.argument_type_spellings) {
+				return false;
+			} else {
+				
+				if (m1.is_const && !m2.is_const) {
+					return false;
+				} else if (m2.is_const && !m1.is_const) {
+					return true;
+				} else {
+					
+					if (m1.is_volatile && !m2.is_volatile) {
+						return false;
+					} else if (m2.is_volatile && !m1.is_volatile) {
+						return true;
+					} else {
+						return false;
+					}
+				}
+			}
+		}
+	}
+
+
 }
 
 namespace definitions {
@@ -104,16 +137,33 @@ namespace definitions {
 
 
 	void print(const TranslationUnit& u, std::ostream& o, bool diagOn) {
-		for(const auto& x: u.include_directives) {
+
+		auto include_directives = u.include_directives;
+
+		sort(include_directives.begin(), include_directives.end());
+		for(const auto& x: include_directives) {
 			o << x << "\n";
 		}
 		o << "\n";
-		for (const auto& x: u.functions) {
+		auto functions = u.functions;
+		sort(functions.begin(), functions.end(), [](const Function& f1, const Function& f2) -> bool {
+			if (f1.name < f2.name) {
+				return true;
+			} else if (f2.name < f1.name) {
+				return false;
+			} else {
+				return f1.argument_type_spellings < f2.argument_type_spellings;
+			}
+		});
+		for (const auto& x: functions) {
 			print(x, o);
 			o << "\n";
 		}
-
-		for (const auto& x: u.classes) {
+		auto classes = u.classes;
+		sort(classes.begin(), classes.end(), [](const shared_ptr<Class>& c1, const shared_ptr<Class>& c2) -> bool {
+			 return c1->name < c2->name;
+		});
+		for (const auto& x: classes) {
 			if (x->inMainFile) {
 				print(*x, o, diagOn, u.classIndex);
 				o << "\n";
@@ -133,10 +183,16 @@ namespace definitions {
 	}
 
 	void printStubMethods(const Class& c, const ClassIndex& index, std::ostream& o) {
-		for (const auto& x: c.methods) {
+		auto methods = c.methods;
+		sort(methods.begin(), methods.end(), compare_methods);
+		for (const auto& x: methods) {
 			printAsStub(x, c.name, o);
 		}
-		for (const Inheritance& i: c.inherited) {
+		auto inherited = c.inherited;
+		sort(inherited.begin(), inherited.end(), [](const Inheritance& i1, const Inheritance& i2) -> bool {
+			 return i1.name < i2.name;
+		});
+		for (const Inheritance& i: inherited) {
 			auto it = index.find(i.name);
 			if (it == index.end()) {
 				throw std::logic_error("no base class can be unresolved at this point");
@@ -170,20 +226,33 @@ namespace definitions {
 			o << "REFL_STUB(" << stubname << ")\n";
 		}
 
-
-		for (const auto& x: c.inherited) {
+		auto inherited = c.inherited;
+		sort(inherited.begin(), inherited.end(), [](const Inheritance& i1, const Inheritance& i2) -> bool {
+			 return i1.name < i2.name;
+		});
+		for (const auto& x: inherited) {
 			print(x, o);
 		}
 
-		for (const auto& x: c.constructors) {
+		auto constructors = c.constructors;
+		sort(constructors.begin(), constructors.end(), [](const Constructor& c1, const Constructor& c2) -> bool {
+			 return c1.argument_type_spellings < c2.argument_type_spellings;
+		});
+		for (const auto& x: constructors) {
 			print(x, o);
 		}
 
-		for (const auto& x: c.attributes) {
+		auto attributes = c.attributes;
+		sort(attributes.begin(), attributes.end(), [](const Attribute& a1, const Attribute& a2) -> bool {
+			 return a1.name < a2.name;
+		});
+		for (const auto& x: attributes) {
 			print(x, o);
 		}
 
-		for (const auto& x: c.methods) {
+		auto methods = c.methods;
+		sort(methods.begin(), methods.end(), compare_methods);
+		for (const auto& x: methods) {
 			print(x, o);
 		}
 		// inner classes also go to TranslationUnit.classes and are printed in that loop
