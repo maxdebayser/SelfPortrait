@@ -133,7 +133,7 @@ public:
 #endif
 	
 	template<class... Args>
-	VariantValue call(const Args&... args) const {
+	VariantValue call(Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
 		return callArgArray(vargs);
@@ -203,31 +203,31 @@ public:
 	bool isStatic() const;
 
 	template<class... Args>
-	VariantValue call(const Args&... args) const {
+	VariantValue call(Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
 		return callArgArray(vargs );
 	}
 	template<class... Args>
-	VariantValue call(VariantValue& object, const Args&... args) const {
+	VariantValue call(VariantValue& object, Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
-	VariantValue call(const VariantValue& object, const Args&... args) const {
+	VariantValue call(const VariantValue& object, Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
-	VariantValue call(volatile VariantValue& object, const Args&... args) const {
+	VariantValue call(volatile VariantValue& object, Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
-	VariantValue call(const volatile VariantValue& object, const Args&... args) const {
+	VariantValue call(const volatile VariantValue& object, Args&&... args) const {
 		::std::vector<VariantValue> vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
