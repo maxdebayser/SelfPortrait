@@ -1,6 +1,30 @@
 #include <SelfPortrait/reflection_impl.h>
 #include "/home/maxdebayser/clang/IoC/src/unit_test/parser_data/input/interfaces.h"
 
+REFL_BEGIN_STUB(Impl3, Impl3Stub)
+REFL_STUB_METHOD(Interface2, method1, int)
+REFL_END_STUB
+
+REFL_BEGIN_CLASS(Impl3)
+REFL_STUB(Impl3Stub)
+REFL_SUPER_CLASS(Interface2)
+REFL_DEFAULT_CONSTRUCTOR()
+REFL_METHOD(operator=, Impl3 &, const Impl3 &)
+REFL_END_CLASS
+
+REFL_BEGIN_STUB(Impl4, Impl4Stub)
+REFL_STUB_METHOD(NS::Interface1, method1, int)
+REFL_STUB_METHOD(NS::Interface1, method1, int, int)
+REFL_STUB_CONST_METHOD(NS::Interface1, method1, int, int)
+REFL_END_STUB
+
+REFL_BEGIN_CLASS(Impl4)
+REFL_STUB(Impl4Stub)
+REFL_SUPER_CLASS(NS::Interface1)
+REFL_DEFAULT_CONSTRUCTOR()
+REFL_METHOD(operator=, Impl4 &, const Impl4 &)
+REFL_END_CLASS
+
 REFL_BEGIN_STUB(Interface1, Interface1Stub)
 REFL_STUB_METHOD(Interface1, method1, int)
 REFL_STUB_METHOD(Interface1, method1, int, int)
@@ -41,6 +65,45 @@ REFL_SUPER_CLASS(Interface1)
 REFL_SUPER_CLASS(Interface2)
 REFL_DEFAULT_CONSTRUCTOR()
 REFL_METHOD(operator=, Interface3 &, const Interface3 &)
+REFL_END_CLASS
+
+REFL_BEGIN_STUB(NS::Impl1, NS__Impl1Stub)
+REFL_STUB_METHOD(Interface2, method1, int)
+REFL_END_STUB
+
+REFL_BEGIN_CLASS(NS::Impl1)
+REFL_STUB(NS__Impl1Stub)
+REFL_SUPER_CLASS(Interface2)
+REFL_DEFAULT_CONSTRUCTOR()
+REFL_METHOD(operator=, NS::Impl1 &, const NS::Impl1 &)
+REFL_END_CLASS
+
+REFL_BEGIN_STUB(NS::Impl2, NS__Impl2Stub)
+REFL_STUB_METHOD(NS::Interface1, method1, int)
+REFL_STUB_METHOD(NS::Interface1, method1, int, int)
+REFL_STUB_CONST_METHOD(NS::Interface1, method1, int, int)
+REFL_END_STUB
+
+REFL_BEGIN_CLASS(NS::Impl2)
+REFL_STUB(NS__Impl2Stub)
+REFL_SUPER_CLASS(NS::Interface1)
+REFL_DEFAULT_CONSTRUCTOR()
+REFL_METHOD(operator=, NS::Impl2 &, const NS::Impl2 &)
+REFL_END_CLASS
+
+REFL_BEGIN_STUB(NS::Interface1, NS__Interface1Stub)
+REFL_STUB_METHOD(NS::Interface1, method1, int)
+REFL_STUB_METHOD(NS::Interface1, method1, int, int)
+REFL_STUB_CONST_METHOD(NS::Interface1, method1, int, int)
+REFL_END_STUB
+
+REFL_BEGIN_CLASS(NS::Interface1)
+REFL_STUB(NS__Interface1Stub)
+REFL_DEFAULT_CONSTRUCTOR()
+REFL_METHOD(method1, int)
+REFL_METHOD(method1, int, int)
+REFL_CONST_METHOD(method1, int, int)
+REFL_METHOD(operator=, NS::Interface1 &, const NS::Interface1 &)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(NotAnInterface1)
@@ -103,68 +166,5 @@ REFL_BEGIN_CLASS(NotAnInterface9)
 REFL_SUPER_CLASS(Interface1)
 REFL_DEFAULT_CONSTRUCTOR()
 REFL_METHOD(operator=, NotAnInterface9 &, const NotAnInterface9 &)
-REFL_END_CLASS
-
-REFL_BEGIN_STUB(NS::Interface1, NS__Interface1Stub)
-REFL_STUB_METHOD(NS::Interface1, method1, int)
-REFL_STUB_METHOD(NS::Interface1, method1, int, int)
-REFL_STUB_CONST_METHOD(NS::Interface1, method1, int, int)
-REFL_END_STUB
-
-REFL_BEGIN_CLASS(NS::Interface1)
-REFL_STUB(NS__Interface1Stub)
-REFL_DEFAULT_CONSTRUCTOR()
-REFL_METHOD(method1, int)
-REFL_METHOD(method1, int, int)
-REFL_CONST_METHOD(method1, int, int)
-REFL_METHOD(operator=, NS::Interface1 &, const NS::Interface1 &)
-REFL_END_CLASS
-
-REFL_BEGIN_STUB(NS::Impl1, NS__Impl1Stub)
-REFL_STUB_METHOD(Interface2, method1, int)
-REFL_END_STUB
-
-REFL_BEGIN_CLASS(NS::Impl1)
-REFL_STUB(NS__Impl1Stub)
-REFL_SUPER_CLASS(Interface2)
-REFL_DEFAULT_CONSTRUCTOR()
-REFL_METHOD(operator=, NS::Impl1 &, const NS::Impl1 &)
-REFL_END_CLASS
-
-REFL_BEGIN_STUB(NS::Impl2, NS__Impl2Stub)
-REFL_STUB_METHOD(NS::Interface1, method1, int)
-REFL_STUB_METHOD(NS::Interface1, method1, int, int)
-REFL_STUB_CONST_METHOD(NS::Interface1, method1, int, int)
-REFL_END_STUB
-
-REFL_BEGIN_CLASS(NS::Impl2)
-REFL_STUB(NS__Impl2Stub)
-REFL_SUPER_CLASS(NS::Interface1)
-REFL_DEFAULT_CONSTRUCTOR()
-REFL_METHOD(operator=, NS::Impl2 &, const NS::Impl2 &)
-REFL_END_CLASS
-
-REFL_BEGIN_STUB(Impl3, Impl3Stub)
-REFL_STUB_METHOD(Interface2, method1, int)
-REFL_END_STUB
-
-REFL_BEGIN_CLASS(Impl3)
-REFL_STUB(Impl3Stub)
-REFL_SUPER_CLASS(Interface2)
-REFL_DEFAULT_CONSTRUCTOR()
-REFL_METHOD(operator=, Impl3 &, const Impl3 &)
-REFL_END_CLASS
-
-REFL_BEGIN_STUB(Impl4, Impl4Stub)
-REFL_STUB_METHOD(NS::Interface1, method1, int)
-REFL_STUB_METHOD(NS::Interface1, method1, int, int)
-REFL_STUB_CONST_METHOD(NS::Interface1, method1, int, int)
-REFL_END_STUB
-
-REFL_BEGIN_CLASS(Impl4)
-REFL_STUB(Impl4Stub)
-REFL_SUPER_CLASS(NS::Interface1)
-REFL_DEFAULT_CONSTRUCTOR()
-REFL_METHOD(operator=, Impl4 &, const Impl4 &)
 REFL_END_CLASS
 

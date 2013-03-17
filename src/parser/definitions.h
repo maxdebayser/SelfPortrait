@@ -52,8 +52,7 @@ namespace definitions {
 
 		Access access;
 	};
-
-
+	
 	struct Method {
 
 		std::string name;
