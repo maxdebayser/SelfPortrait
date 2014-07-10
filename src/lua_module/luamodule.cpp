@@ -60,12 +60,23 @@ public:
 	static void _register(lua_State* L) {
 		Adapted::initialize();
 
-		luaL_newmetatable(L, Adapted::metatableName);
-		luaL_register(L, NULL, Adapted::lib_m);
 
+
+#ifdef LUA51
+        luaL_newmetatable(L, Adapted::metatableName);
+        luaL_register(L, NULL, Adapted::lib_m);
 		lua_newtable(L);
 		lua_replace(L, LUA_ENVIRONINDEX);
-		luaL_register(L, Adapted::userDataName, Adapted::lib_f);
+        luaL_register(L, Adapted::userDataName, Adapted::lib_f);
+#else
+
+        luaL_newmetatable(L, Adapted::metatableName);
+        luaL_setfuncs (L, Adapted::lib_m, 0);
+
+        luaL_newlib(L, Adapted::lib_f);
+        lua_pushvalue(L,-1);        // pluck these lines out if they offend you
+        lua_setglobal(L,Adapted::userDataName); // for they clobber the Holy _G
+#endif
 	}
 
 	static int gc(lua_State* L){
@@ -1301,20 +1312,26 @@ int Lua_Proxy::interfaces(lua_State* L)
 
 namespace {
 	struct LuaClosureWrapper {
-		lua_State * const L;
-		const int envIndex;
-		LuaClosureWrapper() = default;
-		LuaClosureWrapper(const LuaClosureWrapper&) = default;
+        lua_State * const L = nullptr;
+        struct shared_state {
+            shared_state(int index) : envIndex(index) {}
+            const int envIndex;
+        };
 
-		~LuaClosureWrapper() {
-			luaL_unref(L, LUA_ENVIRONINDEX, envIndex);
-		}
+        void deleter(shared_state* s) const {
+            luaL_unref(L, LUA_REGISTRYINDEX, s->envIndex);
+            delete s;
+        }
 
-		LuaClosureWrapper(lua_State* ls, int index) : L(ls), envIndex(index) {}
+        std::shared_ptr<shared_state> ss;
+        LuaClosureWrapper(const LuaClosureWrapper& that) = default;
+
+        LuaClosureWrapper(lua_State* ls, int index) : L(ls), ss(make_shared<shared_state>(index)) {}
 
 		VariantValue operator()(const std::vector<VariantValue>& vargs) const {
 
-			lua_rawgeti(L, LUA_REGISTRYINDEX, envIndex);
+
+            lua_rawgeti(L, LUA_REGISTRYINDEX, ss->envIndex);
 			luaL_checktype(L, -1, LUA_TFUNCTION);
 
 			for(const VariantValue& v: vargs) {
@@ -1343,7 +1360,7 @@ int Lua_Proxy::addImplementation(lua_State* L)
 
 	const int ref = luaL_ref(L, LUA_REGISTRYINDEX); // ja fez o push da funcao
 
-	p->m_proxy.addImplementation(m->wrapped(), LuaClosureWrapper(L, ref));
+    p->m_proxy.addImplementation(m->wrapped(), LuaClosureWrapper(L, ref));
 
 	return 0;
 }

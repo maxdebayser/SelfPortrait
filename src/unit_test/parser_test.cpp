@@ -32,8 +32,10 @@ namespace {
 		string expected_output = exp_output_file(referenceName);
 		string output = output_file(outputName);
 
-		if (system(fmt_str("%1 %2 -o %3", parser(), source_file, output).c_str()) != 0) {
+        auto parser_cmd = fmt_str("%1 %2 -o %3", parser(), source_file, output);
+        if (system(parser_cmd.c_str()) != 0) {
 			std::cerr << "parser command may have failed" << std::endl;
+            std::cerr << "(" << parser_cmd << ")"<< std::endl;
 		}
 
 		ifstream exp_o_file(expected_output);

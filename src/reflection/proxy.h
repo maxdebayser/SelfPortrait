@@ -24,7 +24,7 @@ public:
 
 	void registerInterface(ClassImpl* cimpl);
 
-	void registerHandler(size_t method_hash, Proxy::MethodHandler);
+    void registerHandler(size_t method_hash, Proxy::MethodHandler);
 
 	bool hasHandler(size_t method_hash) const;
 

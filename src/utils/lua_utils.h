@@ -151,7 +151,11 @@ namespace LuaUtils {
 		static C getStackValue(lua_State* L, int pos) {
 			C ret;
 			luaL_checktype(L, pos, LUA_TTABLE);
-			const int size = lua_objlen(L, pos);
+#ifdef LUA52
+            const int size = lua_rawlen(L, pos);
+#else
+            const int size = lua_objlen(L, pos);
+#endif
 
 			for (int i = 1; i <= size; ++i) {
 				lua_rawgeti(L, pos, i);

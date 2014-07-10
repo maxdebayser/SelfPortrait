@@ -156,7 +156,7 @@ Class& Class::operator=(Class&& rhs) {
 std::string Class::simpleName() const {
 	check_valid();
 	::std::string tmp = m_impl->fullyQualifiedName();
-	const int pos = tmp.find_last_of(':');
+    const size_t pos = tmp.find_last_of(':');
 	return tmp.substr((pos == ::std::string::npos) ? 0 : pos+1);
 }
 
@@ -908,7 +908,7 @@ Proxy::IFaceList Proxy::interfaces() const
 void Proxy::addImplementation(const Method& m, MethodHandler handler)
 {
 	std::hash<Method> h;
-	m_impl->registerHandler(h(m), handler);
+    m_impl->registerHandler(h(m), std::move(handler));
 }
 
 bool Proxy::hasImplementation(const Method& m) const

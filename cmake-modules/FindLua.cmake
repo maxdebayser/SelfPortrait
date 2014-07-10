@@ -2,8 +2,13 @@ INCLUDE(FindPkgConfig)
 
 IF(PKG_CONFIG_FOUND)
 
-	pkg_check_modules (LUA lua>=5.1)
-	INCLUDE_DIRECTORIES(${LUA_INCLUDEDIR})
+        pkg_check_modules (LUA lua>=5.1)
+        INCLUDE_DIRECTORIES(${LUA_INCLUDEDIR})
+        if (LUA_VERSION VERSION_LESS "5.2")
+                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLUA51")
+        else()
+                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLUA52")
+        endif()
 
 ELSE(PKG_CONFIG_FOUND)
 	MESSAGE(WARNING " pkg-config not found, version detection will be much less reliable")
@@ -15,15 +20,20 @@ ELSE(PKG_CONFIG_FOUND)
 		
 	ELSE(${LuaInterp} STREQUAL "LuaInterp-NOTFOUND") 
 
-		execute_process(COMMAND ${LuaInterp} -v ERROR_VARIABLE LUA_OUTPUT)
-		STRING(REGEX MATCH "Lua ([0-9]+.[0-9]+.[0-9]).*" DUMMY ${LUA_OUTPUT})
+                execute_process(COMMAND ${LuaInterp} -v ERROR_VARIABLE LUA_OUTPUT OUTPUT_VARIABLE LUA_OUTPUT)
+                STRING(REGEX MATCH "Lua ([0-9]+.[0-9]+).*" DUMMY "${LUA_OUTPUT}" )
 		SET(LUA_VERSION ${CMAKE_MATCH_1})
 
-		IF (${LUA_VERSION} STRLESS "5.1")
+                IF (LUA_VERSION VERSION_LESS "5.1")
 			MESSAGE(FATAL_ERROR "Lua reports unsupported version ${LUA_VERSION}")
-		ELSE (${LUA_VERSION} STRLESS "5.1")
+                ELSE ()
 			MESSAGE(STATUS "Found Lua version = ${LUA_VERSION}")
-		ENDIF (${LUA_VERSION} STRLESS "5.1")
+                        if (LUA_VERSION VERSION_LESS "5.2")
+                                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLUA51")
+                        else()
+                                SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLUA52")
+                        endif()
+                ENDIF ()
 
 	ENDIF(${LuaInterp} STREQUAL "LuaInterp-NOTFOUND") 
 

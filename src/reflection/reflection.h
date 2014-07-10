@@ -504,7 +504,7 @@ public:
 
 	IFaceList interfaces() const;
 
-	void addImplementation(const Method& m, MethodHandler);
+    void addImplementation(const Method& m, MethodHandler);
 
 	bool hasImplementation(const Method& m) const;
 

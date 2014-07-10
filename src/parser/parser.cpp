@@ -4,7 +4,7 @@
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Frontend/CompilerInvocation.h"
-#include "clang/Frontend/DiagnosticOptions.h"
+#include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 
@@ -458,7 +458,8 @@ int main(int argc, const char* argv[])
 	string output;
 
 	args.push_back(argv[0]);
-	args.push_back("-I/usr/lib/clang/3.2/include"); // why can't clang find this from the resource path?
+    args.push_back("-I/usr/lib64/clang/3.2/include"); // why can't clang find this from the resource path?
+    //args.push_back("-I/usr/lib/clang/3.2/include"); // why can't clang find this from the resource path?
 	args.push_back("-Qunused-arguments"); // why do I keep getting warnings about the unused linker if I'm only creating an ASTunit
 
 	for (int i = 1; i < argc; ++i) {
@@ -518,19 +519,22 @@ int main(int argc, const char* argv[])
 		}
 	}
 
-	DiagnosticOptions options;
-	options.ShowCarets = 1;
-	options.ShowColors = 1;
+    // TextDiagnosticPrinter deletes this on on destruction
+    DiagnosticOptions* options = new DiagnosticOptions();
+    options->ShowCarets = 1;
+    options->ShowColors = 1;
 
-	TextDiagnosticPrinter *DiagClient =	new TextDiagnosticPrinter(llvm::errs(), options);
+
+    TextDiagnosticPrinter DiagClient(llvm::errs(), options, /*OwnsOutputStream*/ false);
 
 	llvm::IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
-	llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags(new DiagnosticsEngine(DiagID, DiagClient));
+    llvm::IntrusiveRefCntPtr<DiagnosticsEngine> Diags(new DiagnosticsEngine(DiagID, options, &DiagClient, false));
 
-	llvm::OwningPtr<ASTUnit> unit(ASTUnit::LoadFromCommandLine(&args[0], &args[0]+args.size(), Diags, "/usr/lib/clang/3.1/", /*OnlyLocalDecls=*/false, /*CaptureDiagnostics=*/false, 0, 0, true, /*PrecompilePreamble=*/false, /*TUKind=*/TU_Complete, /*CacheCodeCompletionResults=*/false, /*AllowPCHWithCompilerErrors=*/false));
+    llvm::OwningPtr<ASTUnit> unit(ASTUnit::LoadFromCommandLine(&args[0], &args[0]+args.size(), Diags, "/usr/lib64/clang/3.2/", /*OnlyLocalDecls=*/false, /*CaptureDiagnostics=*/false, 0, 0, true, /*PrecompilePreamble=*/false, /*TUKind=*/TU_Complete, /*CacheCodeCompletionResults=*/false, /*AllowPCHWithCompilerErrors=*/false));
+    //llvm::OwningPtr<ASTUnit> unit(ASTUnit::LoadFromCommandLine(&args[0], &args[0]+args.size(), Diags, "/usr/lib/clang/3.1/", /*OnlyLocalDecls=*/false, /*CaptureDiagnostics=*/false, 0, 0, true, /*PrecompilePreamble=*/false, /*TUKind=*/TU_Complete, /*CacheCodeCompletionResults=*/false, /*AllowPCHWithCompilerErrors=*/false));
 
 
-	if (DiagClient->getNumErrors() > 0) {
+    if (DiagClient.getNumErrors() > 0) {
 		return 1;
 	}
 
@@ -558,6 +562,7 @@ int main(int argc, const char* argv[])
 	}
 
 	astConsumer.print(out, iFaceDiags);
+
 
 	return 0;
 }
