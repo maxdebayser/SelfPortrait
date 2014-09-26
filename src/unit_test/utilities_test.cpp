@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #include "utilities_test.h"
 #include "typelist.h"
 #include "str_conversion.h"

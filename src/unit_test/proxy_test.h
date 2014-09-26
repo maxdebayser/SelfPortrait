@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef PROXY_TEST_H
 #define PROXY_TEST_H
 

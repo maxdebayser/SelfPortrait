@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef COLL_UTILS_H
 #define COLL_UTILS_H
 

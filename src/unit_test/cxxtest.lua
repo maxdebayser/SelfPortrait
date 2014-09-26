@@ -1,3 +1,7 @@
+--
+-- SelfPortrait API
+-- See Copyright Notice in lua_utils.h
+--
 require "debug"
 
 function TS_ASSERT(code)

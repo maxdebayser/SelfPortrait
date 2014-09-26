@@ -19,3 +19,11 @@ meta-data to use in your application.
 For those who have integrated other languages such as lua, python or Java with
 C++ with binding generators such as SWIG, SelfPortrait will look like a binding
 from C++ to C++ itself.
+
+More info
+=========
+
+More information about this project can be found in two places:
+
+- My masters dissertation: http://github.com/maxdebayser/dissertation
+- A paper published at the SBLP conference: "A system for runtime type introspection in c++"

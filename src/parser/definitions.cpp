@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #include "definitions.h"
 #include <stdexcept>
 #include <iostream>

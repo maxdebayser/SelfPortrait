@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef TYPELIST_H
 #define TYPELIST_H
 

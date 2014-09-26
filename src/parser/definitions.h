@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H
 

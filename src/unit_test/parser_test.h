@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef PARSER_TEST_H
 #define PARSER_TEST_H
 

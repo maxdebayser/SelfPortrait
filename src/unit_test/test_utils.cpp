@@ -1,3 +1,8 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in lua_utils.h
+*/
+
 #include "test_utils.h"
 #include <stdexcept>
 #include "str_conversion.h"

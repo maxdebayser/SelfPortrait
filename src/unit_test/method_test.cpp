@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #include "method_test.h"
 #include "method.h"
 #include "reflection.h"

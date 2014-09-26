@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef CONSTRUCTOR_H
 #define CONSTRUCTOR_H
 

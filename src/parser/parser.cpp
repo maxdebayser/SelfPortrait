@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #include "llvm/Support/Host.h"
 
 #include "clang/Driver/Compilation.h"
@@ -283,8 +287,8 @@ public:
 
 						m_visited.insert(definition);
 
-						string name;
-						definition->getNameForDiagnostic(name, m_printPol, true);
+                        string name;
+                        definition->getNameForDiagnostic(name, m_printPol, true);
 
 
 						m_builder.pushClass({printType(name), isInMainFile});
@@ -419,8 +423,8 @@ public:
 						return;
 					}
 					// is not a method
-					string nameWithNamespace;
-					fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
+                    string nameWithNamespace;
+                    fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
 					string a = string(args.empty() ? "" : ", ") + argstr;
 					m_tu.functions.push_back({nameWithNamespace, returnType, argstr});
 				}

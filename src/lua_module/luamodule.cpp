@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #include <lua.hpp>
 #include "reflection_impl.h"
 #include "lua_utils.h"

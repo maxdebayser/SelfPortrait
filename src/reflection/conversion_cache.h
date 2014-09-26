@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef CONVERSION_CACHE
 #define CONVERSION_CACHE
 

@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef TYPE_UTILS_H
 #define TYPE_UTILS_H
 

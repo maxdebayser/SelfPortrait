@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in lua_utils.h
+*/
 #include "lua_utils.h"
 
 namespace {

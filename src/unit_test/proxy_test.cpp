@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #include "proxy_test.h"
 
 #include "reflection_impl.h"

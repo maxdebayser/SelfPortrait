@@ -1,3 +1,8 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in lua_utils.h
+*/
+
 #ifndef TEST_UTILS
 #define TEST_UTILS
 

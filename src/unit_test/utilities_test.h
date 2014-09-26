@@ -1,3 +1,7 @@
+/*
+** SelfPortrait API
+** See Copyright Notice in reflection.h
+*/
 #ifndef UTILITIES_TEST_H
 #define UTILITIES_TEST_H
 
