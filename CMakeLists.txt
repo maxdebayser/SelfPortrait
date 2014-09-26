@@ -9,7 +9,10 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11") # Add c++11 functionality
 #add_definitions(-DNO_RTTI)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake-modules)
-find_package(LLVM REQUIRED)
+IF(SELFPORTRAIT_BUILD_PARSER)
+    find_package(LLVM REQUIRED)
+ENDIF()
+
 find_package(Lua REQUIRED)
 find_package(CxxTest REQUIRED)
 

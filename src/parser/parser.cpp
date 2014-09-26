@@ -288,10 +288,10 @@ public:
 						m_visited.insert(definition);
 
                         string name;
-                        definition->getNameForDiagnostic(name, m_printPol, true);
+                        raw_string_ostream ss(name);
+                        definition->getNameForDiagnostic(ss, m_printPol, true);
 
-
-						m_builder.pushClass({printType(name), isInMainFile});
+                        m_builder.pushClass({printType(ss.str()), isInMainFile});
 
 
 						for (auto it = definition->bases_begin(); it != definition->bases_end(); ++it) {
@@ -424,9 +424,10 @@ public:
 					}
 					// is not a method
                     string nameWithNamespace;
-                    fd->getNameForDiagnostic(nameWithNamespace, m_printPol, true);
+                    raw_string_ostream ss(nameWithNamespace);
+                    fd->getNameForDiagnostic(ss, m_printPol, true);
 					string a = string(args.empty() ? "" : ", ") + argstr;
-					m_tu.functions.push_back({nameWithNamespace, returnType, argstr});
+                    m_tu.functions.push_back({ss.str(), returnType, argstr});
 				}
 			} else if (clang::ClassTemplateDecl* td = llvm::dyn_cast<clang::ClassTemplateDecl>(decl)) {
 				if (m_instantiateTemplates) {

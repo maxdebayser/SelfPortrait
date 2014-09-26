@@ -3,8 +3,7 @@ set(HEADERS
 	class_test.h
 	constructor_test.h
 	function_test.h
-	method_test.h
-	parser_test.h
+        method_test.h
 	proxy_test.h
 	test_utils.h
 	utilities_test.h
@@ -16,13 +15,17 @@ set(SOURCES
 	class_test.cpp
 	constructor_test.cpp
 	function_test.cpp
-	method_test.cpp
-	parser_test.cpp
+        method_test.cpp
 	proxy_test.cpp
 	test_utils.cpp
 	utilities_test.cpp
 	variant_test.cpp
 )
+
+IF(SELFPORTRAIT_BUILD_PARSER)
+    list(APPEND HEADERS parser_test.h)
+    list(APPEND SOURCES parser_test.cpp)
+ENDIF()
 
 
 set(LIBS
