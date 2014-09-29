@@ -16,4 +16,4 @@ set(LIBS
 add_library(luaselfportrait SHARED ${HEADERS} ${SOURCES})
 target_link_libraries(luaselfportrait ${LIBS})
 
-install(TARGETS luaselfportrait LIBRARY DESTINATION lib)
+install(TARGETS luaselfportrait LIBRARY DESTINATION "lib${LIBSUFFIX}")
