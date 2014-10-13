@@ -222,7 +222,7 @@ class ValueHolder: public IValueHolder {
 		}
 	};
 
-	typedef CloneHelper<T, ::std::is_constructible<T, T>::value> Cloner;
+    typedef CloneHelper<T, ::std::is_constructible<T, const T&>::value> Cloner;
 
 
 	template<class U,bool OK>
@@ -409,6 +409,111 @@ public:
 private:
 	RefType m_value;
 };
+
+
+template <class T>
+class ValueHolder<T&&>: public IValueHolder {
+public:
+    typedef T&& RefType;
+    typedef typename normalize_type<T&&>::type ValueType;
+private:
+
+    template<class Dummy,bool OK>
+    struct CloneHelper {
+        static IValueHolder* clone(const ValueHolder* holder) {
+            return new ValueHolder(holder->m_value);
+        }
+    };
+
+    template<class Dummy>
+    struct CloneHelper<Dummy, false> {
+        static IValueHolder* clone(const ValueHolder*) {
+            throw std::runtime_error("type has no copy constructor");
+        }
+    };
+
+    typedef CloneHelper<ValueType, ::std::is_constructible<ValueType, ValueType>::value> Cloner;
+
+
+    template<class U,bool OK>
+    struct CompareHelper {
+        static bool equal(const U& u1, const U& u2) {
+            return u1 == u2;
+        }
+    };
+
+    template<class U>
+    struct CompareHelper<U, false> {
+        static bool equal(const U& u1, const U& u2) {
+            throw std::runtime_error("no equality operator exists for type");
+        }
+    };
+
+    typedef CompareHelper<ValueType, comparable<ValueType>::value> Compare;
+
+
+public:
+
+    ValueHolder(RefType v)
+        : IValueHolder(reinterpret_cast<const void*>(&v),
+#ifndef NO_RTTI
+                       typeid(ValueType),
+#endif
+                       sizeof(ValueType),
+                       alignof(ValueType),
+                       ::std::is_pod<ValueType>::value,
+                       ::std::is_integral<ValueType>::value,
+                       ::std::is_floating_point<ValueType>::value,
+                       ::std::is_pointer<ValueType>::value,
+                       ::std::is_same< ::std::string, ValueType>::value,
+                       normalize_type<T>::is_const),
+          m_value(v) {}
+
+    ~ValueHolder() noexcept {
+    }
+
+    ValueHolder(const ValueHolder&) = delete;
+    ValueHolder& operator=(ValueHolder) = delete;
+
+    IValueHolder* clone() const override {
+        return Cloner::clone(this);
+    }
+
+    virtual bool equals(const IValueHolder* rhs) const override {
+        if (rhs != nullptr) {
+            try {
+                rhs->throwCast();
+            } catch (const ValueType* ptr) {
+                return Compare::equal(m_value, *ptr);
+            } catch (...) {}
+        }
+        return false;
+    }
+
+
+    virtual ::std::string convertToString() const override {
+            return ::std::move(toString(m_value));
+    }
+
+    virtual number_return convertToNumber(NumberType t) const {
+        number_return r;
+        if (t == NumberType::INTEGER) {
+            r.i = ::convertToInteger(m_value);
+        } else {
+            r.f = ::convertToFloatingPoint(m_value);
+        }
+        return r;
+    }
+
+    virtual void throwCast() const {
+        throw &m_value;
+    }
+
+private:
+    RefType m_value;
+};
+
+
 
 }
 

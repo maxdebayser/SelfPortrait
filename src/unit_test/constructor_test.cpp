@@ -45,6 +45,19 @@ namespace ConstructorTest {
 	};
 
 	class Test2 {};
+
+    class Test3 {
+    public:
+        Test3(const Test3&) = delete;
+        Test3(Test3&& t) {
+            this->attr1 = t.attr1;
+        }
+        Test3(int arg1)
+            : attr1(arg1)
+        {}
+        int attr1;
+    };
+
 }
 
 
@@ -61,6 +74,13 @@ REFL_END_CLASS
 
 REFL_BEGIN_CLASS(ConstructorTest::Test2)
 REFL_END_CLASS
+
+REFL_BEGIN_CLASS(ConstructorTest::Test3)
+REFL_CONSTRUCTOR(ConstructorTest::Test3&&)
+REFL_CONSTRUCTOR(int)
+REFL_ATTRIBUTE(attr1, int)
+REFL_END_CLASS
+
 
 using namespace ConstructorTest;
 
