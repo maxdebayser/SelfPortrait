@@ -30,50 +30,41 @@
 #include <vector>
 #include <type_traits>
 #include <stdexcept>
+//#include <iostream>
 
 namespace {
 
 namespace string_conversion_impl {
-	typedef char no;
-	typedef char yes[2];
 
-	struct any_t {
-		template<typename T> any_t( T const& );
-	};
+    struct stream {
+        static std::istream& in();
+        static std::ostream& out();
+    };
 
+    template<class T, class = decltype(stream::out() << std::declval<T>() )>
+    std::true_type  supports_ostream(const T&);
+    std::false_type supports_ostream(...);
 
-	struct stream {
-		stream(const std::ostream&);
-	};
+    template<class T> using printable = decltype(supports_ostream(std::declval<T>()));
 
-	no operator<<( std::ostream const&, any_t const& );
+    template <typename T>
+    struct lvalue_ref_priv {
+        typedef T& type;
+    };
 
-	//no operator<<( stream const&, any_t const& );
+    template <typename T>
+    struct lvalue_ref_priv<const T&> {
+        typedef T& type;
+    };
 
+    template<typename T>
+    typename lvalue_ref_priv<T>::type lvalue_ref();
 
-	no operator>>( std::istream &, const any_t & );
+    template<class T, class = decltype(stream::in() >> lvalue_ref<T>() )>
+    std::true_type  supports_istream(const T&);
+    std::false_type supports_istream(...);
 
-	yes& test_ostream( std::ostream& );
-	no test_ostream( no );
-	
-	yes& test_istream( std::istream& );
-	no test_istream( no );
-
-	template<typename T>
-	struct printable {
-		static std::ostream &s;
-		static T const &t;
-		// Ambiguous conversions have ruined it all
-		//static bool const value = sizeof( test_ostream(s << t) ) == sizeof( yes );
-		static bool const value = ::std::is_arithmetic<T>::value || ::std::is_same<T, const char*>::value || ::std::is_same<T, ::std::string>::value;
-	};
-		
-	template<typename T>
-	struct parseable {
-		static std::istream &s;
-		static T &t;
-		static bool const value = sizeof( test_istream(s >> t) ) == sizeof( yes );
-	};
+    template<class T> using parseable = decltype(supports_istream(std::declval<T>()));
 	
 	enum class ConversionTo {
 		ConvertsToString,
