@@ -279,7 +279,7 @@ public:
 			try {
 				rhs->throwCast();
 			} catch (ValueType* ptr) {
-				return Compare::equal(m_value, *ptr);
+                return Compare::equal(m_value, *ptr);
 			} catch (...) {}
 		}
 		return false;
@@ -524,10 +524,10 @@ public:
 	explicit VariantValue();
 
 	template<class ValueType>
-	VariantValue(const ValueType& t) : m_impl(new ValueHolder<ValueType>(t)) {}
+    VariantValue(const ValueType& t) : m_impl(new ValueHolder<ValueType>(t)) {}
 
 	template<class ValueType>
-	VariantValue(ValueType* t) : m_impl(new ValueHolder<ValueType*>(t)) {}
+    VariantValue(ValueType* t) : m_impl(new ValueHolder<ValueType*>(t)) {}
 
 
 	template<class ValueType, class... Args>
@@ -860,8 +860,13 @@ public:
 	
 	// If the type is a POD and you know what you're doing, you can memcpy it, but beware of the alignment
 	const void * ptrToValue() const;
-	
-	
+
+    /* These two cannot be global functions, otherwise implicit
+     * type conversions and suddenly everything is comparable
+     */
+    bool operator==(const VariantValue& that) const;
+
+    bool operator!=(const VariantValue& that) const;
 	
 private:
 	std::shared_ptr<IValueHolder> m_impl;
@@ -871,13 +876,7 @@ private:
 			throw ::std::runtime_error("variant has no value");
 		}
 	}
-	
-	friend bool operator==(const VariantValue& v1, const VariantValue& v2);
 };
-
-bool operator==(const VariantValue& v1, const VariantValue& v2);
-
-bool operator!=(const VariantValue& v1, const VariantValue& v2);
 
 
 #endif /* VARIANT_H */

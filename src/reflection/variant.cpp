@@ -90,32 +90,33 @@ const void * VariantValue::ptrToValue() const
 	return m_impl->ptrToValue();
 }
 
-bool operator==(const VariantValue& v1, const VariantValue& v2)
+bool VariantValue::operator==(const VariantValue& that) const
 {
 
-	if ((v1.isValid() == false) && (v2.isValid() == false)) {
+    if ((this->isValid() == false) && (that.isValid() == false)) {
 		return true;
 	}
-	if ((v1.isValid() == false) || (v2.isValid() == false)) {
+    if ((this->isValid() == false) || (that.isValid() == false)) {
 		return false;
 	}
 
-	if (v1.isArithmetical() && v2.isArithmetical()) {
-		if (v1.isIntegral() && v2.isIntegral()) {
-			number_return r1 = v1.m_impl->convertToNumber(NumberType::INTEGER);
-			number_return r2 = v2.m_impl->convertToNumber(NumberType::INTEGER);
+    if (this->isArithmetical() && that.isArithmetical()) {
+        if (this->isIntegral() && that.isIntegral()) {
+            number_return r1 = this->m_impl->convertToNumber(NumberType::INTEGER);
+            number_return r2 = that.m_impl->convertToNumber(NumberType::INTEGER);
 			return r1.i == r2.i;
 		} else {
-			number_return r1 = v1.m_impl->convertToNumber(NumberType::FLOATING);
-			number_return r2 = v2.m_impl->convertToNumber(NumberType::FLOATING);
+            number_return r1 = this->m_impl->convertToNumber(NumberType::FLOATING);
+            number_return r2 = that.m_impl->convertToNumber(NumberType::FLOATING);
 			return r1.f == r2.f;
 		}
 	}
 
-	return v1.m_impl->equals(v2.m_impl.get());
+    return this->m_impl->equals(that.m_impl.get());
 }
 
-bool operator!=(const VariantValue& v1, const VariantValue& v2)
+bool VariantValue::operator!=(const VariantValue& that) const
 {
-	return !(v1 == v2);
+    return !(*this == that);
 }
+

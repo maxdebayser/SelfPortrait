@@ -19,6 +19,7 @@ public:
 	void testLuaAPI();
 	void testHash();
 	void testClassRef();
+    void testNonAssignableAttribute();
 };
 
 

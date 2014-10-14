@@ -6,7 +6,6 @@
 
 #include <iostream>
 #include <string>
-using namespace std;
 
 void VariantTestSuite::testInvalid() {
 	VariantValue v;
@@ -86,7 +85,7 @@ void VariantTestSuite::testConversions() {
 
 struct NonCopyable {
 
-	NonCopyable(int i) : m_i(i) {}
+    NonCopyable(int i) : m_i(i) {}
 
 	NonCopyable(const NonCopyable&) = delete;
 	NonCopyable(NonCopyable&&) = delete;
@@ -99,6 +98,7 @@ struct NonCopyable {
 
 void VariantTestSuite::testNonCopyable()
 {
+    static_assert(comparable<NonCopyable>::value == false, "There is no == operator defined for this class");
 	VariantValue v1;
 	v1.construct<NonCopyable>(2);
 
@@ -110,6 +110,9 @@ void VariantTestSuite::testNonCopyable()
 	VariantValue v3;
 	v3.construct<NonCopyable>(3);
 	TS_ASSERT_THROWS(bool b = (v1 == v3), std::runtime_error);
+
+    VariantValue v2;
+    v2.construct<std::unique_ptr<int>>();
 
 }
 
@@ -171,3 +174,4 @@ void VariantTestSuite::testBaseConversion()
 	TS_ASSERT_EQUALS(dref.method1(), 5.3);
 	TS_ASSERT_EQUALS(bref.method1(), 5.3);
 }
+

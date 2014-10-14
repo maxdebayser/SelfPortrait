@@ -39,6 +39,11 @@ namespace AttributeTest {
 
 	class Test2 {};
 
+    class Test3 {
+    public:
+        std::unique_ptr<int> attr1;
+    };
+
 }
 
 REFL_BEGIN_CLASS(AttributeTest::Test)
@@ -53,6 +58,11 @@ REFL_END_CLASS
 REFL_BEGIN_CLASS(AttributeTest::Test2)
 REFL_END_CLASS
 
+
+REFL_BEGIN_CLASS(AttributeTest::Test3)
+REFL_ATTRIBUTE(attr1, std::unique_ptr<int>)
+REFL_END_CLASS
+
 using namespace AttributeTest;
 
 void AttributeTestSuite::testVanillaAttribute()
@@ -60,16 +70,17 @@ void AttributeTestSuite::testVanillaAttribute()
 	AttributeImpl<int Test::*> aImpl("attr1", &Test::attr1, "int");
 	Attribute attr1(&aImpl);
 
-	VariantValue v1 = Test();
-	VariantValue r1 = attr1.get(v1);
+    VariantValue v1 = Test();
+    VariantValue r1 = attr1.get(v1);
 
-	TS_ASSERT(r1.isA<int>());
-	TS_ASSERT_EQUALS(r1.value<int>(), 101);
+    // TODO: check if it is possible to implement a conversion to int (calling the copy constructor)
+    TS_ASSERT(r1.isA<const int&>());
+    TS_ASSERT_EQUALS(r1.value<const int&>(), 101);
 
 	attr1.set(v1, 201);
 	r1 = attr1.get(v1);
-	TS_ASSERT(r1.isA<int>());
-	TS_ASSERT_EQUALS(r1.value<int>(), 201);
+    TS_ASSERT(r1.isA<const int&>());
+    TS_ASSERT_EQUALS(r1.value<const int&>(), 201);
 
 	TS_ASSERT_THROWS(attr1.get(), std::runtime_error);
 	TS_ASSERT_THROWS(attr1.set(201), std::runtime_error);
@@ -77,8 +88,8 @@ void AttributeTestSuite::testVanillaAttribute()
 	const VariantValue v2 = Test();
 	VariantValue r2 = attr1.get(v2);
 
-	TS_ASSERT(r2.isA<int>());
-	TS_ASSERT_EQUALS(r2.value<int>(), 101);
+    TS_ASSERT(r2.isA<const int&>());
+    TS_ASSERT_EQUALS(r2.value<const int&>(), 101);
 
 	TS_ASSERT_THROWS(attr1.set(v2, 201), std::runtime_error);
 }
@@ -92,14 +103,14 @@ void AttributeTestSuite::testConstAttribute()
 	VariantValue v1 = Test();
 	VariantValue r1 = attr2.get(v1);
 
-	TS_ASSERT(r1.isA<int>());
-	TS_ASSERT_EQUALS(r1.value<int>(), 102);
+    TS_ASSERT(r1.isA<const int&>());
+    TS_ASSERT_EQUALS(r1.value<const int&>(), 102);
 	TS_ASSERT_THROWS(attr2.set(v1, 202), std::runtime_error);
 
 	const VariantValue v2 = Test();
 	VariantValue r2 = attr2.get(v2);
-	TS_ASSERT(r2.isA<int>());
-	TS_ASSERT_EQUALS(r2.value<int>(), 102);
+    TS_ASSERT(r2.isA<const int&>());
+    TS_ASSERT_EQUALS(r2.value<const int&>(), 102);
 
 	TS_ASSERT_THROWS(attr2.set(v2, 202), std::runtime_error);
 }
@@ -185,4 +196,9 @@ void AttributeTestSuite::testClassRef()
 	TS_ASSERT_EQUALS(a1.getClass(), a2.getClass());
 
 	TS_ASSERT_DIFFERS(a1.getClass(), test2);
+}
+
+void AttributeTestSuite::testNonAssignableAttribute()
+{
+    static_assert(std::is_copy_assignable<std::unique_ptr<int>>::value == false, "unique_ptr should not be assignable");
 }

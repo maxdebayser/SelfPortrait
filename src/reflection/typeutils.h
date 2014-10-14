@@ -19,31 +19,11 @@ struct Select<true, U, V>
 	typedef U type;
 };
 
+template<class T, class = decltype(std::declval<T>() == std::declval<T>() )>
+std::true_type  supports_equal_test(const T&);
+std::false_type supports_equal_test(...);
 
-namespace comparable_impl {
-
-	typedef char no;
-	typedef char yes[2];
-
-	template<class T>
-	no operator==( T const&, T const& );
-
-	yes& test_eq( bool );
-	no test_eq( no );
-
-	template<typename T>
-	struct test {
-		static T const& t1;
-		static T const& t2;
-		static bool const value = sizeof( test_eq(t1 == t2) ) == sizeof( yes );
-	};
-
-}
-
-template<typename T>
-struct comparable {
-	enum { value = comparable_impl::test<T>::value };
-};
+template<class T> using comparable = decltype(supports_equal_test(std::declval<T>()));
 
 
 template<class T>

@@ -21,6 +21,30 @@ namespace {
 template<class Attr>
 struct attribute_type;
 
+
+
+template<class Clazz, class Type, bool assignable>
+struct assignable_helper {
+    typedef Type (Clazz::*ptr_to_attr);
+    static void set(Clazz& object, ptr_to_attr ptr, const VariantValue& value) {
+        bool success = false;
+        Type v = value.convertTo<Type>(&success);
+        if (!success) {
+            throw ::std::runtime_error("wrong type in attibute attribution");
+        }
+        object.*ptr = v;
+    }
+};
+
+template<class Clazz, class Type>
+struct assignable_helper<Clazz, Type, false> {
+    typedef Type (Clazz::*ptr_to_attr);
+    static void set(Clazz&, ptr_to_attr, const VariantValue&) {
+            throw ::std::runtime_error("this attribute is not assignable");
+    }
+};
+
+
 template<class _Clazz, class _Type>
 struct attribute_type<_Type _Clazz::*> {
 	typedef _Clazz Clazz;
@@ -30,21 +54,43 @@ struct attribute_type<_Type _Clazz::*> {
 	enum { is_const = false };
 	
 	static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
-		return object.*ptr;
+        VariantValue ret;
+        return ret.construct<const Type&>(object.*ptr);
 	}
 	
 	static void set(Clazz& object, ptr_to_attr ptr, const VariantValue& value) {
-		bool success = false;
-		Type v = value.convertTo<Type>(&success);
-		if (!success) {
-			throw ::std::runtime_error("wrong type in attibute attribution");
-		}
-		object.*ptr = v;
+        assignable_helper<Clazz, Type, std::is_copy_assignable<Type>::value>::set(object, ptr, value);
+
+        /*bool success = false;
+        Type v = value.convertTo<Type>(&success);
+        if (!success) {
+            throw ::std::runtime_error("wrong type in attibute attribution");
+        }
+        object.*ptr = v;*/
 	}
 	
 	static void set(const Clazz& object, ptr_to_attr, const VariantValue& ) {
 		throw ::std::runtime_error("cannot change value of an attribute of a const object");
 	}
+};
+
+template<class _Clazz, class _Type>
+struct attribute_type<const _Type _Clazz::*> {
+    typedef _Clazz Clazz;
+    typedef _Type Type;
+    typedef const Type (Clazz::*ptr_to_attr);
+
+    enum { is_const = true };
+
+    static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
+        VariantValue ret;
+        return ret.construct<const Type&>(object.*ptr);
+    }
+
+    // const and non-const references bind to this
+    static void set(const Clazz&, ptr_to_attr, const VariantValue&) {
+        throw ::std::runtime_error("cannot change value of const attribute");
+    }
 };
 
 template<class Type>
@@ -84,25 +130,6 @@ struct ptr_type<const _Type*> {
 	
 	static void set(ptr_to_variable, const VariantValue& ) {
 		throw ::std::runtime_error("cannot change value of const variable");
-	}
-};
-
-
-template<class _Clazz, class _Type>
-struct attribute_type<const _Type _Clazz::*> {
-	typedef _Clazz Clazz;
-	typedef _Type Type;
-	typedef const Type (Clazz::*ptr_to_attr);
-	
-	enum { is_const = true };
-	
-	static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
-		return object.*ptr;
-	}
-	
-	// const and non-const references bind to this
-	static void set(const Clazz&, ptr_to_attr, const VariantValue&) {
-		throw ::std::runtime_error("cannot change value of const attribute");
 	}
 };
 

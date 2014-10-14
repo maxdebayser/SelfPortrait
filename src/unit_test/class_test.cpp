@@ -227,13 +227,13 @@ void ClassTestSuite::testClass()
 	TS_ASSERT_EQUALS(test, test3);
 #endif
 
-	TS_ASSERT_EQUALS(attr.get(testInst1).value<int>(), 3);
+    TS_ASSERT_EQUALS(attr.get(testInst1).value<const int&>(), 3);
 
 
 	VariantValue testInst2 = intConstr.call(77);
 
 	TS_ASSERT(testInst2.isA<Test1>());
-	TS_ASSERT_EQUALS(attr.get(testInst2).value<int>(), 77);
+    TS_ASSERT_EQUALS(attr.get(testInst2).value<const int&>(), 77);
 
 	Class::MethodList methods = test.methods();
 
