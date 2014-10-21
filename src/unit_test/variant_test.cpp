@@ -175,3 +175,21 @@ void VariantTestSuite::testBaseConversion()
 	TS_ASSERT_EQUALS(bref.method1(), 5.3);
 }
 
+namespace {
+enum class Units {
+    INV_VOLUME = 1,
+    VOLUME = 2,
+    DISTANCE = 3
+};
+
+}
+
+void VariantTestSuite::testEnum()
+{
+    VariantValue v1;
+    v1.construct<int>(1);
+    bool success = false;
+    Units v2 = v1.moveValue<Units>(&success);
+    TS_ASSERT(success);
+    TS_ASSERT_EQUALS(v2, Units::INV_VOLUME);
+}

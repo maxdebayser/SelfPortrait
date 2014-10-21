@@ -2,6 +2,11 @@
 ** SelfPortrait API
 ** See Copyright Notice in reflection.h
 */
+
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 #include <lua.hpp>
 #include "reflection_impl.h"
 #include "lua_utils.h"
@@ -420,6 +425,31 @@ struct binding_mapper<Function> {
 	typedef Lua_Function type;
 };
 
+//---------------Library----------------------------------------------------------
+
+class Lua_Library: public LuaAdapter<Lua_Library> {
+public:
+    Lua_Library(string library);
+    ~Lua_Library();
+
+    static int newInstance(lua_State* L);
+    static int close(lua_State* L);
+
+    static void initialize();
+
+    static const char * metatableName;
+    static const char * userDataName;
+
+    const string wrapped() const { return m_libraryName; }
+
+private:
+    string m_libraryName;
+    void* m_library;
+    static MethodTable methods;
+    static const struct luaL_Reg lib_f[];
+    static const struct luaL_Reg lib_m[];
+    friend class LuaAdapter<Lua_Library>;
+};
 
 
 //=====================Definitions==============================================
@@ -1390,12 +1420,151 @@ int Lua_Proxy::reference(lua_State* L)
 }
 
 
+/* Library loading functions adapted from loadlib.c from the lua source code
+ *
+ */
 
+#if defined(__unix__)
+/*
+** {========================================================================
+** This is an implementation of loadlib based on the dlfcn interface.
+** The dlfcn interface is available in Linux, SunOS, Solaris, IRIX, FreeBSD,
+** NetBSD, AIX 4.2, HPUX 11, and  probably most other Unix flavors, at least
+** as an emulation layer on top of native functions.
+** =========================================================================
+*/
+
+#include <dlfcn.h>
+
+static void unloadlib (void *lib) {
+  dlclose(lib);
+}
+
+static void *loadlib(const char *path) {
+  void *lib = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+  if (lib == nullptr) {
+    throw std::runtime_error(dlerror());
+  }
+  return lib;
+}
+
+
+/* }====================================================== */
+
+
+
+#elif defined(LUA_DL_DLL)
+/*
+** {======================================================================
+** This is an implementation of loadlib for Windows using native functions.
+** =======================================================================
+*/
+
+
+/*
+** optional flags for LoadLibraryEx
+*/
+
+static void unloadlib (void *lib) {
+  FreeLibrary((HMODULE)lib);
+}
+
+static void *loadlib (const char *path) {
+  HMODULE lib = LoadLibraryExA(path, NULL, 0);
+  if (lib == nullptr) {
+    throw std::runtime_error(std::string("could not load library ")+path);
+  }
+  return lib;
+}
+
+/* }====================================================== */
+
+
+#else
+/*
+** {======================================================
+** Fallback for other systems
+** =======================================================
+*/
+
+static void unloadlib (void *lib) {
+  (void)(lib);  /* not used */
+}
+
+
+static void *loadlib (const char *path) {
+  throw std::runtime_error("loading dynamic libraries is not supported on this system");
+  return NULL;
+}
+
+
+/* }====================================================== */
+#endif
+
+
+//---------------Library----------------------------------------------------------
+
+Lua_Library::Lua_Library(string library)
+    : m_libraryName(library)
+    , m_library(loadlib(m_libraryName.c_str()))
+{}
+
+
+
+Lua_Library::~Lua_Library()
+{
+    if (m_library) {
+        unloadlib(m_library);
+        m_library = nullptr;
+    }
+}
+
+const char * Lua_Library::metatableName = "SelfPortrait.Library";
+const char * Lua_Library::userDataName  = "Library";
+MethodTable Lua_Library::methods;
+
+
+const struct luaL_Reg Lua_Library::lib_f[] = {
+    { "new", exception_translator<newInstance> },
+    { NULL, NULL }
+};
+
+const struct luaL_Reg Lua_Library::lib_m[] = {
+    { "__gc", exception_translator<gc> },
+    { "__index", exception_translator<index> },
+    { "__eq", exception_translator<eq> },
+    { NULL, NULL }
+};
+
+void Lua_Library::initialize()
+{
+    methods["close"] = exception_translator<close>;
+}
+
+int Lua_Library::newInstance(lua_State* L)
+{
+    size_t length = 0;
+    string name = luaL_checklstring(L, 1, &length);
+    create(L, name);
+    return 1;
+}
+
+int Lua_Library::close(lua_State* L)
+{
+    Lua_Library* l = checkUserData(L);
+
+    if (l->m_library) {
+        unloadlib(l->m_library);
+        l->m_library = nullptr;
+    }
+
+    return 1;
+}
 
 extern "C" {
 
-	int luaopen_libluaselfportrait ( lua_State* L )
-	{
+    int luaopen_libluaselfportrait ( lua_State* L )
+    {
 		Lua_Class::_register(L);
 		Lua_Attribute::_register(L);
 		Lua_Method::_register(L);
@@ -1403,6 +1572,7 @@ extern "C" {
 		Lua_Variant::_register(L);
 		Lua_Function::_register(L);
 		Lua_Proxy::_register(L);
+        Lua_Library::_register(L);
 		return 1;
-	}
+    }
 }

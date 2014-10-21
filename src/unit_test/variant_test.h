@@ -19,6 +19,7 @@ public:
 	void testConversions();
 	void testNonCopyable();
 	void testBaseConversion();
+    void testEnum();
 };
 
 

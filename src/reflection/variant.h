@@ -681,8 +681,8 @@ private:
 	struct impossibleConversion {
 		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
-			ValueType* ptr = nullptr;
-			return *ptr;
+            // something must be returned in order to compile, but this value should never be read
+            return *reinterpret_cast<ValueType*>(holder->ptrToValue());
 		}
 		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
@@ -693,8 +693,8 @@ private:
 	struct impossibleConversion<ValueType&> {
 		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
-			ValueType* ptr = nullptr;
-			return *ptr;
+            // something must be returned in order to compile, but this value should never be read
+            return *reinterpret_cast<ValueType*>(holder->ptrToValue());
 		}
 		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
@@ -705,8 +705,8 @@ private:
 	struct impossibleConversion<ValueType&&> {
 		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
-			ValueType* ptr = nullptr;
-			return *ptr;
+            // something must be returned in order to compile, but this value should never be read
+            return *reinterpret_cast<ValueType*>(holder->ptrToValue());
 		}
 		static ValueType&& value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
@@ -738,7 +738,7 @@ public:
 			return *ptr;
 		}
 		
-		return Select< ::std::is_integral<ValueType>::value,
+        return Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
 				integralConversion<ValueType>,
 				typename Select< ::std::is_floating_point<ValueType>::value,
 					floatConversion<ValueType>,
@@ -759,7 +759,7 @@ public:
 			return *ptr;
 		}
 
-		return Select< ::std::is_integral<ValueType>::value,
+        return Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
 				integralConversion<ValueType>,
 				typename Select< ::std::is_floating_point<ValueType>::value,
 					floatConversion<ValueType>,
@@ -781,7 +781,7 @@ public:
 			return ::std::forward<ValueType>(*ptr);
 		}
 
-		return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value,
+        return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
 										 integralConversion<ValueType>,
 										 typename Select< ::std::is_floating_point<ValueType>::value,
 											 floatConversion<ValueType>,
@@ -802,7 +802,7 @@ public:
 			return ::std::forward<ValueType>(*ptr);
 		}
 
-		return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value,
+        return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
 										 integralConversion<ValueType>,
 										 typename Select< ::std::is_floating_point<ValueType>::value,
 											 floatConversion<ValueType>,
