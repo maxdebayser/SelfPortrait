@@ -119,7 +119,7 @@ class MyASTConsumer
 
 
 
-		cerr << entry->getName() << ":" <<
+        cerr << (entry ? entry->getName() : "unknown location") << ":" <<
 				line << ":" << column <<
 				": warning: Incomplete type " <<
 				t.type.getAsString(m_printPol) <<
