@@ -49,6 +49,7 @@ function testConstructor()
     TS_ASSERT[[ attr1:get(v2) == 33]]
     TS_ASSERT[[ attr2:get(v2) == 103 ]]
 
+
     local cons2Arg = cons["int,int"]
     TS_ASSERT(cons2Arg)
     TS_ASSERT[[ cons2Arg:numberOfArguments() == 2 ]]
@@ -72,6 +73,17 @@ function testConstructor()
 	local searched = TestClass:findConstructor(function(c) return c:numberOfArguments() == 1 and c:argumentSpellings()[1] == "int" end)
     TS_ASSERT(searched)
 	TS_ASSERT[[ searched == cons1Arg ]]
+
+    local v5 = TestClass:construct()
+
+    TS_ASSERT[[ attr1:get(v5) == 101 ]]
+    TS_ASSERT[[ attr2:get(v5) == 102 ]]
+
+    local v6 = TestClass:construct(44, 88)
+
+    TS_ASSERT(v6)
+    TS_ASSERT[[ attr1:get(v6) == 44 ]]
+    TS_ASSERT[[ attr2:get(v6) == 88 ]]
 
     return true
 end

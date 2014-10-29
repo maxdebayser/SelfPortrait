@@ -152,14 +152,13 @@ const struct luaL_Reg LuaAdapter<T>::lib_m[] = {
 };
 
 //---------------Variant--------------------------------------------------------
-
 class Lua_Variant: public LuaAdapter<Lua_Variant> {
 public:
 
 	template<class Arg>
-	Lua_Variant(Arg&& arg) : m_variant(arg) {}
+    Lua_Variant(Arg&& arg) : m_variant(arg), m_class() {}
 
-	Lua_Variant() : m_variant() {}
+    Lua_Variant() : m_variant(), m_class() {}
 
 	static void initialize();
 
@@ -179,29 +178,38 @@ public:
 	static int sizeOf(lua_State* L);
 	static int alignOf(lua_State* L);
 
+    static int attribute_stub(lua_State* L);
+    static int method_stub(lua_State* L);
+
 	static const char * metatableName;
 	static const char * userDataName;
 
-	static void create(lua_State* L, VariantValue&& v) {
+    static void create(lua_State* L, Class c, VariantValue&& v) {
 		void * f = lua_newuserdata(L, sizeof(Lua_Variant));
 		Lua_Variant * lc = new(f) Lua_Variant();
 		lc->m_variant = ::std::move(v);
+        lc->m_class = c;
 		luaL_getmetatable(L, Lua_Variant::metatableName);
 		lua_setmetatable(L, -2);
 	}
 
-	template<class... Args>
-	static void create(lua_State* L, Args&&... args) {
+    static int index(lua_State* L);
+    static int newindex(lua_State* L);
+
+    template<class... Args>
+    static void create(lua_State* L, Class c, Args&&... args) {
 		void * f = lua_newuserdata(L, sizeof(Adapted));
 		Adapted * lc = new(f) Adapted(args...);
+        lc->m_class = c;
 		luaL_getmetatable(L, Adapted::metatableName);
 		lua_setmetatable(L, -2);
-	}
+    }
 
 	const VariantValue& wrapped() const { return m_variant; }
 
 private:
 	VariantValue m_variant;
+    Class m_class;
 	static MethodTable methods;
 	static const struct luaL_Reg lib_f[];
 	static const struct luaL_Reg lib_m[];
@@ -218,6 +226,7 @@ public:
 
 	static int lookup(lua_State* L);
 
+    static int construct(lua_State* L);
 	static int fullyQualifiedName(lua_State* L);
 	static int simpleName(lua_State* L);
 	static int isInterface(lua_State* L);
@@ -469,7 +478,8 @@ const struct luaL_Reg Lua_Variant::lib_f[] = {
 
 const struct luaL_Reg Lua_Variant::lib_m[] = {
 	{ "__gc", exception_translator<gc> },
-	{ "__index", exception_translator<index> },
+    { "__index", exception_translator<index> },
+    { "__newindex", exception_translator<newindex> },
 	{ "__tostring", exception_translator<tostring> },
 	{ "__eq", exception_translator<eq> },
 	{ NULL, NULL }
@@ -487,6 +497,70 @@ void Lua_Variant::initialize()
 	methods["isPOD"]           = exception_translator<isPOD>;
 	methods["sizeOf"]          = exception_translator<sizeOf>;
 	methods["alignOf"]         = exception_translator<alignOf>;
+}
+
+int Lua_Variant::index(lua_State* L) {
+    Lua_Variant* c = Lua_Variant::checkUserData(L);
+    const char * index = luaL_checkstring(L, 2);
+
+    auto it = Adapted::methods.find(index);
+
+    if (it != Adapted::methods.end()) {
+        lua_pushcfunction(L, it->second);
+        return 1;
+    } else {
+
+        if(c->m_class.isValid()) {
+
+            Class clazz = c->m_class;
+
+            Attribute attr;
+
+            if (clazz.findMethod([&](const Method& m){ return m.name() == index; }).isValid()) {
+                LuaAdapter<Lua_Class>::create(L,clazz);
+                lua_pushstring(L, index);
+                lua_pushcclosure(L, method_stub, 2);
+                return 1;
+
+            } else if ((attr = clazz.findAttribute([&](const Attribute& a){ return a.name() == index; })).isValid()) {
+                Lua_Attribute::create(L,attr);
+                lua_pushvalue(L, 1);
+                lua_remove(L, 1);
+                lua_remove(L, 1);
+                return Lua_Attribute::get(L);
+            }
+        }
+
+        luaL_error(L, "class has no property %s\n", index);
+    }
+    return 0;
+}
+
+int Lua_Variant::newindex(lua_State* L) {
+    Lua_Variant* c = Lua_Variant::checkUserData(L);
+    const char * index = luaL_checkstring(L, 2);
+
+    if(c->m_class.isValid()) {
+
+        Class clazz = c->m_class;
+        Attribute attr;
+
+        if ((attr = clazz.findAttribute([&](const Attribute& a){ return a.name() == index; })).isValid()) {
+            Lua_Attribute::create(L,attr);
+            lua_pushvalue(L, 1);
+            lua_remove(L, 1);
+            lua_remove(L, 1);
+            lua_pushvalue(L, 1);
+            lua_remove(L, 1);
+            return Lua_Attribute::set(L);
+
+            return 1;
+        }
+    }
+
+    luaL_error(L, "class has no property %s\n", index);
+
+    return 0;
 }
 
 VariantValue Lua_Variant::getFromStack(lua_State* L, int idx)
@@ -539,9 +613,9 @@ int Lua_Variant::newInstance(lua_State* L)
 	int n = lua_gettop(L);
 
 	if (n == 0) {
-		create(L);
+        create(L, Class());
 	} else {
-		create(L, getFromStack(L, 1));
+        create(L, Class(), getFromStack(L, 1));
 	}
 	return 1;
 }
@@ -622,6 +696,30 @@ int Lua_Variant::alignOf(lua_State* L)
 	return 1;
 }
 
+int Lua_Variant::method_stub(lua_State* L)
+{
+    Lua_Class& c = *Lua_Class::checkUserData(L, lua_upvalueindex(1));
+    const string name = luaL_checkstring(L, lua_upvalueindex(2));
+    const int numArgs = lua_gettop(L) - 1;
+
+    auto methods = c.wrapped().findAllMethods([&](const Method& m){ return m.name() == name && m.numberOfArguments() == numArgs;});
+
+    if (methods.size() == 0) {
+        luaL_error(L, fmt_str("Class %1 has no method named %2", c.wrapped().fullyQualifiedName(), name).c_str());
+    } else if (methods.size() > 1) {
+        luaL_error(L, fmt_str("Class %1 has more than one method named %2 with %3 arguments", c.wrapped().fullyQualifiedName(), name, numArgs).c_str());
+    }
+
+    Method& m = methods.front();
+
+    Lua_Method::create(L, m);
+    for (int i = 1; i <= numArgs+1; ++i) {
+        lua_pushvalue(L, 1);
+        lua_remove(L, 1);
+    }
+
+    return Lua_Method::call(L);
+}
 
 
 //---------------Class----------------------------------------------------------
@@ -651,6 +749,7 @@ void Lua_Class::initialize()
 	methods["isInterface"]         = exception_translator<isInterface>;
 	methods["methods"]             = exception_translator<getMethods>;
 	methods["constructors"]        = exception_translator<getConstructors>;
+    methods["construct"]           = exception_translator<construct>;
 	methods["attributes"]          = exception_translator<getAttributes>;
 	methods["superclasses"]        = exception_translator<getSuperClasses>;
 	methods["findAttribute"]       = exception_translator<findAttribute>;
@@ -737,6 +836,31 @@ int Lua_Class::getConstructors(lua_State* L)
 		lua_rawseti(L, -2, ++i);
 	}
 	return 1;
+}
+
+
+int Lua_Class::construct(lua_State* L)
+{
+    Lua_Class* c = checkUserData(L);
+    const int numArgs = lua_gettop(L) - 1;
+
+    const Class::ConstructorList&  l = c->m_class.findAllConstructors([&](const Constructor& cons){ return cons.numberOfArguments() == numArgs; });
+    if (l.size() == 0) {
+        luaL_error(L, fmt_str("Class %1 has no constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
+    } else if (l.size() > 1) {
+        luaL_error(L, fmt_str("Class %1 has more than one constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
+    }
+    lua_remove(L, 1);
+
+    const Constructor& cons = l.front();
+
+    Lua_Constructor::create(L, cons);
+    for (int i = 1; i <= numArgs; ++i) {
+        lua_pushvalue(L, 1);
+        lua_remove(L, 1);
+    }
+
+    return Lua_Constructor::call(L);
 }
 
 int Lua_Class::getAttributes(lua_State* L)
@@ -990,7 +1114,12 @@ int Lua_Method::call(lua_State* L)
 		} else if (ret.isStdString()) {
 			lua_pushstring(L, ret.convertTo<std::string>().c_str());
 		} else {
-			Lua_Variant::create(L, ret);
+            Class clazz;
+#ifndef NO_RTTI
+            clazz = Class::lookup(ret.typeId());
+#endif
+            // TODO: check if we can provide the class if we have the meta-data
+            Lua_Variant::create(L, clazz, ret);
 		}
 
 		return 1;
@@ -1039,7 +1168,7 @@ int Lua_Constructor::call(lua_State* L)
 		args.push_back(Lua_Variant::getFromStack(L, i));
 	}
 
-	Lua_Variant::create(L, ::std::move(c->m_constructor.callArgArray(args)));
+    Lua_Variant::create(L, c->wrapped().getClass(), ::std::move(c->m_constructor.callArgArray(args)));
 	return 1;
 }
 
@@ -1112,7 +1241,11 @@ int Lua_Attribute::get(lua_State* L)
 	} else if (ret.isStdString()) {
 		lua_pushstring(L, ret.convertTo<std::string>().c_str());
 	} else {
-		Lua_Variant::create(L, ret);
+        Class clazz;
+#ifndef NO_RTTI
+        clazz = Class::lookup(ret.typeId());
+#endif
+        Lua_Variant::create(L, clazz, ret);
 	}
 
 	return 1;
@@ -1225,8 +1358,12 @@ int Lua_Function::call(lua_State* L)
 			lua_pushnumber(L, ret.convertTo<lua_Number>());
 		} else if (ret.isStdString()) {
 			lua_pushstring(L, ret.convertTo<std::string>().c_str());
-		} else {
-			Lua_Variant::create(L, ret);
+		} else {      
+            Class clazz;
+#ifndef NO_RTTI
+            clazz = Class::lookup(ret.typeId());
+#endif
+            Lua_Variant::create(L, clazz, ret);
 		}
 		return 1;
 	} else {
@@ -1368,8 +1505,12 @@ namespace {
             lua_rawgeti(L, LUA_REGISTRYINDEX, ss->envIndex);
 			luaL_checktype(L, -1, LUA_TFUNCTION);
 
-			for(const VariantValue& v: vargs) {
-				Lua_Variant::create(L, v);
+			for(const VariantValue& v: vargs) {    
+                Class clazz;
+    #ifndef NO_RTTI
+                clazz = Class::lookup(v.typeId());
+    #endif
+                Lua_Variant::create(L, clazz, v);
 			}
 
 			if (lua_pcall(L, vargs.size(), 1, 0) != 0) {
@@ -1413,8 +1554,12 @@ int Lua_Proxy::reference(lua_State* L)
 {
 	Lua_Proxy* p = checkUserData(L,1);
 	Lua_Class* c = Lua_Class::checkUserData(L,2);
-
-	Lua_Variant::create(L, p->m_proxy.reference(c->wrapped()));
+    VariantValue v = p->m_proxy.reference(c->wrapped());
+    Class clazz;
+#ifndef NO_RTTI
+    clazz = Class::lookup(v.typeId());
+#endif
+    Lua_Variant::create(L, clazz, v);
 
 	return 1;
 }

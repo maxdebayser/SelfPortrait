@@ -26,6 +26,11 @@ function testMethod()
 
     TS_ASSERT[[ method1:call(v1, 3) == 6 ]]
 
+    TS_ASSERT[[ v1:method1(3) == 6 ]]
+
+    TS_ASSERT[[ v1:method4(3) == 15 ]]
+    TS_ASSERT[[ v1:method4(3, 4) == 19 ]]
+
 
     local method5 = methods["method5(int)"]
     TS_ASSERT(method5)

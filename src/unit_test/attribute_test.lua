@@ -41,6 +41,14 @@ function testAttribute()
 
     TS_ASSERT[[ attr1:get(v1) == 101 ]]
 
+    TS_ASSERT[[ v1.attr1 == 101 ]]
+
+    v1.attr1 = 102
+
+    TS_ASSERT[[ v1.attr1 == 102 ]]
+
+    --TS_ASSERT[[ v1:attr1 == 101 ]]
+
     TS_ASSERT[[ attr1:get(v1) ~= 201 ]]
     attr1:set(v1, 201)
     TS_ASSERT[[ attr1:get(v1) == 201 ]]
