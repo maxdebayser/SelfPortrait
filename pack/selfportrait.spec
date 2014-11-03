@@ -1,6 +1,6 @@
 Name:		SelfPortrait
 Version:	0.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A reflection library for C++11
 
 Group:		System Environment/Libraries
@@ -9,6 +9,8 @@ URL:		http://github.com/maxdebayser/SelfPortrait
 Source0:	SelfPortrait.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:	clang
+
+%define lua_version           %(lua -v 2>&1 | grep -Po '\\d\\.\\d')
 
 
 %description
@@ -68,8 +70,11 @@ rm -rf $RPM_BUILD_ROOT
 %doc LICENSE README.md
 %{_bindir}/selfportraitc
 %{_libdir}/*.so
+%{_libdir}/lua/%{lua_version}/*.so
 %{_includedir}/SelfPortrait/*.h
 
 %changelog
+* Mon Nov 03 2014 Maximilien de Bayser <maxdebayser@gmail.com> 0.2
+- Install the lua module in a location that is on the "luarocks path"
 * Thu Oct 08 2014 Maximilien de Bayser <maxdebayser@gmail.com> 0.1
 - Package first created for g++-4.9, built without parser
