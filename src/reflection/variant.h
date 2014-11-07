@@ -82,12 +82,12 @@ namespace number_conversion {
 
 template<class T>
 constexpr bool convertibleToInteger() {
-		return ::std::is_arithmetic<T>::value || ::std::is_convertible<T, ::number_conversion::dst_int_t>::value || ::std::is_same<T, ::std::string>::value || ::std::is_same<T, const char *>::value;
+        return ::std::is_arithmetic<T>::value || ::std::is_convertible<T, ::number_conversion::dst_int_t>::value || ::std::is_enum<T>::value || ::std::is_same<T, ::std::string>::value || ::std::is_same<T, const char *>::value;
 }
 
 template<class T>
 constexpr bool convertibleToFloatingPoint() {
-		return ::std::is_arithmetic<T>::value || ::std::is_convertible<T, ::number_conversion::dst_float_t>::value || ::std::is_same<T, ::std::string>::value || ::std::is_same<T, const char *>::value;;
+        return ::std::is_arithmetic<T>::value || ::std::is_convertible<T, ::number_conversion::dst_float_t>::value || ::std::is_enum<T>::value || ::std::is_same<T, ::std::string>::value || ::std::is_same<T, const char *>::value;;
 }
 
 template<class T>
@@ -291,11 +291,11 @@ public:
 
 	virtual number_return convertToNumber(NumberType t) const {
 		number_return r;
-		if (t == NumberType::INTEGER) {
-			r.i = ::convertToInteger(m_value);
-		} else {
+        if (t == NumberType::INTEGER) {
+            r.i = ::convertToInteger(m_value);
+        } else {
 			r.f = ::convertToFloatingPoint(m_value);
-		}
+        }
 		return r;
 	}
 

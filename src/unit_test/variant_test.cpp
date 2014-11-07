@@ -189,7 +189,21 @@ void VariantTestSuite::testEnum()
     VariantValue v1;
     v1.construct<int>(1);
     bool success = false;
-    Units v2 = v1.moveValue<Units>(&success);
+    Units u1 = v1.moveValue<Units>(&success);
     TS_ASSERT(success);
-    TS_ASSERT_EQUALS(v2, Units::INV_VOLUME);
+    TS_ASSERT_EQUALS(u1, Units::INV_VOLUME);
+
+    VariantValue v2;
+    v2.construct<Units>(Units::VOLUME);
+    success = false;
+    int u2 = v2.moveValue<int>(&success);
+    TS_ASSERT(success);
+    TS_ASSERT_EQUALS(u2, 2);
+
+    VariantValue v3;
+    v3.construct<Units>(Units::DISTANCE);
+    success = false;
+    double u3 = v3.moveValue<double>(&success);
+    TS_ASSERT(success);
+    TS_ASSERT_EQUALS(u3, 3);
 }
