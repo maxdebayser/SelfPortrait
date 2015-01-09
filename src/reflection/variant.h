@@ -744,9 +744,11 @@ public:
 					floatConversion<ValueType>,
 					typename Select< ::std::is_same<ValueType, ::std::string>::value,
 						stringConversion<ValueType>,
-						typename Select< ::std::is_pointer<ValueType>::value,
-								pointerConversion<ValueType>,
-								impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl, success);
+                            typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+                                stringConversion<ValueType>,
+                                typename Select< ::std::is_pointer<ValueType>::value,
+                                        pointerConversion<ValueType>,
+                                        impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl, success);
 	}
 
 	template<class ValueType>
@@ -760,14 +762,16 @@ public:
 		}
 
         return Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
-				integralConversion<ValueType>,
-				typename Select< ::std::is_floating_point<ValueType>::value,
-					floatConversion<ValueType>,
-					typename Select< ::std::is_same<ValueType, ::std::string>::value,
-						stringConversion<ValueType>,
-						typename Select< ::std::is_pointer<ValueType>::value,
-								pointerConversion<ValueType>,
-								impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl);
+                integralConversion<ValueType>,
+                typename Select< ::std::is_floating_point<ValueType>::value,
+                    floatConversion<ValueType>,
+                    typename Select< ::std::is_same<ValueType, ::std::string>::value,
+                        stringConversion<ValueType>,
+                        typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+                            stringConversion<ValueType>,
+                            typename Select< ::std::is_pointer<ValueType>::value,
+                                    pointerConversion<ValueType>,
+                                    impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl);
 	}
 
 	template<class ValueType>
@@ -787,9 +791,11 @@ public:
 											 floatConversion<ValueType>,
 											 typename Select< ::std::is_same<ValueType, ::std::string>::value,
 												 stringConversion<ValueType>,
-												 typename Select< ::std::is_pointer<ValueType>::value,
-														 pointerConversion<ValueType>,
-														 impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl, success));
+                                                 typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+                                                     stringConversion<ValueType>,
+                                                     typename Select< ::std::is_pointer<ValueType>::value,
+                                                             pointerConversion<ValueType>,
+                                                             impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl, success));
 	}
 
 	template<class ValueType>
@@ -808,9 +814,11 @@ public:
 											 floatConversion<ValueType>,
 											 typename Select< ::std::is_same<ValueType, ::std::string>::value,
 												 stringConversion<ValueType>,
+                                                 typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+                                                     stringConversion<ValueType>,
 												 typename Select< ::std::is_pointer<ValueType>::value,
 														 pointerConversion<ValueType>,
-														 impossibleConversion<ValueType>>::type>::type>::type>::type::value(m_impl));
+                                                         impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl));
 	}
 
 	template<class ValueType>

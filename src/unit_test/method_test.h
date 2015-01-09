@@ -23,6 +23,7 @@ public:
 	void testClassRef();
 	void testFullName();
 	void testMethodOverriding();
+    void testLoggerCase();
 };
 
 

@@ -44,6 +44,22 @@ namespace MethodTest {
 		int method2() { return 667; }
 	};
 
+    class Logger {
+    public:
+        Logger(int) {}
+        Logger(const Logger&) = delete;
+        Logger(Logger&&) = delete;
+    };
+
+    class LoggerFactory {
+    public:
+        static Logger& getLogger(const std::string& name, std::string outputName = "stderr", bool colored = true) { static Logger myLogger(3); return myLogger; }
+        static void getLogger2(const std::string& name, std::string outputName = "stderr", bool colored = true) {  }
+        static void getLogger3(const std::string& name) {  }
+        static void getLogger4(std::string name) {  }
+        static void getLogger5(bool name) {  }
+    };
+
 }
 
 REFL_BEGIN_CLASS(MethodTest::Test1)
@@ -72,6 +88,14 @@ REFL_BEGIN_CLASS(MethodTest::Derived)
 	REFL_DEFAULT_CONSTRUCTOR()
 	REFL_METHOD(method1, int)
 	REFL_METHOD(method2, int)
+REFL_END_CLASS
+
+REFL_BEGIN_CLASS(MethodTest::LoggerFactory)
+REFL_STATIC_METHOD(getLogger, MethodTest::Logger&, const std::basic_string<char>&, std::basic_string<char>, bool)
+REFL_STATIC_METHOD(getLogger2, void, const std::basic_string<char>&, std::basic_string<char>, bool)
+REFL_STATIC_METHOD(getLogger3, void, const std::basic_string<char>&)
+REFL_STATIC_METHOD(getLogger4, void, std::basic_string<char>)
+REFL_STATIC_METHOD(getLogger5, void, bool)
 REFL_END_CLASS
 
 
@@ -358,4 +382,38 @@ void MethodTestSuite::testMethodOverriding()
 	VariantValue r6 = dm2.call(dinst);
 	TS_ASSERT(r6.isA<int>());
 	TS_ASSERT_EQUALS(r6.value<int>(), 667);
+}
+
+void MethodTestSuite::testLoggerCase()
+{
+    Class test = Class::lookup("MethodTest::LoggerFactory");
+
+    Method m1 = test.findMethod([](const Method& m){ return m.name() == "getLogger";});
+    Method m2 = test.findMethod([](const Method& m){ return m.name() == "getLogger2";});
+    Method m3 = test.findMethod([](const Method& m){ return m.name() == "getLogger3";});
+    Method m4 = test.findMethod([](const Method& m){ return m.name() == "getLogger4";});
+    Method m5 = test.findMethod([](const Method& m){ return m.name() == "getLogger5";});
+
+    VariantValue v;
+    v.construct<const char*>("hello");
+    bool success = false;
+    v.convertTo<const std::string&>(&success);
+    TS_ASSERT(success);
+
+    /*VariantValue v2;
+    v2.construct<float>(3.5);
+    success = false;
+    v2.convertTo<const int&>(&success);
+    TS_ASSERT(success);*/
+
+    TS_ASSERT(m1.isValid());
+    TS_ASSERT(m2.isValid());
+    TS_ASSERT(m3.isValid());
+    TS_ASSERT(m4.isValid());
+    TS_ASSERT(m5.isValid());
+    m3.call("hello");
+    m4.call("hello");
+    m5.call(true);
+    m2.call("myLogger", "stderr", true);
+    m1.call("myLogger", "stderr", true);
 }
