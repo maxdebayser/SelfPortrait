@@ -186,11 +186,12 @@ public:
 
     static void create(lua_State* L, Class c, VariantValue&& v) {
 		void * f = lua_newuserdata(L, sizeof(Lua_Variant));
-		Lua_Variant * lc = new(f) Lua_Variant();
+        Lua_Variant * lc = new(f) Lua_Variant();
 		lc->m_variant = ::std::move(v);
+
         lc->m_class = c;
 		luaL_getmetatable(L, Lua_Variant::metatableName);
-		lua_setmetatable(L, -2);
+        lua_setmetatable(L, -2);
 	}
 
     static int index(lua_State* L);
@@ -1084,7 +1085,7 @@ int Lua_Method::isStatic(lua_State* L)
 int Lua_Method::call(lua_State* L)
 {
 	Lua_Method* m = checkUserData(L);
-	vector<VariantValue> args;
+    vector<VariantValue> args;
 
 	VariantValue obj;
 
@@ -1119,7 +1120,7 @@ int Lua_Method::call(lua_State* L)
             clazz = Class::lookup(ret.typeId());
 #endif
             // TODO: check if we can provide the class if we have the meta-data
-            Lua_Variant::create(L, clazz, ret);
+            Lua_Variant::create(L, clazz, std::move(ret));
 		}
 
 		return 1;
@@ -1245,7 +1246,7 @@ int Lua_Attribute::get(lua_State* L)
 #ifndef NO_RTTI
         clazz = Class::lookup(ret.typeId());
 #endif
-        Lua_Variant::create(L, clazz, ret);
+        Lua_Variant::create(L, clazz, std::move(ret));
 	}
 
 	return 1;
@@ -1363,7 +1364,7 @@ int Lua_Function::call(lua_State* L)
 #ifndef NO_RTTI
             clazz = Class::lookup(ret.typeId());
 #endif
-            Lua_Variant::create(L, clazz, ret);
+            Lua_Variant::create(L, clazz, std::move(ret));
 		}
 		return 1;
 	} else {
@@ -1510,7 +1511,7 @@ namespace {
     #ifndef NO_RTTI
                 clazz = Class::lookup(v.typeId());
     #endif
-                Lua_Variant::create(L, clazz, v);
+                Lua_Variant::create(L, clazz, std::move(v));
 			}
 
 			if (lua_pcall(L, vargs.size(), 1, 0) != 0) {
@@ -1559,7 +1560,7 @@ int Lua_Proxy::reference(lua_State* L)
 #ifndef NO_RTTI
     clazz = Class::lookup(v.typeId());
 #endif
-    Lua_Variant::create(L, clazz, v);
+    Lua_Variant::create(L, clazz, std::move(v));
 
 	return 1;
 }

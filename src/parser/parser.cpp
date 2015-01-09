@@ -270,14 +270,34 @@ public:
 						// maybe we can force the definition to exist
 
 						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd)) {
-							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
-							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
+
+                            string nameWithNamespace;
+                            raw_string_ostream ss(nameWithNamespace);
+                            spec->getNameForDiagnostic(ss, m_printPol, true);
+                            cout << "1 template name = "<< ss.str() << " is valid " << spec->getPointOfInstantiation().isValid() << endl;
+                            cout << "instantiation: " << crd->getTemplateSpecializationKind() << endl;
+                            const TemplateArgumentList& list = spec->getTemplateArgs();
+                            if (nameWithNamespace.find("type-parameter") == string::npos) {
+                                cout << "treating " << endl;
+                                m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
+                                m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
+                            } else {
+                                cout << "not treating " << endl;
+                            }
 						}
 
 						if (ClassTemplateSpecializationDecl* spec = dyn_cast<ClassTemplateSpecializationDecl>(crd->getDeclContext())) {
+                            string nameWithNamespace;
+                            raw_string_ostream ss(nameWithNamespace);
+                            spec->getNameForDiagnostic(ss, m_printPol, true);
+                            cout << "2 template name = "<< ss.str() << " is valid " << spec->getPointOfInstantiation().isValid() << endl;
+                            const TemplateArgumentList& list = spec->getTemplateArgs();
+
+                            if (nameWithNamespace.find("type-parameter") == string::npos) {
 							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
 							m_sema.InstantiateClassMembers(crd->getSourceRange().getBegin(), spec, MultiLevelTemplateArgumentList(spec->getTemplateArgs()),TSK_ImplicitInstantiation);
 							return;
+                            }
 						}
 					}
 
