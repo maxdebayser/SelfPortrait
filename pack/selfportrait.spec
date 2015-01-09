@@ -1,6 +1,6 @@
 Name:		SelfPortrait
-Version:	0.1
-Release:	2%{?dist}
+Version:	0.2
+Release:	1%{?dist}
 Summary:	A reflection library for C++11
 
 Group:		System Environment/Libraries
