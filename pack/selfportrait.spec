@@ -1,5 +1,5 @@
 Name:		SelfPortrait
-Version:	0.3
+Version:	0.4
 Release:	1%{?dist}
 Summary:	A reflection library for C++11
 
