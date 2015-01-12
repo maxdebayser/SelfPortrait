@@ -620,22 +620,23 @@ private:
 
 
 	template<class ValueType>
-	struct pointerConversion {
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+    struct pointerConversion {
+        typedef ValueType type;
+        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 
 			try {
 				holder->throwCast();
-			} catch (ValueType& ptr) {
+            } catch (type& ptr) {
 				if (success != nullptr) *success = true;
 				return ptr;
 			} catch(...) { }
 			if (success != nullptr) *success = false;
-			return ValueType();
+            return type();
 		}
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
 			try {
 				holder->throwCast();
-			} catch (ValueType& ptr) {
+            } catch (type& ptr) {
 				return ptr;
 			} catch(...) { }
 			throw std::runtime_error("failed to convert variant to pointer");
@@ -643,72 +644,78 @@ private:
 	};
 
 	template<class ValueType>
-	struct integralConversion {
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+    struct integralConversion {
+        typedef ValueType type;
+        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			number_return r = holder->convertToNumber(NumberType::INTEGER);
-			return static_cast<ValueType>(r.i);
+            return static_cast<type>(r.i);
 		}
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
 			return value(holder, nullptr);
 		}
 	};
 
 	template<class ValueType>
-	struct floatConversion {
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+    struct floatConversion {
+        typedef ValueType type;
+        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			number_return r = holder->convertToNumber(NumberType::FLOATING);
-			return static_cast<ValueType>(r.f);
+            return static_cast<type>(r.f);
 		}
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
 			return value(holder, nullptr);
 		}
 	};
 
 	template<class ValueType>
-	struct stringConversion {
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+    struct stringConversion {
+        typedef std::string type;
+        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = true;
 			return holder->convertToString();
 		}
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
 			return value(holder, nullptr);
 		}
 	};
 
 	template<class ValueType>
-	struct impossibleConversion {
-		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+    struct impossibleConversion {
+        typedef ValueType type;
+        static type& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+			if (success != nullptr) *success = false;
+            // something must be returned in order to compile, but this value should never be read
+            return *reinterpret_cast<type*>(holder->ptrToValue());
+        }
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+			throw std::runtime_error("failed conversion");
+		}
+	};
+
+    template<class ValueType>
+    struct impossibleConversion<ValueType&> {
+        typedef ValueType& type;
+        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
             // something must be returned in order to compile, but this value should never be read
             return *reinterpret_cast<ValueType*>(holder->ptrToValue());
 		}
-		static ValueType value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
 
 	template<class ValueType>
-	struct impossibleConversion<ValueType&> {
-		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+    struct impossibleConversion<ValueType&&> {
+        typedef ValueType&& type;
+        static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
 			if (success != nullptr) *success = false;
             // something must be returned in order to compile, but this value should never be read
             return *reinterpret_cast<ValueType*>(holder->ptrToValue());
 		}
-		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder) {
-			throw std::runtime_error("failed conversion");
-		}
-	};
-
-	template<class ValueType>
-	struct impossibleConversion<ValueType&&> {
-		static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
-			if (success != nullptr) *success = false;
-            // something must be returned in order to compile, but this value should never be read
-            return *reinterpret_cast<ValueType*>(holder->ptrToValue());
-		}
-		static ValueType&& value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -725,57 +732,50 @@ public:
 			throw ::std::runtime_error("variant value is not of the requested type");
 		}
 		return *ptr;
-	}
-	
-	template<class ValueType>
-	ValueType convertTo(bool * success = nullptr) const {
-		check_valid();
+    }
 
-		auto ptr = isAPriv<ValueType>();
-		
-		if (ptr != nullptr) {
-			if (success != nullptr) * success = true;
-			return *ptr;
-		}
-		
-        return Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
-				integralConversion<ValueType>,
-				typename Select< ::std::is_floating_point<ValueType>::value,
-					floatConversion<ValueType>,
-					typename Select< ::std::is_same<ValueType, ::std::string>::value,
-						stringConversion<ValueType>,
-                            typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
-                                stringConversion<ValueType>,
-                                typename Select< ::std::is_pointer<ValueType>::value,
-                                        pointerConversion<ValueType>,
-                                        impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl, success);
-	}
-
-	template<class ValueType>
-	ValueType convertToThrow() const {
-		check_valid();
-
-		auto ptr = isAPriv<ValueType>();
-
-		if (ptr != nullptr) {
-			return *ptr;
-		}
-
-        return Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
-                integralConversion<ValueType>,
-                typename Select< ::std::is_floating_point<ValueType>::value,
-                    floatConversion<ValueType>,
-                    typename Select< ::std::is_same<ValueType, ::std::string>::value,
-                        stringConversion<ValueType>,
-                        typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+    template<class ValueType> using converter = typename
+                Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
+                    integralConversion<ValueType>,
+                    typename Select< ::std::is_floating_point<ValueType>::value,
+                        floatConversion<ValueType>,
+                        typename Select< ::std::is_same<ValueType, ::std::string>::value,
                             stringConversion<ValueType>,
-                            typename Select< ::std::is_pointer<ValueType>::value,
-                                    pointerConversion<ValueType>,
-                                    impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl);
+                                typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+                                    stringConversion<ValueType>,
+                                    typename Select< ::std::is_pointer<ValueType>::value,
+                                            pointerConversion<ValueType>,
+                                            impossibleConversion<ValueType>>::type>::type>::type>::type>::type;
+	
+    template<class ValueType>
+    typename converter<ValueType>::type convertTo(bool * success = nullptr) const {
+		check_valid();
+
+		auto ptr = isAPriv<ValueType>();
+		
+		if (ptr != nullptr) {
+			if (success != nullptr) * success = true;
+			return *ptr;
+		}
+		
+        return converter<ValueType>::value(m_impl, success);
 	}
 
 	template<class ValueType>
-	ValueType moveValue(bool * success = nullptr) const {
+    typename converter<ValueType>::type convertToThrow() const {
+		check_valid();
+
+		auto ptr = isAPriv<ValueType>();
+
+		if (ptr != nullptr) {
+			return *ptr;
+		}
+
+        return converter<ValueType>::value(m_impl);
+	}
+
+	template<class ValueType>
+    typename converter<ValueType>::type moveValue(bool * success = nullptr) const {
 		check_valid();
 
 		auto ptr = isAPriv<ValueType>();
@@ -785,21 +785,11 @@ public:
 			return ::std::forward<ValueType>(*ptr);
 		}
 
-        return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
-										 integralConversion<ValueType>,
-										 typename Select< ::std::is_floating_point<ValueType>::value,
-											 floatConversion<ValueType>,
-											 typename Select< ::std::is_same<ValueType, ::std::string>::value,
-												 stringConversion<ValueType>,
-                                                 typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
-                                                     stringConversion<ValueType>,
-                                                     typename Select< ::std::is_pointer<ValueType>::value,
-                                                             pointerConversion<ValueType>,
-                                                             impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl, success));
+        return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(m_impl, success));
 	}
 
 	template<class ValueType>
-	ValueType moveValueThrow() const {
+    typename converter<ValueType>::type moveValueThrow() const {
 		check_valid();
 
 		auto ptr = isAPriv<ValueType>();
@@ -808,21 +798,11 @@ public:
 			return ::std::forward<ValueType>(*ptr);
 		}
 
-        return ::std::forward<ValueType>(Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
-										 integralConversion<ValueType>,
-										 typename Select< ::std::is_floating_point<ValueType>::value,
-											 floatConversion<ValueType>,
-											 typename Select< ::std::is_same<ValueType, ::std::string>::value,
-												 stringConversion<ValueType>,
-                                                 typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
-                                                     stringConversion<ValueType>,
-												 typename Select< ::std::is_pointer<ValueType>::value,
-														 pointerConversion<ValueType>,
-                                                         impossibleConversion<ValueType>>::type>::type>::type>::type>::type::value(m_impl));
+        return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(m_impl));
 	}
 
 	template<class ValueType>
-	ValueType convertTo(bool * success = nullptr) const volatile {
+    typename converter<ValueType>::type convertTo(bool * success = nullptr) const volatile {
 		return const_cast<VariantValue&>(*this).convertTo<ValueType>(success);
 	}
 	

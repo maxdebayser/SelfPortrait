@@ -55,8 +55,8 @@ namespace MethodTest {
     public:
         static Logger& getLogger(const std::string& name, std::string outputName = "stderr", bool colored = true) { static Logger myLogger(3); return myLogger; }
         static void getLogger2(const std::string& name, std::string outputName = "stderr", bool colored = true) {  }
-        static void getLogger3(const std::string& name) {  }
-        static void getLogger4(std::string name) {  }
+        static void getLogger3(const std::string& name) { cout << "Name = " << name << endl; }
+        static void getLogger4(std::string name) { cout << "Name = " << name << endl;  }
         static void getLogger5(bool name) {  }
     };
 
@@ -416,4 +416,13 @@ void MethodTestSuite::testLoggerCase()
     m5.call(true);
     m2.call("myLogger", "stderr", true);
     m1.call("myLogger", "stderr", true);
+
+    VariantValue str1;
+    str1.construct<const char*>("Roger the Shrubber");
+    cout << str1.convertTo<std::string>() << endl;
+    cout << str1.convertTo<const std::string&>() << endl;
+    VariantValue obj;
+
+    m3.callArgArray(obj, {str1});
+    m4.callArgArray(obj, {str1});
 }

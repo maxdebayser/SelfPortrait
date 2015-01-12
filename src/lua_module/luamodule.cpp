@@ -570,11 +570,13 @@ VariantValue Lua_Variant::getFromStack(lua_State* L, int idx)
 
 	switch (t) {
 		case LUA_TSTRING: {
-			return ::std::move(VariantValue(string(lua_tostring(L, idx))));
+            VariantValue v;
+            v.construct<const char*>(lua_tostring(L, idx));
+            return ::std::move(v);
 			break;
 		}
 		case LUA_TBOOLEAN: {
-			return ::std::move(VariantValue( bool(lua_toboolean(L, idx))));
+            return ::std::move(VariantValue( bool(lua_toboolean(L, idx))));
 			break;
 		}
 		case LUA_TNUMBER: {
@@ -1100,7 +1102,7 @@ int Lua_Method::call(lua_State* L)
 		obj = Lua_Variant::getFromStack(L, begin++);
 	}
 
-	for (int i = begin; i <= n; ++i) {
+    for (int i = begin; i <= n; ++i) {
 		args.push_back(Lua_Variant::getFromStack(L, i));
 	}
 
@@ -1119,7 +1121,6 @@ int Lua_Method::call(lua_State* L)
 #ifndef NO_RTTI
             clazz = Class::lookup(ret.typeId());
 #endif
-            // TODO: check if we can provide the class if we have the meta-data
             Lua_Variant::create(L, clazz, std::move(ret));
 		}
 
