@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <string>
+#include <boost/date_time/gregorian/gregorian.hpp>
 
 void VariantTestSuite::testInvalid() {
 	VariantValue v;
@@ -206,4 +207,16 @@ void VariantTestSuite::testEnum()
     double u3 = v3.moveValue<double>(&success);
     TS_ASSERT(success);
     TS_ASSERT_EQUALS(u3, 3);
+}
+
+
+void VariantTestSuite::testPrintable()
+{
+    stringstream ss;
+    boost::gregorian::days d(666);
+    ss << d;
+    TS_ASSERT_EQUALS(ss.str(), "666");
+    VariantValue v;
+    v.construct<boost::gregorian::days>(667);
+    TS_ASSERT_EQUALS(v.convertToThrow<std::string>(), "667");
 }

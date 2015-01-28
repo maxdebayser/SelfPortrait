@@ -58,10 +58,10 @@ namespace number_conversion {
 	template<>
 	struct convert< ::std::string, true> {
 		static dst_int_t convertToInteger(const ::std::string& str, bool* success) {
-			return ::fromString<dst_int_t>(str, success);
+            return ::strconv::fromString<dst_int_t>(str, success);
 		}
 		static dst_float_t convertToFloat(const ::std::string& str, bool* success) {
-			return ::fromString<dst_float_t>(str, success);
+            return ::strconv::fromString<dst_float_t>(str, success);
 		}
 	};
 	
@@ -71,10 +71,10 @@ namespace number_conversion {
 	template<>
 	struct convert<const char*, true> {
 		static dst_int_t convertToInteger(const ::std::string& str, bool* success) {
-			return ::fromString<dst_int_t>(str, success);
+            return ::strconv::fromString<dst_int_t>(str, success);
 		}
 		static dst_float_t convertToFloat(const ::std::string& str, bool* success) {
-			return ::fromString<dst_float_t>(str, success);
+            return ::strconv::fromString<dst_float_t>(str, success);
 		}
 	};
 }
@@ -286,7 +286,7 @@ public:
 	}
 
 	virtual ::std::string convertToString() const override {
-			return ::std::move(toString(m_value));
+            return ::std::move(strconv::toString(m_value));
 	}
 
 	virtual number_return convertToNumber(NumberType t) const {
@@ -389,7 +389,7 @@ public:
 
 
 	virtual ::std::string convertToString() const override {
-			return ::std::move(toString(m_value));
+            return ::std::move(strconv::toString(m_value));
 	}
 
 	virtual number_return convertToNumber(NumberType t) const {
@@ -492,7 +492,7 @@ public:
 
 
     virtual ::std::string convertToString() const override {
-            return ::std::move(toString(m_value));
+            return ::std::move(strconv::toString(m_value));
     }
 
     virtual number_return convertToNumber(NumberType t) const {

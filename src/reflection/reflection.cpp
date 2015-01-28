@@ -883,10 +883,10 @@ Proxy::Proxy(std::vector<Class> ifaces)
 	m_impl->weakThis = m_impl;
 	for(Class clazz: ifaces) {
 		if (!clazz.m_impl->isInterface()) {
-			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which is not an interface", clazz.fullyQualifiedName()));
+            throw std::logic_error(strconv::fmt_str("cannot create proxy for a class %1 which is not an interface", clazz.fullyQualifiedName()));
 		}
 		if (clazz.m_impl->hasUnresolvedBases()) {
-			throw std::logic_error(fmt_str("cannot create proxy for a class %1 which has unresolved base classes", clazz.fullyQualifiedName()));
+            throw std::logic_error(strconv::fmt_str("cannot create proxy for a class %1 which has unresolved base classes", clazz.fullyQualifiedName()));
 		}
 
 		m_impl->registerInterface(clazz.m_impl);

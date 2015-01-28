@@ -67,19 +67,19 @@ void TypeUtilsTestSuite::testMeta()
     static_assert(comparable<std::tuple<Comparable, NonComparable>>::value == false, "");
     static_assert(comparable<std::tuple<NonComparable, Comparable>>::value == false, "");
 
-    static_assert(convertible_to_string<int>() == true, "");
-    static_assert(convertible_to_string<std::string>() == true, "");
-    static_assert(convertible_to_string<const char*>() == true, "");
+    static_assert(strconv::convertible_to_string<int>() == true, "");
+    static_assert(strconv::convertible_to_string<std::string>() == true, "");
+    static_assert(strconv::convertible_to_string<const char*>() == true, "");
 
 
-    static_assert(convertible_to_string<std::unique_ptr<int>>() == false, "");
-    static_assert(convertible_to_string<Comparable>() == false, "");
+    static_assert(strconv::convertible_to_string<std::unique_ptr<int>>() == false, "");
+    static_assert(strconv::convertible_to_string<Comparable>() == false, "");
 
 
-    static_assert(convertible_from_string<int>() == true, "");
-    static_assert(convertible_from_string<std::string>() == true, "");
-    static_assert(convertible_from_string<char*>() == true, "");
+    static_assert(strconv::convertible_from_string<int>() == true, "");
+    static_assert(strconv::convertible_from_string<std::string>() == true, "");
+    static_assert(strconv::convertible_from_string<char*>() == true, "");
 
-    static_assert(convertible_from_string<std::unique_ptr<int>>() == false, "");
-    static_assert(convertible_from_string<Comparable>() == false, "");
+    static_assert(strconv::convertible_from_string<std::unique_ptr<int>>() == false, "");
+    static_assert(strconv::convertible_from_string<Comparable>() == false, "");
 }

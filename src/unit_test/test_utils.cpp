@@ -74,7 +74,7 @@ namespace LuaUtils {
         : LuaStateHolder(luaL_newstate(), addLuaPath, addCPath) {}
 
     int atPanicThrow(lua_State* L) {
-        throw std::runtime_error(fmt_str("Error during execution of Lua code:\n%1", lua_tostring(L, -1)));
+        throw std::runtime_error(strconv::fmt_str("Error during execution of Lua code:\n%1", lua_tostring(L, -1)));
         return 0;
     }
 

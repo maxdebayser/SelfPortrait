@@ -116,7 +116,7 @@ void UtilitiesTestSuite::testConversionsToStr()
 {
 	bool success = false;
 	ConvertibleTo t1;
-	std::string r1 = toString(t1, &success);
+    std::string r1 = strconv::toString(t1, &success);
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(r1, "this is a late parrot");
 
@@ -129,17 +129,17 @@ void UtilitiesTestSuite::testConversionsToStr()
 
 
 	ConvertibleToAndPrintable t3;
-	std::string r3 = toString(t3, &success);
+    std::string r3 = strconv::toString(t3, &success);
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(r3, "whatever1");
 
-	std::string r4 = toString(3, &success);
+    std::string r4 = strconv::toString(3, &success);
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(r4, "3");
 
 
 	NoConversions t5;
-	std::string r5 = toString(t5, &success);
+    std::string r5 = strconv::toString(t5, &success);
 	TS_ASSERT(!success);
 }
 
@@ -148,18 +148,18 @@ void UtilitiesTestSuite::testConversionsFromStr()
 {
 	bool success = false;
 
-	int i = fromString<int>("3", &success);
+    int i = strconv::fromString<int>("3", &success);
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(i, 3);
 
-	ConvertibleFrom t1 = fromString<ConvertibleFrom>("it's gone to meet its maker", &success);
+    ConvertibleFrom t1 = strconv::fromString<ConvertibleFrom>("it's gone to meet its maker", &success);
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(t1.attr1, "it's gone to meet its maker");
 
-	Parseable t2 = fromString<Parseable>("deceased", &success);
+    Parseable t2 = strconv::fromString<Parseable>("deceased", &success);
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(t2.attr1, "deceased");
 
-	NoConversions t3 = fromString<NoConversions>("whatever", &success);
+    NoConversions t3 = strconv::fromString<NoConversions>("whatever", &success);
 	TS_ASSERT(!success);
 }

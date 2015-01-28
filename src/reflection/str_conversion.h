@@ -30,7 +30,7 @@
 #include <vector>
 #include <type_traits>
 #include <stdexcept>
-//#include <iostream>
+#include <iostream>
 
 namespace {
 
@@ -81,7 +81,7 @@ namespace string_conversion_impl {
 	template<class T, enum ConversionTo>
 	struct ouput_helper {
 		static ::std::string print(const T& t, bool * success) {
-			if (success != nullptr) *success = false;
+            if (success != nullptr) *success = false;
 			return "";
 		}
 	};
@@ -90,6 +90,7 @@ namespace string_conversion_impl {
 	struct ouput_helper<T, ConversionTo::ConvertsToString> {
 		static ::std::string print(const T& t, bool * success) {
 			if (success != nullptr) *success = true;
+            std::string b = t;
 			return t;
 		}
 	};
@@ -99,7 +100,7 @@ namespace string_conversion_impl {
 		static ::std::string print(const T& t, bool * success) {
 			::std::ostringstream ss;
 			ss << t;
-			if (success != nullptr) *success = true;
+            if (success != nullptr) *success = true;
 			return ss.str();
 		}
 	};
@@ -153,6 +154,9 @@ namespace string_conversion_impl {
 	}
 }
 
+}
+
+namespace strconv {
 
 template<class T>
 constexpr bool convertible_to_string()

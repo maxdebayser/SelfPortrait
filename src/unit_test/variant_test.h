@@ -20,6 +20,7 @@ public:
 	void testNonCopyable();
 	void testBaseConversion();
     void testEnum();
+    void testPrintable();
 };
 
 

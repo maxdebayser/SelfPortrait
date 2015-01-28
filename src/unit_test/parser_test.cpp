@@ -15,19 +15,19 @@ using namespace std;
 namespace {
 
 	string input_file(const string& name) {
-		return fmt_str("%1/parser_data/input/%2", srcpath(), name);
+        return strconv::fmt_str("%1/parser_data/input/%2", srcpath(), name);
 	}
 
 	string exp_output_file(const string& name) {
-		return fmt_str("%1/parser_data/output/%2", srcpath(), name);
+        return strconv::fmt_str("%1/parser_data/output/%2", srcpath(), name);
 	}
 
 	string output_file(const string& name) {
-		return fmt_str("%1/parser_test_data/%2", binpath(), name);
+        return strconv::fmt_str("%1/parser_test_data/%2", binpath(), name);
 	}
 
 	string parser() {
-		return fmt_str("%1/../parser/selfportraitc", binpath());
+        return strconv::fmt_str("%1/../parser/selfportraitc", binpath());
 	}
 
 	void runtest(const string& inputName, const string& referenceName, const string& outputName)
@@ -36,7 +36,7 @@ namespace {
 		string expected_output = exp_output_file(referenceName);
 		string output = output_file(outputName);
 
-        auto parser_cmd = fmt_str("%1 %2 -o %3", parser(), source_file, output);
+        auto parser_cmd = strconv::fmt_str("%1 %2 -o %3", parser(), source_file, output);
         if (system(parser_cmd.c_str()) != 0) {
 			std::cerr << "parser command may have failed" << std::endl;
             std::cerr << "(" << parser_cmd << ")"<< std::endl;
@@ -67,7 +67,7 @@ namespace {
 			}
 
 			if (e != o) {
-				TS_FAIL(fmt_str("files %1 and %2 differ at line %3:\n-%4\n+%5\n", expected_output, output, lines, e, o).c_str());
+                TS_FAIL(strconv::fmt_str("files %1 and %2 differ at line %3:\n-%4\n+%5\n", expected_output, output, lines, e, o).c_str());
 			}
 
 		}

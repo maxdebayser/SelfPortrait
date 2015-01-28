@@ -708,9 +708,9 @@ int Lua_Variant::method_stub(lua_State* L)
     auto methods = c.wrapped().findAllMethods([&](const Method& m){ return m.name() == name && m.numberOfArguments() == numArgs;});
 
     if (methods.size() == 0) {
-        luaL_error(L, fmt_str("Class %1 has no method named %2", c.wrapped().fullyQualifiedName(), name).c_str());
+        luaL_error(L, strconv::fmt_str("Class %1 has no method named %2", c.wrapped().fullyQualifiedName(), name).c_str());
     } else if (methods.size() > 1) {
-        luaL_error(L, fmt_str("Class %1 has more than one method named %2 with %3 arguments", c.wrapped().fullyQualifiedName(), name, numArgs).c_str());
+        luaL_error(L, strconv::fmt_str("Class %1 has more than one method named %2 with %3 arguments", c.wrapped().fullyQualifiedName(), name, numArgs).c_str());
     }
 
     Method& m = methods.front();
@@ -849,9 +849,9 @@ int Lua_Class::construct(lua_State* L)
 
     const Class::ConstructorList&  l = c->m_class.findAllConstructors([&](const Constructor& cons){ return cons.numberOfArguments() == numArgs; });
     if (l.size() == 0) {
-        luaL_error(L, fmt_str("Class %1 has no constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
+        luaL_error(L, strconv::fmt_str("Class %1 has no constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
     } else if (l.size() > 1) {
-        luaL_error(L, fmt_str("Class %1 has more than one constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
+        luaL_error(L, strconv::fmt_str("Class %1 has more than one constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
     }
     lua_remove(L, 1);
 
@@ -909,7 +909,7 @@ int Lua_Class::findFirst(lua_State* L, MPtr ptr)
 		binding_mapper<Elem>::type::create(L, a);
 
 		if (lua_pcall(L, 1, 1, 0) != 0) {
-			std::string msg = fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
+            std::string msg = strconv::fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
 			lua_pop(L, 1);
 			throw LuaBindingException(msg);
 		}
@@ -939,7 +939,7 @@ int Lua_Class::findAll(lua_State* L, MPtr ptr)
 		binding_mapper< Elem >::type::create(L, a);
 
 		if (lua_pcall(L, 1, 1, 0) != 0) {
-			std::string msg = fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
+            std::string msg = strconv::fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
 			lua_pop(L, 1);
 			throw LuaBindingException(msg);
 		}
@@ -1516,7 +1516,7 @@ namespace {
 			}
 
 			if (lua_pcall(L, vargs.size(), 1, 0) != 0) {
-				std::string msg = fmt_str("Error running proxy method handler: %1", lua_tostring(L, -1));
+                std::string msg = strconv::fmt_str("Error running proxy method handler: %1", lua_tostring(L, -1));
 				lua_pop(L, 1);
 				throw LuaBindingException(msg);
 			}

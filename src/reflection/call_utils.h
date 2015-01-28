@@ -24,7 +24,7 @@ namespace {
 		void assert_conversion_succeded() const {
 			for (::std::size_t i = 0; i < success.size(); ++i) {
 				if (success[i] == false) {
-					throw ::std::runtime_error(::fmt_str("function or constructor called with incompatible argument at position %1", i) );
+                    throw ::std::runtime_error(::strconv::fmt_str("function or constructor called with incompatible argument at position %1", i) );
 				}
 			}
 		}
