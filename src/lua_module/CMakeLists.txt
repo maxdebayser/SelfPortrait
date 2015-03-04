@@ -1,4 +1,5 @@
 set(HEADERS
+        luamodule.h
 )
 
 set(SOURCES
