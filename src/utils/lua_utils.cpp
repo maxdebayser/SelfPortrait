@@ -3,6 +3,9 @@
 ** See Copyright Notice in lua_utils.h
 */
 #include "lua_utils.h"
+#include <stdexcept>
+#include "str_conversion.h"
+using namespace std;
 
 namespace {
 	void handleUserdata(lua_State* L, int index) {
@@ -90,5 +93,28 @@ namespace LuaUtils {
 			}
 		}
 	}
+
+    LuaStateHolder::LuaStateHolder(lua_State* L, const string& addLuaPath, const string& addCPath)
+        : m_L(L)
+    {
+        if (!addLuaPath.empty()) {
+            lua_getfield(L, 1, "path");
+            lua_pushstring(L, ";");
+            lua_pushstring(L, addLuaPath.c_str());
+            lua_concat(L, 3);
+            lua_setfield(L, 1, "path");
+        }
+
+        if (!addCPath.empty()) {
+            lua_getfield(L, 1, "cpath");
+            lua_pushstring(L, ";");
+            lua_pushstring(L, addCPath.c_str());
+            lua_concat(L, 3);
+            lua_setfield(L, 1, "cpath");
+        }
+    }
+
+    LuaStateHolder::LuaStateHolder(const string& addLuaPath, const string& addCPath)
+        : LuaStateHolder(luaL_newstate(), addLuaPath, addCPath) {}
 
 }

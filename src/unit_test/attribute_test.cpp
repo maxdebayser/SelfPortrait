@@ -150,6 +150,7 @@ void AttributeTestSuite::testStaticAttribute()
 void AttributeTestSuite::testLuaAPI()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/attribute_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));

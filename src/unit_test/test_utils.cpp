@@ -12,16 +12,15 @@ using namespace std;
 
 namespace LuaUtils {
 
-    LuaStateHolder::LuaStateHolder(lua_State* L, const string& addLuaPath, const string& addCPath)
-        : m_L(L)
+    void addTestFunctionsAndPaths(lua_State* L)
     {
-        lua_atpanic(m_L, atPanicThrow);
-        luaL_openlibs(m_L);
-        lua_pushcfunction(m_L, ts_fail);
+        lua_atpanic(L, atPanicThrow);
+        luaL_openlibs(L);
+        lua_pushcfunction(L, ts_fail);
         lua_setglobal(L, "TS_FAIL");
-        lua_pushcfunction(m_L, ts_trace);
+        lua_pushcfunction(L, ts_trace);
         lua_setglobal(L, "TS_TRACE");
-        lua_pushcfunction(m_L, ts_warn);
+        lua_pushcfunction(L, ts_warn);
         lua_setglobal(L, "TS_WARN");
 
         lua_getglobal(L, "package");
@@ -35,14 +34,6 @@ namespace LuaUtils {
         lua_concat(L, 4);
         lua_setfield(L, 1, "path");
 
-        if (!addLuaPath.empty()) {
-            lua_getfield(L, 1, "path");
-            lua_pushstring(L, ";");
-            lua_pushstring(L, addLuaPath.c_str());
-            lua_concat(L, 3);
-            lua_setfield(L, 1, "path");
-        }
-
         // for libluacppreflect
         lua_getfield(L, 1, "cpath");
         lua_pushstring(L, ";");
@@ -54,31 +45,18 @@ namespace LuaUtils {
         lua_concat(L, 7);
         lua_setfield(L, 1, "cpath");
 
-        if (!addCPath.empty()) {
-            lua_getfield(L, 1, "cpath");
-            lua_pushstring(L, ";");
-            lua_pushstring(L, addCPath.c_str());
-            lua_concat(L, 3);
-            lua_setfield(L, 1, "cpath");
-        }
-
         // Uncomment this to prevent the unloading of the library
         // When the library is unloaded valgrind cannot translate function addresses to names
         // in the stacktrace
         //std::string library_path = fmt_str("%1/../lua_module/libluaselfportrait.so", binpath());
         //void* handle = dlopen(library_path.c_str(), RTLD_NOW);
-
     }
 
-    LuaStateHolder::LuaStateHolder(const string& addLuaPath, const string& addCPath)
-        : LuaStateHolder(luaL_newstate(), addLuaPath, addCPath) {}
 
     int atPanicThrow(lua_State* L) {
         throw std::runtime_error(strconv::fmt_str("Error during execution of Lua code:\n%1", lua_tostring(L, -1)));
         return 0;
     }
-
-
 
     int ts_fail(lua_State* L) {
 

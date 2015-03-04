@@ -275,7 +275,16 @@ namespace LuaUtils {
 		return callFuncPriv<R, Args...>(L, "anonymous", args...);
 	}
 
-
+    struct LuaStateHolder {
+        explicit LuaStateHolder(lua_State* L, const std::string& addLuaPath = "", const std::string& addCPath = "");
+        LuaStateHolder(const std::string& addLuaPath = "", const std::string& addCPath = "");
+        ~LuaStateHolder() {
+            lua_close(m_L);
+        }
+        operator lua_State*() { return m_L; }
+    private:
+        lua_State* m_L;
+    };
 
 }
 

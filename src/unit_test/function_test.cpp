@@ -328,6 +328,7 @@ void FunctionTestSuite::testParametersByConstReference()
 void FunctionTestSuite::testLuaAPI()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
@@ -338,6 +339,7 @@ void FunctionTestSuite::testLuaAPI()
 void FunctionTestSuite::testLuaReturnByValue()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
@@ -348,6 +350,7 @@ void FunctionTestSuite::testLuaReturnByValue()
 void FunctionTestSuite::testLuaReturnByReference()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
@@ -358,6 +361,7 @@ void FunctionTestSuite::testLuaReturnByReference()
 void FunctionTestSuite::testLuaReturnByConstReference()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
@@ -368,6 +372,7 @@ void FunctionTestSuite::testLuaReturnByConstReference()
 void FunctionTestSuite::testLuaParameterByValue()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
@@ -378,6 +383,7 @@ void FunctionTestSuite::testLuaParameterByValue()
 void FunctionTestSuite::testLuaParameterByReference()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
@@ -388,6 +394,7 @@ void FunctionTestSuite::testLuaParameterByReference()
 void FunctionTestSuite::testLuaParameterByConstReference()
 {
 	LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
 
     if (luaL_loadfile(L, strconv::fmt_str("%1/function_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
