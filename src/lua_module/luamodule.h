@@ -385,13 +385,19 @@ struct LuaClosureWrapper {
         const int envIndex;
     };
 
-    void deleter(shared_state* s) const;
+    struct deleter {
+        lua_State * const L;
+        void operator()(shared_state* s) const;
+    };
+
 
     std::shared_ptr<shared_state> ss;
 
     LuaClosureWrapper(const LuaClosureWrapper& that) = default;
 
-    LuaClosureWrapper(lua_State* ls, int index) : L(ls), ss(make_shared<shared_state>(index)) {}
+    LuaClosureWrapper(lua_State* ls, int index) : L(ls), ss(new shared_state(index), deleter{L}) {
+
+    }
 
     VariantValue operator()(const std::vector<VariantValue>& vargs) const;
 };

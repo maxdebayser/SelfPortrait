@@ -1032,7 +1032,7 @@ int Lua_Proxy::interfaces(lua_State* L)
 }
 
 
-void LuaClosureWrapper::deleter(shared_state* s) const {
+void LuaClosureWrapper::deleter::operator()(shared_state* s) const {
     luaL_unref(L, LUA_REGISTRYINDEX, s->envIndex);
     delete s;
 }
