@@ -32,8 +32,16 @@ const struct luaL_Reg Lua_Variant::lib_m[] = {
     { "__newindex", exception_translator<newindex> },
 	{ "__tostring", exception_translator<tostring> },
 	{ "__eq", exception_translator<eq> },
+    { "__add", exception_translator<add> },
+    { "__sub", exception_translator<sub> },
+    { "__mul", exception_translator<mul> },
+    { "__div", exception_translator<div> },
+    { "__mod", exception_translator<mod> },
+    { "__unm", exception_translator<unm> },
 	{ NULL, NULL }
 };
+
+
 
 void Lua_Variant::initialize()
 {
@@ -190,6 +198,56 @@ int Lua_Variant::tonumber(lua_State* L)
 	Lua_Variant* v = checkUserData(L);
 	LuaUtils::LuaValue<double>::pushValue(L, v->m_variant.convertTo<double>());
 	return 1;
+}
+
+template<typename T = double>
+T getArithOperand(lua_State* L, int index)
+{
+    if (lua_type(L, index) == LUA_TNUMBER) {
+        return lua_tonumber(L, index);
+    } else if (Lua_Variant::isUserData(L, index)) {
+        Lua_Variant* v = (Lua_Variant*)lua_touserdata(L, index);
+        T t = v->wrapped().convertToThrow<T>();
+        return t;
+    } else {
+        luaL_error(L, "invalid operand to arithmetic operation");
+    }
+}
+
+int Lua_Variant::add(lua_State* L)
+{
+    lua_pushnumber(L, getArithOperand(L,1)+getArithOperand(L,2));
+    return 1;
+}
+
+int Lua_Variant::sub(lua_State* L)
+{
+    lua_pushnumber(L, getArithOperand(L,1)-getArithOperand(L,2));
+    return 1;
+}
+
+int Lua_Variant::mul(lua_State* L)
+{
+    lua_pushnumber(L, getArithOperand(L,1)*getArithOperand(L,2));
+    return 1;
+}
+
+int Lua_Variant::div(lua_State* L)
+{
+    lua_pushnumber(L, getArithOperand(L,1)/getArithOperand(L,2));
+    return 1;
+}
+
+int Lua_Variant::mod(lua_State* L)
+{
+    lua_pushnumber(L, getArithOperand<int>(L,1)%getArithOperand<int>(L,2));
+    return 1;
+}
+
+int Lua_Variant::unm(lua_State* L)
+{
+    lua_pushnumber(L, -getArithOperand(L,1));
+    return 1;
 }
 
 int Lua_Variant::isValid(lua_State* L)

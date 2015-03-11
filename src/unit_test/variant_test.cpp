@@ -7,6 +7,8 @@
 #include <iostream>
 #include <string>
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include "lua_utils.h"
+#include "test_utils.h"
 
 void VariantTestSuite::testInvalid() {
 	VariantValue v;
@@ -219,4 +221,16 @@ void VariantTestSuite::testPrintable()
     VariantValue v;
     v.construct<boost::gregorian::days>(667);
     TS_ASSERT_EQUALS(v.convertToThrow<std::string>(), "667");
+}
+
+void VariantTestSuite::testLuaAPI()
+{
+    LuaUtils::LuaStateHolder L;
+    LuaUtils::addTestFunctionsAndPaths(&*L);
+
+    if (luaL_loadfile(L, strconv::fmt_str("%1/variant_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
+        luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
+    }
+
+    LuaUtils::callFunc<bool>(L, "testVariant");
 }

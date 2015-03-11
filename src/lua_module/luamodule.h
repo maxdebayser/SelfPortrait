@@ -174,6 +174,13 @@ public:
     static int sizeOf(lua_State* L);
     static int alignOf(lua_State* L);
 
+    static int add(lua_State* L);
+    static int sub(lua_State* L);
+    static int mul(lua_State* L);
+    static int div(lua_State* L);
+    static int mod(lua_State* L);
+    static int unm(lua_State* L);
+
     static int attribute_stub(lua_State* L);
     static int method_stub(lua_State* L);
 

@@ -14,6 +14,7 @@ public:
 	
 	// test methods must begin with "test", otherwise cxxtestgen ignores them
 
+    void testLuaAPI();
 	void testInvalid();
 	void testValue();
 	void testConversions();
