@@ -88,12 +88,13 @@ namespace LuaUtils {
         }
     }
 
-	void stackDump(lua_State *L)
+    int stackDump(lua_State *L)
 	{
 		int top = lua_gettop(L);
 		for (int i = 1; i <= top; i++) {
             printType(L, i);
 		}
+        return 0;
 	}
 
     LuaStateHolder::LuaStateHolder(lua_State* L, const string& addLuaPath, const string& addCPath)

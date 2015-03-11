@@ -43,7 +43,7 @@ namespace LuaUtils {
 
     void printType(lua_State* L, int i);
 
-	void stackDump(lua_State *L);
+    int stackDump(lua_State *L);
 
 	struct popper {
 		popper(lua_State* L, int size = 1) : m_L(L), m_size(size) {}
