@@ -8,8 +8,7 @@ set(SOURCES
 
 
 set(LIBS
-	selfportrait
-    lua
+        selfportrait
     utils
 )
 
