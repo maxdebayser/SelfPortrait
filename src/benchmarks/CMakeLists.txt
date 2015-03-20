@@ -9,7 +9,7 @@ SET(SOURCES
 
 set(LIBS
 	selfportrait
-    lua
+        ${LUA_LIBRARY}
 	utils
 )
 

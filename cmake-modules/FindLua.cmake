@@ -1,9 +1,7 @@
 INCLUDE(FindPkgConfig)
 
 IF(PKG_CONFIG_FOUND)
-
         pkg_check_modules (LUA lua>=5.1)
-        INCLUDE_DIRECTORIES(${LUA_INCLUDEDIR})
         if (LUA_VERSION VERSION_LESS "5.2")
                 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLUA51")
 		SET(LUA_SHORT_VERSION "5.1")
@@ -11,6 +9,8 @@ IF(PKG_CONFIG_FOUND)
                 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLUA52")
 		SET(LUA_SHORT_VERSION "5.2")
         endif()
+
+        FIND_LIBRARY(LUA_LIBRARY NAMES lua)
 
 ELSE(PKG_CONFIG_FOUND)
 	MESSAGE(WARNING " pkg-config not found, version detection will be much less reliable")
@@ -42,7 +42,7 @@ ELSE(PKG_CONFIG_FOUND)
 	ENDIF(${LuaInterp} STREQUAL "LuaInterp-NOTFOUND") 
 
 
-	FIND_PATH(LUA_INCLUDE_DIR lua.h)
+        FIND_PATH(LUA_INCLUDEDIR lua.h)
 
 	FIND_LIBRARY(LUA_LIBRARY NAMES lua) 
 

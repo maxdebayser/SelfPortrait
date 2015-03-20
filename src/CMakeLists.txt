@@ -1,5 +1,6 @@
 include_directories(${IoCContainer_SOURCE_DIR}/src/reflection)
 include_directories(${IoCContainer_SOURCE_DIR}/src/utils)
+include_directories(${LUA_INCLUDEDIR})
 
 add_subdirectory(reflection)
 IF(SELFPORTRAIT_BUILD_PARSER)
