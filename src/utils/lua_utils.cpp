@@ -100,20 +100,30 @@ namespace LuaUtils {
     LuaStateHolder::LuaStateHolder(lua_State* L, const string& addLuaPath, const string& addCPath)
         : m_L(L)
     {
+
+        luaL_openlibs(L);
+
         if (!addLuaPath.empty()) {
+            lua_getglobal(L, "package");
+            luaL_checktype(L, 1, LUA_TTABLE);
             lua_getfield(L, 1, "path");
             lua_pushstring(L, ";");
             lua_pushstring(L, addLuaPath.c_str());
             lua_concat(L, 3);
             lua_setfield(L, 1, "path");
+
+            lua_settop(L, 0);
         }
 
         if (!addCPath.empty()) {
+            lua_getglobal(L, "package");
+            luaL_checktype(L, 1, LUA_TTABLE);
             lua_getfield(L, 1, "cpath");
             lua_pushstring(L, ";");
             lua_pushstring(L, addCPath.c_str());
             lua_concat(L, 3);
             lua_setfield(L, 1, "cpath");
+            lua_settop(L, 0);
         }
     }
 
