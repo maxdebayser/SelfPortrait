@@ -211,6 +211,7 @@ T getArithOperand(lua_State* L, int index)
         return t;
     } else {
         luaL_error(L, "invalid operand to arithmetic operation");
+        return 0;
     }
 }
 
