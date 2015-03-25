@@ -280,12 +280,16 @@ namespace LuaUtils {
     struct LuaStateHolder {
         explicit LuaStateHolder(lua_State* L, const std::string& addLuaPath = "", const std::string& addCPath = "");
         LuaStateHolder(const std::string& addLuaPath = "", const std::string& addCPath = "");
+        LuaStateHolder(const LuaStateHolder&) = delete;
+        LuaStateHolder(LuaStateHolder&& that) : m_L(that.m_L) { that.m_L = nullptr; }
         ~LuaStateHolder() {
-            lua_close(m_L);
+            if (m_L != nullptr) {
+                lua_close(m_L);
+            }
         }
         operator lua_State*() { return m_L; }
     private:
-        lua_State* m_L;
+        lua_State* m_L = nullptr;
     };
 
 }
