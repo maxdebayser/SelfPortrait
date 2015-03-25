@@ -15,7 +15,6 @@ namespace LuaUtils {
     void addTestFunctionsAndPaths(lua_State* L)
     {
         lua_atpanic(L, atPanicThrow);
-        luaL_openlibs(L);
         lua_pushcfunction(L, ts_fail);
         lua_setglobal(L, "TS_FAIL");
         lua_pushcfunction(L, ts_trace);
