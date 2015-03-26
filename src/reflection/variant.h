@@ -20,6 +20,8 @@
 #include "str_conversion.h"
 #include "typeutils.h"
 #include "conversion_cache.h"
+#include <cassert>
+#include <cstddef>
 
 #include <iostream>
 using namespace std;
@@ -112,11 +114,141 @@ enum class NumberType {
 	FLOATING
 };
 
+namespace alignment_helper {
+    constexpr uint64_t check(uint64_t x , uint64_t n, uint64_t shift) {
+        return (shift == 1) ?
+                (((x >> 1) != 0) ?  n - 2 : n - x) :
+                (((x >> shift) != 0) ?
+                        check(x >> shift, n-shift, shift >> 1)  :
+                        check(x, n, shift >> 1));
+    }
+
+    constexpr unsigned int nlz(uint64_t x) {
+        return check(x, 64, 32);
+    }
+
+    constexpr unsigned int alignement_bits(uint64_t x) {
+        return (64 - nlz(x >> 1));
+    }
+
+    enum {
+        max_alignment = alignof(max_align_t),
+        max_alignment_bits = alignement_bits(max_alignment)
+    };
+}
+
+template<typename T>
+struct PointerPacker_x86_64 {
+
+    enum {
+        addr_bits = 48,
+        lo_bits = alignment_helper::alignement_bits(alignof(T)),
+        hi_mask = ~((1ull << addr_bits) - 1),
+        lo_mask = ((1ull << lo_bits) - 1),
+        usable_bits = addr_bits - lo_bits
+    };
+
+    static size_t ptr_pack(T const volatile* p) {
+        const size_t v = reinterpret_cast<size_t>(p);
+        assert((v & lo_mask) == 0);
+        assert((v & hi_mask) == 0);
+        return (v >> lo_bits);
+    }
+
+    static T* ptr_unpack (size_t v) {
+        return reinterpret_cast<T*>((v << lo_bits) & ~hi_mask);
+    }
+
+};
+
+template<>
+struct PointerPacker_x86_64<void> {
+
+    enum {
+        addr_bits = 48,
+        lo_bits = 0,
+        hi_mask = ~((1ull << addr_bits) - 1),
+        lo_mask = ((1ull << lo_bits) - 1),
+        usable_bits = addr_bits - lo_bits
+    };
+
+    static size_t ptr_pack(void const volatile* p) {
+        const size_t v = reinterpret_cast<size_t>(p);
+        assert((v & lo_mask) == 0);
+        assert((v & hi_mask) == 0);
+        return (v >> lo_bits);
+    }
+
+    static void* ptr_unpack (size_t v) {
+        return reinterpret_cast<void*>((v << lo_bits) & ~hi_mask);
+    }
+
+};
+
+template<typename T>
+struct NoopPointerPacker {
+
+    enum {
+        addr_bits = 8*sizeof(T*),
+        lo_bits = 0,
+        hi_mask = ~((1ull << addr_bits) - 1),
+        lo_mask = ((1ull << lo_bits) - 1),
+        usable_bits = addr_bits - lo_bits
+    };
+
+    static size_t ptr_pack(T const volatile* p) {
+        return reinterpret_cast<size_t>(p);
+    }
+
+    static T* ptr_unpack (size_t v) {
+        return reinterpret_cast<T*>(v);
+    }
+
+};
+
+template<class T>
+using PointerPacker = typename Select<sizeof(void*) == 8, PointerPacker_x86_64<T>, NoopPointerPacker<T>>::type;
+
 class IValueHolder {
 public:
 
-	constexpr IValueHolder(
-			const void * ptr,
+    enum {
+        max_sizeof = 0xffff,
+        max_sizeof_bits = 16
+    };
+
+    enum class TypeCategories {
+        POD = 0,
+        INTEGRAL = 1,
+        FLOATING = 2,
+        POINTER = 3,
+        STDSTRING = 4,
+        NONE = 5
+    };
+
+    TypeCategories resolveCategory(bool isPod,
+                               bool isIntegral,
+                               bool isFloatingPoint,
+                               bool isPointer,
+                               bool isStdString) {
+
+            if (isIntegral) {
+                return TypeCategories::INTEGRAL;
+            } else if (isFloatingPoint) {
+                return TypeCategories::FLOATING;
+            } else if (isPointer) {
+                return TypeCategories::POINTER;
+            } else if (isStdString) {
+                return TypeCategories::STDSTRING;
+            } else if (isPod) {
+                return TypeCategories::POD;
+            }
+            return TypeCategories::NONE;
+        }
+
+    IValueHolder(
+            const void* ptr,
+            bool valInStruct,
 #ifndef NO_RTTI
 			const ::std::type_info& typeId,
 #endif
@@ -128,48 +260,62 @@ public:
 			bool isPointer,
 			bool isStdString,
 			bool isConst)
-		: m_ptrToValue(ptr)
+        : m_offset(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this))
+        , m_offsetToPtr(!valInStruct)
 #ifndef NO_RTTI
-		, m_typeId(typeId)
+        , m_typeId(PointerPacker<::std::type_info>::ptr_pack(&typeId))
 #endif
 		, m_sizeOf(sizeOf)
 		, m_alignOf(alignOf)
-		, m_isPod(isPod)
-		, m_isIntegral(isIntegral)
-		, m_isFloatingPoint(isFloatingPoint)
-		, m_isPointer(isPointer)
-		, m_isStdString(isStdString)
+        , m_category(static_cast<unsigned int>(resolveCategory(isPod,isIntegral,isFloatingPoint,isPointer,isStdString)))
 		, m_isConst(isConst)
-	{}
+    {
+        assert(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this) > 0);
+        assert(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this) < 64);
+    }
 
 	virtual IValueHolder* clone() const = 0;
 	
 	virtual bool equals(const IValueHolder* rhs) const = 0;
 
-	void * ptrToValue() { return const_cast<void*>(m_ptrToValue); }
+    void * ptrToValue() {
+        if (m_offsetToPtr) {
+            void** ptr = reinterpret_cast<void**>(reinterpret_cast<size_t>(this) + m_offset);
+            return *ptr;
+        } else {
+            return reinterpret_cast<void*>(reinterpret_cast<size_t>(this) + m_offset);
+        }
+    }
 
 
-	const void * ptrToValue() const {
-		return m_ptrToValue;
-	}
+    const void * ptrToValue() const {
+        if (m_offsetToPtr) {
+            void** ptr = reinterpret_cast<void**>(reinterpret_cast<size_t>(this) + m_offset);
+            return *ptr;
+        } else {
+            return reinterpret_cast<void*>(reinterpret_cast<size_t>(this) + m_offset);
+        }
+    }
 	
 #ifndef NO_RTTI
-	const ::std::type_info& typeId() const { return m_typeId; }
+    const ::std::type_info& typeId() const {
+        return *PointerPacker<::std::type_info>::ptr_unpack(m_typeId);
+    }
 #endif
 	
 	::std::size_t sizeOf() const { return m_sizeOf; }
 	
 	::std::size_t alignOf() const { return m_alignOf; }
 	
-	bool isPOD() const { return m_isPod; }
-	
-	bool isIntegral() const { return m_isIntegral; }
-	
-	bool isFloatingPoint() const { return m_isFloatingPoint; }
-	
-	bool isPointer() const { return m_isPointer; }
-	
-	bool isStdString() const { return m_isStdString; }
+    bool isPOD() const { return m_category == static_cast<unsigned int>(TypeCategories::POD) || isIntegral() || isFloatingPoint() || isPointer(); }
+
+    bool isIntegral() const { return m_category == static_cast<unsigned int>(TypeCategories::INTEGRAL); }
+
+    bool isFloatingPoint() const { return m_category == static_cast<unsigned int>(TypeCategories::FLOATING); }
+
+    bool isPointer() const { return m_category == static_cast<unsigned int>(TypeCategories::POINTER); }
+
+    bool isStdString() const { return m_category == static_cast<unsigned int>(TypeCategories::STDSTRING); }
 
 	bool isConst() const { return m_isConst; }
 
@@ -185,21 +331,18 @@ public:
 	IValueHolder& operator=(const IValueHolder&) = delete;
 
 private:
-	const void * m_ptrToValue;
+    const unsigned long m_offset : 6;
+    const unsigned long m_offsetToPtr : 1;
 
 #ifndef NO_RTTI
-	const ::std::type_info& m_typeId;
+    const unsigned long m_typeId : PointerPacker<::std::type_info>::usable_bits;
 #endif
 
-	const std::size_t m_sizeOf;
+    const unsigned long m_sizeOf: max_sizeof_bits;
 
-	const std::size_t m_alignOf;
+    const unsigned long m_alignOf: alignment_helper::max_alignment_bits;
 
-	const unsigned int m_isPod : 1;
-	const unsigned int m_isIntegral : 1;
-	const unsigned int m_isFloatingPoint : 1;
-	const unsigned int m_isPointer : 1;
-	const unsigned int m_isStdString : 1;
+    const unsigned int m_category: 3;
 	const unsigned int m_isConst : 1;
 };
 
@@ -247,7 +390,7 @@ public:
 
 	template<class... Args>
 	ValueHolder(Args&&... args)
-		: IValueHolder(reinterpret_cast<const void*>(&m_value),
+        : IValueHolder(reinterpret_cast<const void*>(&m_value), true,
 #ifndef NO_RTTI
 					   typeid(ValueType),
 #endif
@@ -260,7 +403,9 @@ public:
 					   ::std::is_same< ::std::string, ValueType>::value,
 					   normalize_type<T>::is_const),
 		m_value( ::std::forward<Args>(args)...)
-	{
+    {
+        static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
+        static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
 	}
 
 	~ValueHolder() noexcept{
@@ -352,7 +497,7 @@ private:
 public:
 
 	ValueHolder(RefType v)
-		: IValueHolder(reinterpret_cast<const void*>(&v),
+        : IValueHolder(reinterpret_cast<const void*>(&m_ptr), false,
 #ifndef NO_RTTI
 					   typeid(ValueType),
 #endif
@@ -363,8 +508,11 @@ public:
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
 					   ::std::is_same< ::std::string, ValueType>::value,
-					   normalize_type<T>::is_const),
-		  m_value(v) {}
+                       normalize_type<T>::is_const),
+          m_value(v), m_ptr(&v) {
+        static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
+        static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
+    }
 
 	~ValueHolder() noexcept {
 	}
@@ -408,6 +556,7 @@ public:
 
 private:
 	RefType m_value;
+    const void* const m_ptr;
 };
 
 
@@ -455,7 +604,7 @@ private:
 public:
 
     ValueHolder(RefType v)
-        : IValueHolder(reinterpret_cast<const void*>(&v),
+        : IValueHolder(reinterpret_cast<const void*>(&m_ptr), false,
 #ifndef NO_RTTI
                        typeid(ValueType),
 #endif
@@ -467,7 +616,10 @@ public:
                        ::std::is_pointer<ValueType>::value,
                        ::std::is_same< ::std::string, ValueType>::value,
                        normalize_type<T>::is_const),
-          m_value(v) {}
+          m_value(v), m_ptr(&v) {
+        static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
+        static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
+    }
 
     ~ValueHolder() noexcept {
     }
@@ -511,6 +663,7 @@ public:
 
 private:
     RefType m_value;
+    const void* const m_ptr;
 };
 
 
