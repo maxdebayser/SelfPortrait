@@ -32,7 +32,8 @@ namespace {
 namespace number_conversion {
 	
 	typedef long long int dst_int_t; // largest integer type
-	typedef long double dst_float_t; // larget floating point type
+    //typedef long double dst_float_t; // largest floating point type
+    typedef double dst_float_t; // larget floating point type that doesn't trigger warnings
 	
 	template<class T, bool ArithType>
 	struct convert {
@@ -59,7 +60,7 @@ namespace number_conversion {
 	};
 	
 	template<>
-	struct convert< ::std::string, true> {
+    struct convert<std::string, true> {
 		static dst_int_t convertToInteger(const ::std::string& str, bool* success) {
             return ::strconv::fromString<dst_int_t>(str, success);
 		}
@@ -264,7 +265,7 @@ public:
         : m_offset(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this))
         , m_offsetToPtr(!valInStruct)
 #ifndef NO_RTTI
-        , m_typeId(PointerPacker<::std::type_info>::ptr_pack(&typeId))
+        , m_typeId(PointerPacker<std::type_info>::ptr_pack(&typeId))
 #endif
 		, m_sizeOf(sizeOf)
 		, m_alignOf(alignOf)
@@ -300,7 +301,7 @@ public:
 	
 #ifndef NO_RTTI
     const ::std::type_info& typeId() const {
-        return *PointerPacker<::std::type_info>::ptr_unpack(m_typeId);
+        return *PointerPacker<std::type_info>::ptr_unpack(m_typeId);
     }
 #endif
 	
@@ -336,7 +337,7 @@ private:
     const unsigned long m_offsetToPtr : 1;
 
 #ifndef NO_RTTI
-    const unsigned long m_typeId : PointerPacker<::std::type_info>::usable_bits;
+    const unsigned long m_typeId : PointerPacker<std::type_info>::usable_bits;
 #endif
 
     const unsigned long m_sizeOf: max_sizeof_bits;
@@ -401,7 +402,7 @@ public:
 					   ::std::is_integral<ValueType>::value,
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
-					   ::std::is_same< ::std::string, ValueType>::value,
+                       ::std::is_same<std::string, ValueType>::value,
 					   normalize_type<T>::is_const),
 		m_value( ::std::forward<Args>(args)...)
     {
@@ -424,7 +425,7 @@ public:
                        ::std::is_integral<ValueType>::value,
                        ::std::is_floating_point<ValueType>::value,
                        ::std::is_pointer<ValueType>::value,
-                       ::std::is_same< ::std::string, ValueType>::value,
+                       ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
         m_value( that.m_value )
     {}
@@ -440,7 +441,7 @@ public:
                        ::std::is_integral<ValueType>::value,
                        ::std::is_floating_point<ValueType>::value,
                        ::std::is_pointer<ValueType>::value,
-                       ::std::is_same< ::std::string, ValueType>::value,
+                       ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
         m_value( that.m_value )
     {}
@@ -539,7 +540,7 @@ public:
 					   ::std::is_integral<ValueType>::value,
 					   ::std::is_floating_point<ValueType>::value,
 					   ::std::is_pointer<ValueType>::value,
-					   ::std::is_same< ::std::string, ValueType>::value,
+                       ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
           m_value(v), m_ptr(&v) {
         static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
@@ -646,7 +647,7 @@ public:
                        ::std::is_integral<ValueType>::value,
                        ::std::is_floating_point<ValueType>::value,
                        ::std::is_pointer<ValueType>::value,
-                       ::std::is_same< ::std::string, ValueType>::value,
+                       ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
           m_value(v), m_ptr(&v) {
         static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
@@ -1069,15 +1070,15 @@ public:
     }
 
     template<class ValueType> using converter = typename
-                Select< ::std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
+                Select<std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
                     integralConversion<ValueType>,
-                    typename Select< ::std::is_floating_point<ValueType>::value,
+                    typename Select<std::is_floating_point<ValueType>::value,
                         floatConversion<ValueType>,
-                        typename Select< ::std::is_same<ValueType, ::std::string>::value,
+                        typename Select<std::is_same<ValueType, ::std::string>::value,
                             stringConversion<ValueType>,
-                                typename Select< ::std::is_same<ValueType, const ::std::string&>::value,
+                                typename Select<std::is_same<ValueType, const ::std::string&>::value,
                                     stringConversion<ValueType>,
-                                    typename Select< ::std::is_pointer<ValueType>::value,
+                                    typename Select<std::is_pointer<ValueType>::value,
                                             pointerConversion<ValueType>,
                                             impossibleConversion<ValueType>>::type>::type>::type>::type>::type;
 	
@@ -1164,7 +1165,6 @@ public:
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
 #endif
-
 	bool isStdString() const;
 
 	bool isIntegral() const;
@@ -1213,17 +1213,17 @@ private:
 
         std::shared_ptr<IValueHolder> m_impl;
 
-        ValueHolder<::std::uint8_t>   m_uint8;
-        ValueHolder<::std::int8_t>     m_int8;
-        ValueHolder<::std::uint16_t> m_uint16;
-        ValueHolder<::std::int16_t>   m_int16;
-        ValueHolder<::std::uint32_t> m_uint32;
-        ValueHolder<::std::int32_t>   m_int32;
-        ValueHolder<::std::uint64_t> m_uint64;
-        ValueHolder<::std::int64_t>   m_int64;
+        ValueHolder<std::uint8_t>   m_uint8;
+        ValueHolder<std::int8_t>     m_int8;
+        ValueHolder<std::uint16_t> m_uint16;
+        ValueHolder<std::int16_t>   m_int16;
+        ValueHolder<std::uint32_t> m_uint32;
+        ValueHolder<std::int32_t>   m_int32;
+        ValueHolder<std::uint64_t> m_uint64;
+        ValueHolder<std::int64_t>   m_int64;
         ValueHolder<double>          m_double;
         ValueHolder<float>            m_float;
-        ValueHolder<::std::string>   m_string;
+        ValueHolder<std::string>   m_string;
     };
 
     IValueHolder* impl() {
