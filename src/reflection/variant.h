@@ -22,6 +22,7 @@
 #include "conversion_cache.h"
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 
 #include <iostream>
 using namespace std;
@@ -346,7 +347,7 @@ private:
 	const unsigned int m_isConst : 1;
 };
 
-namespace {
+//namespace {
 
 template <class T>
 class ValueHolder: public IValueHolder {
@@ -412,8 +413,39 @@ public:
 		//m_value.~ValueType();
 	}
 
-	ValueHolder(const ValueHolder&) = delete;
-	ValueHolder& operator=(ValueHolder) = delete;
+    ValueHolder(const ValueHolder& that)
+        : IValueHolder(reinterpret_cast<const void*>(&m_value), true,
+#ifndef NO_RTTI
+                       typeid(ValueType),
+#endif
+                       sizeof(ValueType),
+                       alignof(ValueType),
+                       ::std::is_pod<ValueType>::value,
+                       ::std::is_integral<ValueType>::value,
+                       ::std::is_floating_point<ValueType>::value,
+                       ::std::is_pointer<ValueType>::value,
+                       ::std::is_same< ::std::string, ValueType>::value,
+                       normalize_type<T>::is_const),
+        m_value( that.m_value )
+    {}
+
+    ValueHolder(ValueHolder&& that)
+        : IValueHolder(reinterpret_cast<const void*>(&m_value), true,
+#ifndef NO_RTTI
+                       typeid(ValueType),
+#endif
+                       sizeof(ValueType),
+                       alignof(ValueType),
+                       ::std::is_pod<ValueType>::value,
+                       ::std::is_integral<ValueType>::value,
+                       ::std::is_floating_point<ValueType>::value,
+                       ::std::is_pointer<ValueType>::value,
+                       ::std::is_same< ::std::string, ValueType>::value,
+                       normalize_type<T>::is_const),
+        m_value( that.m_value )
+    {}
+
+    ValueHolder& operator=(ValueHolder) = delete;
 
 	IValueHolder* clone() const override {
 		return Cloner::clone(this);
@@ -668,7 +700,7 @@ private:
 
 
 
-}
+//}
 
 // A variant value contains a value type by value
 class VariantValue {
@@ -676,18 +708,94 @@ public:
 	//! Creates an empty variant
 	explicit VariantValue();
 
-	template<class ValueType>
-    VariantValue(const ValueType& t) : m_impl(new ValueHolder<ValueType>(t)) {}
+    VariantValue(std::uint8_t t) : m_embedded(Types::UINT8) {
+        new(&m_uint8) ValueHolder<std::uint8_t>(t);
+    }
+    VariantValue(std::int8_t t) : m_embedded(Types::INT8) {
+        new(&m_int8) ValueHolder<std::int8_t>(t);
+    }
+    VariantValue(std::uint16_t t) : m_embedded(Types::UINT16) {
+        new(&m_uint16) ValueHolder<std::uint16_t>(t);
+    }
+    VariantValue(std::int16_t t) : m_embedded(Types::INT16) {
+        new(&m_int16) ValueHolder<std::int16_t>(t);
+    }
+    VariantValue(std::uint32_t t) : m_embedded(Types::UINT32) {
+        new(&m_uint32) ValueHolder<std::uint32_t>(t);
+    }
+    VariantValue(std::int32_t t) : m_embedded(Types::INT32) {
+        new(&m_int32) ValueHolder<std::int32_t>(t);
+    }
+    VariantValue(std::uint64_t t) : m_embedded(Types::UINT64) {
+        new(&m_uint64) ValueHolder<std::uint64_t>(t);
+    }
+    VariantValue(std::int64_t t) : m_embedded(Types::INT64) {
+        new(&m_int64) ValueHolder<std::int64_t>(t);
+    }
+    VariantValue(float t) : m_embedded(Types::FLOAT) {
+        new(&m_float) ValueHolder<float>(t);
+    }
+    VariantValue(double t) : m_embedded(Types::DOUBLE) {
+        new(&m_double) ValueHolder<double>(t);
+    }
+    VariantValue(std::string t) : m_embedded(Types::STRING) {
+        new(&m_string) ValueHolder<std::string>(t);
+    }
 
 	template<class ValueType>
-    VariantValue(ValueType* t) : m_impl(new ValueHolder<ValueType*>(t)) {}
+    VariantValue(const ValueType& t) : m_embedded(Types::DEFAULT) {
+        new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>(t));
+    }
+
+	template<class ValueType>
+    VariantValue(ValueType* t) : m_embedded(Types::DEFAULT) {
+
+        new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType*>(t));
+    }
 
 
 	template<class ValueType, class... Args>
 	VariantValue& construct(Args&&... args) {
-		m_impl = ::std::unique_ptr<ValueHolder<ValueType>>(new ValueHolder<ValueType>( ::std::forward<Args>(args)... ));
+        destroyEmbedded();
+        m_embedded = Types::DEFAULT;
+        new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( ::std::forward<Args>(args)... ));
 		return *this;
 	}
+
+    VariantValue& construct(std::uint8_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::int8_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::uint16_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::int16_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::uint32_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::int32_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::uint64_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::int64_t t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(double t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(float t) {
+        *this = t; return *this;
+    }
+    VariantValue& construct(std::string t) {
+        *this = t; return *this;
+    }
+
 
 	VariantValue(const VariantValue& rhs);
 	
@@ -696,12 +804,83 @@ public:
 	VariantValue& operator=(const VariantValue& rhs);
 	
 	VariantValue& operator=(VariantValue&& rhs);
+
+    ~VariantValue();
 	
 	template<class ValueType>
 	VariantValue& operator=(ValueType value) {
-		m_impl.reset(new ValueHolder<ValueType>(value));
+        destroyEmbedded();
+        m_embedded = Types::DEFAULT;
+        new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( value ));
 		return *this;
 	}
+
+    VariantValue& operator=(std::uint8_t t) {
+        destroyEmbedded();
+        m_embedded = Types::UINT8;
+        new(&m_uint8) ValueHolder<std::uint8_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::int8_t t) {
+        destroyEmbedded();
+        m_embedded = Types::INT8;
+        new(&m_int8) ValueHolder<std::int8_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::uint16_t t) {
+        destroyEmbedded();
+        m_embedded = Types::UINT16;
+        new(&m_uint16) ValueHolder<std::uint16_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::int16_t t) {
+        destroyEmbedded();
+        m_embedded = Types::INT8;
+        new(&m_int16) ValueHolder<std::int16_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::uint32_t t) {
+        destroyEmbedded();
+        m_embedded = Types::UINT32;
+        new(&m_uint32) ValueHolder<std::uint32_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::int32_t t) {
+        destroyEmbedded();
+        m_embedded = Types::INT32;
+        new(&m_int32) ValueHolder<std::int32_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::uint64_t t) {
+        destroyEmbedded();
+        m_embedded = Types::UINT64;
+        new(&m_uint64) ValueHolder<std::uint64_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::int64_t t) {
+        destroyEmbedded();
+        m_embedded = Types::INT64;
+        new(&m_int64) ValueHolder<std::int64_t>(t);
+        return *this;
+    }
+    VariantValue& operator=(double t) {
+        destroyEmbedded();
+        m_embedded = Types::DOUBLE;
+        new(&m_double) ValueHolder<double>(t);
+        return *this;
+    }
+    VariantValue& operator=(float t) {
+        destroyEmbedded();
+        m_embedded = Types::FLOAT;
+        new(&m_float) ValueHolder<float>(t);
+        return *this;
+    }
+    VariantValue& operator=(std::string t) {
+        destroyEmbedded();
+        m_embedded = Types::STRING;
+        new(&m_string) ValueHolder<std::string>(t);
+        return *this;
+    }
 
 	VariantValue createReference() const;
 	
@@ -714,19 +893,21 @@ public:
 	bool isA() const volatile {
 		return const_cast<const VariantValue*>(this)->template isA<ValueType>();
 	}
+
+    bool isEmbedded() const { return m_embedded != Types::DEFAULT; }
 	
 private:
 
 #ifndef NO_RTTI
 	template<class ValueType>
-	typename normalize_type<ValueType>::ptr_type isAPriv() const {
+    typename normalize_type<ValueType>::ptr_type isAPriv() const {
 
-		const std::type_info& from = m_impl->typeId();
+        const std::type_info& from = impl()->typeId();
 		const std::type_info& to   = typeid(ValueType);
 
 		if (from == to) {
-			if (!m_impl->isConst() || (m_impl->isConst() && normalize_type<ValueType>::is_const)) {
-				return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(m_impl->ptrToValue());
+            if (!impl()->isConst() || (impl()->isConst() && normalize_type<ValueType>::is_const)) {
+                return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(const_cast<void*>(impl()->ptrToValue()));
 			}
 		}
 
@@ -734,9 +915,9 @@ private:
 		bool possible;
 		if (conversion_cache<ValueType>::instance().conversionKnown(from, offset, possible)) {
 			if (possible) {
-				const bool implConst = m_impl->isConst();
+                const bool implConst = impl()->isConst();
 				if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
-					return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(reinterpret_cast<char*>(m_impl->ptrToValue())+offset);
+                    return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(reinterpret_cast<char*>(const_cast<void*>(impl()->ptrToValue()))+offset);
 				}
 			} else {
 				// conversion is known to fail, we won't even try
@@ -745,9 +926,9 @@ private:
 		}
 
 		try {
-			m_impl->throwCast();
+            impl()->throwCast();
 		} catch(typename normalize_type<ValueType>::ptr_type ptr) {
-			offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(m_impl->ptrToValue());
+            offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(impl()->ptrToValue());
 			conversion_cache<ValueType>::instance().registerConversion(from, offset, true);
 			return ptr;
 		} catch (...) {
@@ -761,7 +942,7 @@ private:
 	typename normalize_type<ValueType>::ptr_type isAPriv() const {
 
 		try {
-			m_impl->throwCast();
+            impl()->throwCast();
 		} catch(typename normalize_type<ValueType>::ptr_type ptr) {
 			return ptr;
 		} catch (...) {
@@ -775,7 +956,7 @@ private:
 	template<class ValueType>
     struct pointerConversion {
         typedef ValueType type;
-        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static type value(const IValueHolder* holder, bool * success) {
 
 			try {
 				holder->throwCast();
@@ -786,7 +967,7 @@ private:
 			if (success != nullptr) *success = false;
             return type();
 		}
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			try {
 				holder->throwCast();
             } catch (type& ptr) {
@@ -799,12 +980,12 @@ private:
 	template<class ValueType>
     struct integralConversion {
         typedef ValueType type;
-        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static type value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = true;
 			number_return r = holder->convertToNumber(NumberType::INTEGER);
             return static_cast<type>(r.i);
 		}
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			return value(holder, nullptr);
 		}
 	};
@@ -812,12 +993,12 @@ private:
 	template<class ValueType>
     struct floatConversion {
         typedef ValueType type;
-        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static type value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = true;
 			number_return r = holder->convertToNumber(NumberType::FLOATING);
             return static_cast<type>(r.f);
 		}
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			return value(holder, nullptr);
 		}
 	};
@@ -825,11 +1006,11 @@ private:
 	template<class ValueType>
     struct stringConversion {
         typedef std::string type;
-        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static type value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = true;
 			return holder->convertToString();
 		}
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			return value(holder, nullptr);
 		}
 	};
@@ -837,12 +1018,12 @@ private:
 	template<class ValueType>
     struct impossibleConversion {
         typedef ValueType type;
-        static type& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static type& value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = false;
             // something must be returned in order to compile, but this value should never be read
-            return *reinterpret_cast<type*>(holder->ptrToValue());
+            return *reinterpret_cast<type*>(const_cast<void*>(holder->ptrToValue()));
         }
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -850,12 +1031,12 @@ private:
     template<class ValueType>
     struct impossibleConversion<ValueType&> {
         typedef ValueType& type;
-        static type value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static type value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = false;
             // something must be returned in order to compile, but this value should never be read
-            return *reinterpret_cast<ValueType*>(holder->ptrToValue());
+            return *reinterpret_cast<ValueType*>(const_cast<void*>(holder->ptrToValue()));
 		}
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -863,12 +1044,12 @@ private:
 	template<class ValueType>
     struct impossibleConversion<ValueType&&> {
         typedef ValueType&& type;
-        static ValueType& value(const ::std::shared_ptr<IValueHolder>& holder, bool * success) {
+        static ValueType& value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = false;
             // something must be returned in order to compile, but this value should never be read
-            return *reinterpret_cast<ValueType*>(holder->ptrToValue());
+            return *reinterpret_cast<ValueType*>(const_cast<void*>(holder->ptrToValue()));
 		}
-        static type value(const ::std::shared_ptr<IValueHolder>& holder) {
+        static type value(const IValueHolder* holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -911,7 +1092,7 @@ public:
 			return *ptr;
 		}
 		
-        return converter<ValueType>::value(m_impl, success);
+        return converter<ValueType>::value(impl(), success);
 	}
 
 	template<class ValueType>
@@ -924,7 +1105,7 @@ public:
 			return *ptr;
 		}
 
-        return converter<ValueType>::value(m_impl);
+        return converter<ValueType>::value(impl());
 	}
 
 	template<class ValueType>
@@ -938,7 +1119,7 @@ public:
 			return ::std::forward<ValueType>(*ptr);
 		}
 
-        return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(m_impl, success));
+        return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl(), success));
 	}
 
 	template<class ValueType>
@@ -951,7 +1132,7 @@ public:
 			return ::std::forward<ValueType>(*ptr);
 		}
 
-        return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(m_impl));
+        return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl()));
 	}
 
 	template<class ValueType>
@@ -978,7 +1159,7 @@ public:
 	}
 	
 
-	bool isValid() const { return m_impl.get() != nullptr; }
+    bool isValid() const { return impl() != nullptr; }
 
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
@@ -1010,13 +1191,81 @@ public:
     bool operator!=(const VariantValue& that) const;
 	
 private:
-	std::shared_ptr<IValueHolder> m_impl;
+
+    enum class Types : char {
+        DEFAULT,
+        INT8,
+        UINT8,
+        INT16,
+        UINT16,
+        INT32,
+        UINT32,
+        INT64,
+        UINT64,
+        DOUBLE,
+        FLOAT,
+        STRING
+    };
+
+    Types m_embedded;
+
+    union {
+
+        std::shared_ptr<IValueHolder> m_impl;
+
+        ValueHolder<::std::uint8_t>   m_uint8;
+        ValueHolder<::std::int8_t>     m_int8;
+        ValueHolder<::std::uint16_t> m_uint16;
+        ValueHolder<::std::int16_t>   m_int16;
+        ValueHolder<::std::uint32_t> m_uint32;
+        ValueHolder<::std::int32_t>   m_int32;
+        ValueHolder<::std::uint64_t> m_uint64;
+        ValueHolder<::std::int64_t>   m_int64;
+        ValueHolder<double>          m_double;
+        ValueHolder<float>            m_float;
+        ValueHolder<::std::string>   m_string;
+    };
+
+    IValueHolder* impl() {
+        switch (m_embedded) {
+            case Types::DEFAULT:
+                return m_impl.get();
+            case Types::UINT8:
+                return &m_uint8;
+            case Types::INT8:
+                return &m_int8;
+            case Types::UINT16:
+                return &m_uint16;
+            case Types::INT16:
+                return &m_int16;
+            case Types::UINT32:
+                return &m_uint32;
+            case Types::INT32:
+                return &m_int32;
+            case Types::UINT64:
+                return &m_uint64;
+            case Types::INT64:
+                return &m_int64;
+            case Types::DOUBLE:
+                return &m_double;
+            case Types::FLOAT:
+                return &m_double;
+            case Types::STRING:
+                return &m_string;
+        }
+        return m_impl.get();
+    }
+    const IValueHolder* impl() const {
+        return const_cast<VariantValue*>(this)->impl();
+    }
 
 	void check_valid() const {
 		if (!isValid()) {
 			throw ::std::runtime_error("variant has no value");
 		}
 	}
+
+    void destroyEmbedded();
 };
 
 
