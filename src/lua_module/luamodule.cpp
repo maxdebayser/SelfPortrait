@@ -1105,7 +1105,9 @@ VariantValue LuaClosureWrapper::operator()(const std::vector<VariantValue>& varg
     for(const VariantValue& v: vargs) {
         Class clazz;
 #ifndef NO_RTTI
-        clazz = Class::lookup(v.typeId());
+        if (!v.isArithmetical()) {
+            clazz = Class::lookup(v.typeId());
+        }
 #endif
         Lua_Variant::create(L, clazz, std::move(v));
     }
