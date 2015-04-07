@@ -39,9 +39,9 @@ namespace {
 
 namespace LuaUtils {
 
-	bool found = false;
 	// modified version of luaL_checkudata
 	bool isudata (lua_State *L, int ud, const char *tname) {
+      bool found = false;
 	  void *p = lua_touserdata(L, ud);
 	  if (p != NULL) {  /* value is a userdata? */
 		if (lua_getmetatable(L, ud)) {  /* does it have a metatable? */
