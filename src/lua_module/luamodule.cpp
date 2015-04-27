@@ -314,15 +314,42 @@ int Lua_Variant::method_stub(lua_State* L)
     const string name = luaL_checkstring(L, lua_upvalueindex(2));
     const size_t numArgs = lua_gettop(L) - 1;
 
-    auto methods = c.wrapped().findAllMethods([&](const Method& m){ return m.name() == name && m.numberOfArguments() == numArgs;});
+    auto methods = c.wrapped().findAllMethods([&](const Method& m){ return m.name() == name && m.numberOfArguments() == numArgs && !m.isStatic();});
 
+    Method m;
     if (methods.size() == 0) {
         luaL_error(L, strconv::fmt_str("Class %1 has no method named %2", c.wrapped().fullyQualifiedName(), name).c_str());
     } else if (methods.size() > 1) {
-        luaL_error(L, strconv::fmt_str("Class %1 has more than one method named %2 with %3 arguments", c.wrapped().fullyQualifiedName(), name, numArgs).c_str());
+        if (methods.size() == 2) {
+            /* Heuristic: usally when there are two methods that differ only in constness and return types,
+             * they return a reference or a const reference. Choosing the method that returns the const
+             * reference seems to be a reasonable default
+             */
+            auto it = methods.begin();
+            Method& m1 = *it++;
+            Method& m2 = *it;
+            if ((m1.isConst() && !m2.isConst()) || (!m1.isConst() && m2.isConst())) {
+                Method mc = m1;
+                if (m2.isConst()) {
+                    mc = m2;
+                }
+#ifndef NO_RTTI
+                if (m1.argumentTypes() == m2.argumentTypes()) {
+                    m = mc;
+                }
+#else
+                if (m1.argumentSpellings() == m2.argumentSpellings()) {
+                    m = mc;
+                }
+#endif
+            }
+        }
+        if (!m.isValid()) {
+            luaL_error(L, strconv::fmt_str("Class %1 has more than one method named %2 with %3 arguments", c.wrapped().fullyQualifiedName(), name, numArgs).c_str());
+        }
+    } else {
+        m = methods.front();
     }
-
-    Method& m = methods.front();
 
     Lua_Method::create(L, m);
     for (size_t i = 1; i <= numArgs+1; ++i) {
