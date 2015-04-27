@@ -1086,13 +1086,17 @@ public:
     typename converter<ValueType>::type convertTo(bool * success = nullptr) const {
 		check_valid();
 
-		auto ptr = isAPriv<ValueType>();
-		
-		if (ptr != nullptr) {
+        auto ptr = isAPriv<ValueType>();
+        if (ptr != nullptr) {
 			if (success != nullptr) * success = true;
 			return *ptr;
 		}
-		
+
+        auto ptrc = isAPriv<const ValueType>();
+        if (ptrc != nullptr) {
+            if (success != nullptr) * success = true;
+            return *ptrc;
+        }
         return converter<ValueType>::value(impl(), success);
 	}
 
@@ -1106,35 +1110,70 @@ public:
 			return *ptr;
 		}
 
+        auto ptrc = isAPriv<const ValueType>();
+        if (ptrc != nullptr) {
+            return *ptrc;
+        }
         return converter<ValueType>::value(impl());
 	}
+
+
+    template<class ValueType, class... T>
+    typename converter<ValueType>::type convertToThrow(const char* fmt, const T&... t) const {
+        try {
+            return convertToThrow<ValueType>();
+        } catch (const std::runtime_error& err) {
+            if (fmt == nullptr) throw;
+            throw std::runtime_error(strconv::fmt_str(fmt, t..., err.what()));
+        }
+    }
 
 	template<class ValueType>
     typename converter<ValueType>::type moveValue(bool * success = nullptr) const {
 		check_valid();
 
 		auto ptr = isAPriv<ValueType>();
-
 		if (ptr != nullptr) {
 			if (success != nullptr) * success = true;
 			return ::std::forward<ValueType>(*ptr);
 		}
 
+        auto ptrc = isAPriv<const ValueType>();
+        if (ptrc != nullptr) {
+            if (success != nullptr) * success = true;
+            return ::std::forward<const ValueType>(*ptrc);
+        }
+
         return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl(), success));
 	}
 
-	template<class ValueType>
+    template<class ValueType>
     typename converter<ValueType>::type moveValueThrow() const {
 		check_valid();
 
 		auto ptr = isAPriv<ValueType>();
-
-		if (ptr != nullptr) {
-			return ::std::forward<ValueType>(*ptr);
-		}
+        if (ptr != nullptr) {
+            return ::std::forward<ValueType>(*ptr);
+        }
+        auto ptrc = isAPriv<const ValueType>();
+        if (ptrc != nullptr) {
+            return ::std::forward<const ValueType>(*ptrc);
+        }
 
         return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl()));
 	}
+
+    template<class ValueType, class... T>
+    typename converter<ValueType>::type moveValueThrow(const char* fmt, const T&... t) const {
+        try {
+            return moveValueThrow<ValueType>();
+        } catch (const std::runtime_error& err) {
+            if (fmt == nullptr) throw;
+            throw std::runtime_error(strconv::fmt_str(fmt, t..., err.what()));
+        }
+    }
+
+
 
 	template<class ValueType>
     typename converter<ValueType>::type convertTo(bool * success = nullptr) const volatile {

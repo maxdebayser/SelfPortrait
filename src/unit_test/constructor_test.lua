@@ -85,5 +85,14 @@ function testConstructor()
     TS_ASSERT[[ attr1:get(v6) == 44 ]]
     TS_ASSERT[[ attr2:get(v6) == 88 ]]
 
+
+print("lua checkpoint 1")
+    local Test4 = Class.lookup("ConstructorTest::Test4")
+    local v7 = Test4:construct(2005,1,17)
+    TS_ASSERT[[ tostring(v7.d) == '2005-Jan-17' ]]
+print("lua checkpoint 2")
+    local v8 = Test4:construct(v7.d)
+    TS_ASSERT[[ tostring(v8.d) == '2005-Jan-17' ]]
+    print("lua checkpoint 3")
     return true
 end

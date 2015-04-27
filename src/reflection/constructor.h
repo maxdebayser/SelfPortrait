@@ -37,9 +37,9 @@ struct constructor_type {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<false, Ind<I...>> {
 		static VariantValue call(const ::std::vector<VariantValue>& args) {
-			verify_call<Arguments, I...>(args);
+            //verify_call<Arguments, I...>(args);
 			VariantValue ret;
-			ret.construct<Clazz>(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
+            ret.construct<Clazz>(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return ret;
 		}
 	};
@@ -74,8 +74,8 @@ public:
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 #endif
 private:
+    unsigned int m_numArgs;
 	const char* m_argSpellings;
-	unsigned int m_numArgs;
 #ifndef NO_RTTI
 	::std::vector<const ::std::type_info*> m_argumentTypes;
 #endif

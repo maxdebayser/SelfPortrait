@@ -41,8 +41,7 @@ struct function_type<_Result(*)(Args...)> {
 	struct call_helper<R, Ind<I...>> {
 		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			verify_call<Arguments, I...>(args);
-			ret.construct<R>(ptr(args[I].moveValue<typename type_at<Arguments, I>::type>()...));
+            ret.construct<R>(ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return ret;
 		}
 	};
@@ -50,8 +49,7 @@ struct function_type<_Result(*)(Args...)> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<void, Ind<I...>> {
 		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
-			verify_call<Arguments, I...>(args);
-			ptr(args[I].moveValue<typename type_at<Arguments, I>::type>()...);
+            ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};

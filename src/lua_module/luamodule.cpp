@@ -7,6 +7,7 @@
 #include <windows.h>
 #endif
 
+#include "boost/date_time/posix_time/posix_time.hpp"
 #include "luamodule.h"
 
 namespace SelfPortraitLua {
@@ -311,7 +312,7 @@ int Lua_Variant::method_stub(lua_State* L)
 {
     Lua_Class& c = *Lua_Class::checkUserData(L, lua_upvalueindex(1));
     const string name = luaL_checkstring(L, lua_upvalueindex(2));
-    const int numArgs = lua_gettop(L) - 1;
+    const size_t numArgs = lua_gettop(L) - 1;
 
     auto methods = c.wrapped().findAllMethods([&](const Method& m){ return m.name() == name && m.numberOfArguments() == numArgs;});
 
@@ -324,7 +325,7 @@ int Lua_Variant::method_stub(lua_State* L)
     Method& m = methods.front();
 
     Lua_Method::create(L, m);
-    for (int i = 1; i <= numArgs+1; ++i) {
+    for (size_t i = 1; i <= numArgs+1; ++i) {
         lua_pushvalue(L, 1);
         lua_remove(L, 1);
     }
@@ -453,20 +454,22 @@ int Lua_Class::getConstructors(lua_State* L)
 int Lua_Class::construct(lua_State* L)
 {
     Lua_Class* c = checkUserData(L);
-    const int numArgs = lua_gettop(L) - 1;
+    const size_t numArgs = lua_gettop(L) - 1;
 
     const Class::ConstructorList&  l = c->m_class.findAllConstructors([&](const Constructor& cons){ return cons.numberOfArguments() == numArgs; });
+
     if (l.size() == 0) {
         luaL_error(L, strconv::fmt_str("Class %1 has no constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
     } else if (l.size() > 1) {
         luaL_error(L, strconv::fmt_str("Class %1 has more than one constructor with %2 arguments", c->m_class.fullyQualifiedName(), numArgs).c_str());
     }
+
     lua_remove(L, 1);
 
     const Constructor& cons = l.front();
 
     Lua_Constructor::create(L, cons);
-    for (int i = 1; i <= numArgs; ++i) {
+    for (size_t i = 1; i <= numArgs; ++i) {
         lua_pushvalue(L, 1);
         lua_remove(L, 1);
     }
@@ -773,13 +776,12 @@ int Lua_Constructor::call(lua_State* L)
 	vector<VariantValue> args;
 
 	int n = lua_gettop(L);
-
 	for (int i = 2; i <= n; ++i) {
 		args.push_back(Lua_Variant::getFromStack(L, i));
 	}
 
     Lua_Variant::create(L, c->wrapped().getClass(), ::std::move(c->m_constructor.callArgArray(args)));
-	return 1;
+    return 1;
 }
 
 int Lua_Constructor::numberOfArguments(lua_State* L)

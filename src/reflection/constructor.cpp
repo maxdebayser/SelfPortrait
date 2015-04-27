@@ -32,6 +32,9 @@ ConstructorImpl::ConstructorImpl(
 
 VariantValue ConstructorImpl::call(const ::std::vector<VariantValue>& args) const
 {
+    if (args.size() < m_numArgs) {
+        throw ::std::runtime_error("function or constructor called with insufficient number of arguments");
+    }
 	return m_c(args);
 }
 

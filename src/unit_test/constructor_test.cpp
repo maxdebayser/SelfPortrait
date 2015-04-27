@@ -10,6 +10,8 @@
 #include "test_utils.h"
 #include "str_utils.h"
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+
 #include <lua.hpp>
 
 #include <iostream>
@@ -58,6 +60,15 @@ namespace ConstructorTest {
         int attr1;
     };
 
+
+    class Test4 {
+    public:
+        boost::gregorian::date d;
+
+        Test4(int year, int month, int day) : d(year, month, day) {}
+        Test4(boost::gregorian::date _d) : d(_d) {}
+    };
+
 }
 
 
@@ -81,6 +92,11 @@ REFL_CONSTRUCTOR(int)
 REFL_ATTRIBUTE(attr1, int)
 REFL_END_CLASS
 
+REFL_BEGIN_CLASS(ConstructorTest::Test4)
+REFL_CONSTRUCTOR(boost::gregorian::date)
+REFL_CONSTRUCTOR(int, int, int)
+REFL_ATTRIBUTE(d, boost::gregorian::date)
+REFL_END_CLASS
 
 using namespace ConstructorTest;
 
@@ -185,4 +201,39 @@ void ConstructorTestSuite::testClassRef()
 	TS_ASSERT_EQUALS(c1.getClass(), c2.getClass());
 
 	TS_ASSERT_DIFFERS(c1.getClass(), test2);
+}
+
+
+void ConstructorTestSuite::testCaseGregorian()
+{
+    Class test4 = Class::lookup("ConstructorTest::Test4");
+
+    boost::gregorian::date d(2005, 1, 15);
+
+    auto it = test4.constructors().begin();
+    Constructor c1 = *it++;
+    Constructor c2 = *it++;
+
+    TS_ASSERT_EQUALS(c1.getClass(), test4);
+    TS_ASSERT_EQUALS(c2.getClass(), test4);
+
+    TS_ASSERT_EQUALS(c1.numberOfArguments(), 1);
+    TS_ASSERT_EQUALS(c2.numberOfArguments(), 3);
+
+    Attribute attr = test4.attributes().front();
+
+    VariantValue b1 = c1.call(d);
+    boost::gregorian::date d1 = attr.get(b1).convertTo<boost::gregorian::date>();
+    TS_ASSERT_EQUALS(d, d1);
+
+    VariantValue b2 = c2.call(2005,1,15);
+
+    boost::gregorian::date d2 = attr.get(b2).convertTo<boost::gregorian::date>();
+    TS_ASSERT_EQUALS(d, d2);
+
+    VariantValue d3 = attr.get(b1);
+    VariantValue b3 = c1.callArgArray({d3});
+
+    boost::gregorian::date d4 = attr.get(b3).convertTo<boost::gregorian::date>();
+    TS_ASSERT_EQUALS(d, d4);
 }

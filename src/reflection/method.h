@@ -46,7 +46,7 @@ struct method_type<_Result(_Clazz::*)(Args...)> {
 
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...));
+            ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
 		}
 	};
@@ -55,7 +55,7 @@ struct method_type<_Result(_Clazz::*)(Args...)> {
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			(object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...);
+            (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
@@ -93,7 +93,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const> {
 
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...));
+            ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
 		}
 	};
@@ -102,7 +102,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const> {
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			(object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...);
+            (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
@@ -138,7 +138,7 @@ struct method_type<_Result(_Clazz::*)(Args...) volatile> {
 
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...));
+            ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
 		}
 	};
@@ -147,7 +147,7 @@ struct method_type<_Result(_Clazz::*)(Args...) volatile> {
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			(object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...);
+            (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
@@ -183,7 +183,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const volatile> {
 
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...));
+            ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
 		}
 	};
@@ -192,7 +192,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const volatile> {
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			(object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...);
+            (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
@@ -222,7 +222,7 @@ struct method_type<_Result(*)(Args...)> {
 	struct call_helper<R, Ind<I...>> {
 		static VariantValue call(ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
 			VariantValue ret;
-			ret.construct<Result>(ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...));
+            ret.construct<Result>(ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
 		}
 	};
@@ -230,7 +230,7 @@ struct method_type<_Result(*)(Args...)> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<void, Ind<I...>> {
 		static VariantValue call(ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
-			ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>()...);
+            ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};

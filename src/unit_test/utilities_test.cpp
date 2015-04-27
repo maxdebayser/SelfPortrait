@@ -160,6 +160,6 @@ void UtilitiesTestSuite::testConversionsFromStr()
 	TS_ASSERT(success);
 	TS_ASSERT_EQUALS(t2.attr1, "deceased");
 
-    NoConversions t3 = strconv::fromString<NoConversions>("whatever", &success);
+    strconv::fromString<NoConversions>("whatever", &success);
 	TS_ASSERT(!success);
 }

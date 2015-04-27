@@ -276,7 +276,7 @@ public:
                             spec->getNameForDiagnostic(ss, m_printPol, true);
                             cout << "1 template name = "<< ss.str() << " is valid " << spec->getPointOfInstantiation().isValid() << endl;
                             cout << "instantiation: " << crd->getTemplateSpecializationKind() << endl;
-                            const TemplateArgumentList& list = spec->getTemplateArgs();
+                            //const TemplateArgumentList& list = spec->getTemplateArgs();
                             if (nameWithNamespace.find("type-parameter") == string::npos) {
                                 cout << "treating " << endl;
                                 m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);
@@ -291,7 +291,7 @@ public:
                             raw_string_ostream ss(nameWithNamespace);
                             spec->getNameForDiagnostic(ss, m_printPol, true);
                             cout << "2 template name = "<< ss.str() << " is valid " << spec->getPointOfInstantiation().isValid() << endl;
-                            const TemplateArgumentList& list = spec->getTemplateArgs();
+                            //const TemplateArgumentList& list = spec->getTemplateArgs();
 
                             if (nameWithNamespace.find("type-parameter") == string::npos) {
 							m_sema.InstantiateClassTemplateSpecialization(crd->getSourceRange().getBegin(), spec, TSK_ImplicitInstantiation, true);

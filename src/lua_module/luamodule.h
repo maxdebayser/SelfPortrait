@@ -111,7 +111,7 @@ public:
     }
 
     static int index(lua_State* L) {
-        Adapted* c = Adapted::checkUserData(L);
+        Adapted::checkUserData(L);
         const char * index = luaL_checkstring(L, 2);
 
         auto it = Adapted::methods.find(index);
@@ -131,7 +131,7 @@ public:
     template<class... Args>
     static void create(lua_State* L, Args&&... args) {
         void * f = lua_newuserdata(L, sizeof(Adapted));
-        Adapted * lc = new(f) Adapted(std::forward<Args>(args)...);
+        new(f) Adapted(std::forward<Args>(args)...);
         luaL_getmetatable(L, Adapted::metatableName);
         lua_setmetatable(L, -2);
     }

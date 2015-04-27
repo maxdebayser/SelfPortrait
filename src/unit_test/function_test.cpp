@@ -235,7 +235,7 @@ void FunctionTestSuite::testReturnByConstReference()
 	VariantValue v = f.call();
 	TS_ASSERT(v.isValid());
 	bool ok = false;
-	CopyCount& ref = v.convertTo<CopyCount&>(&ok);
+    v.convertTo<CopyCount&>(&ok);
 	TS_ASSERT(!ok);
 
 	const CopyCount& cref = v.convertTo<const CopyCount&>(&ok);
@@ -271,7 +271,7 @@ void FunctionTestSuite::testParametersByValue()
 	int reflectionMoves = CopyCount::numberOfMoves();
 
 	TS_ASSERT_EQUALS(reflectionCopies, 1);
-	TS_ASSERT_EQUALS(reflectionMoves,  2);
+    TS_ASSERT_EQUALS(reflectionMoves,  1);
 	TS_ASSERT(!c.hasBeenMoved());
 }
 

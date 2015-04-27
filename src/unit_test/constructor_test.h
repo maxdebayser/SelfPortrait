@@ -17,6 +17,8 @@ public:
 	void testLuaAPI();
 	void testConstructorHash();
 	void testClassRef();
+
+    void testCaseGregorian();
 };
 
 

@@ -17,7 +17,6 @@ namespace {
 				lua_pushvalue(L, LUA_REGISTRYINDEX);
 
 				/* table is in the stack at index 't' */
-				bool found = false;
 				lua_pushnil(L);
 				while (lua_next(L, -2) != 0) {
 					if (lua_istable(L, -1)) {
