@@ -30,7 +30,7 @@ void VariantTestSuite::testValue() {
 	TS_ASSERT(v3.isA<decltype("hello")>());
 	TS_ASSERT(v3.isA<const char[]>());
 	TS_ASSERT(v3.isA<const char(&)[]>());
-	TS_ASSERT(!v3.isA<char[]>());
+    TS_ASSERT(v3.isA<char[]>());
 
 	VariantValue v4(3);
 	TS_ASSERT_EQUALS(v1,v4);
@@ -84,6 +84,46 @@ void VariantTestSuite::testConversions() {
 	const int* cptr = v3.convertTo<const int*>(&ok);
 	TS_ASSERT(ok);
 	TS_ASSERT_EQUALS(*cptr, 4);
+
+    int pointee = 666;
+
+    VariantValue v4(&pointee);
+    ok = false;
+    int* ptr2 = v4.convertTo<int*>(&ok);
+    TS_ASSERT(v4.mayConvertTo<int*>());
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(*ptr2, 666);
+    ok = false;
+    int& ref2 = v4.convertTo<int&>(&ok);
+    TS_ASSERT(v4.mayConvertTo<int&>());
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(ref2, 666);
+
+    ok = false;
+    int copy1 = v4.convertTo<int>(&ok);
+    TS_ASSERT(v4.mayConvertTo<int>());
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(copy1, 666);
+
+    int cpointee = 777;
+
+    VariantValue v5(&cpointee);
+    ok = false;
+    TS_ASSERT(v5.mayConvertTo<const int*>());
+    const int* cptr2 = v5.convertTo<const int*>(&ok);
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(*cptr2, 777);
+    ok = false;
+    TS_ASSERT(v5.mayConvertTo<const int&>());
+    const int& cref2 = v5.convertTo<const int&>(&ok);
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(cref2, 777);
+    ok = false;
+    TS_ASSERT(v5.mayConvertTo<const int>());
+    const int copy2 = v5.convertTo<const int>(&ok);
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(copy2, 777);
+
 }
 
 struct NonCopyable {

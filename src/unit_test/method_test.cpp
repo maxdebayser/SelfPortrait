@@ -130,6 +130,14 @@ void MethodTestSuite::testNonCVMethod() {
 
 	const volatile VariantValue v4(t);
 	TS_ASSERT_THROWS(method.call(v4, 3), std::runtime_error);
+
+
+    VariantValue v5(&t);
+
+    VariantValue r2 = method.call(v5, 3);
+
+    TS_ASSERT(r2.isA<int>());
+    TS_ASSERT_EQUALS(r2.value<int>(), 6);
 }
 
 

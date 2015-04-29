@@ -887,7 +887,7 @@ public:
 	
 	template<class ValueType>
 	bool isA() const {
-		return (isValid() && (isAPriv<ValueType>() != nullptr));
+        return (isValid() && ((isAPriv<const ValueType>() != nullptr) || (isAPriv<const typename normalize_type<ValueType>::ptr_type>() != nullptr)));
 	}
 
 	template<class ValueType>
@@ -1086,16 +1086,17 @@ public:
     typename converter<ValueType>::type convertTo(bool * success = nullptr) const {
 		check_valid();
 
-        auto ptr = isAPriv<ValueType>();
-        if (ptr != nullptr) {
-			if (success != nullptr) * success = true;
-			return *ptr;
-		}
-
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
+            //if (std::is_const<ValueType>::value || !impl()->isConst()) {
+                if (success != nullptr) * success = true;
+                return *ptrc;
+            //}
+        }
+        auto pptr = isAPriv<const typename normalize_type<ValueType>::ptr_type>();
+        if (pptr != nullptr) {
             if (success != nullptr) * success = true;
-            return *ptrc;
+            return **pptr;
         }
         return converter<ValueType>::value(impl(), success);
 	}
@@ -1103,12 +1104,6 @@ public:
 	template<class ValueType>
     typename converter<ValueType>::type convertToThrow() const {
 		check_valid();
-
-		auto ptr = isAPriv<ValueType>();
-
-		if (ptr != nullptr) {
-			return *ptr;
-		}
 
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
@@ -1132,16 +1127,10 @@ public:
     typename converter<ValueType>::type moveValue(bool * success = nullptr) const {
 		check_valid();
 
-		auto ptr = isAPriv<ValueType>();
-		if (ptr != nullptr) {
-			if (success != nullptr) * success = true;
-			return ::std::forward<ValueType>(*ptr);
-		}
-
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
             if (success != nullptr) * success = true;
-            return ::std::forward<const ValueType>(*ptrc);
+            return ::std::forward<ValueType>(*const_cast<typename normalize_type<ValueType>::ptr_type>(ptrc));
         }
 
         return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl(), success));
@@ -1150,14 +1139,9 @@ public:
     template<class ValueType>
     typename converter<ValueType>::type moveValueThrow() const {
 		check_valid();
-
-		auto ptr = isAPriv<ValueType>();
-        if (ptr != nullptr) {
-            return ::std::forward<ValueType>(*ptr);
-        }
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
-            return ::std::forward<const ValueType>(*ptrc);
+            return ::std::forward<ValueType>(*const_cast<typename normalize_type<ValueType>::ptr_type>(ptrc));
         }
 
         return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl()));
@@ -1211,6 +1195,8 @@ public:
 	bool isFloatingPoint() const;
 	
 	bool isArithmetical() const;
+
+    bool isConst() const;
 	
 	// Is a Plain-Old-Datatype (can be memcpy'd)
 	bool isPOD() const;

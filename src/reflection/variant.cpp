@@ -282,6 +282,12 @@ bool VariantValue::isArithmetical() const
 	return isIntegral() || isFloatingPoint();
 }
 
+bool VariantValue::isConst() const
+{
+    check_valid();
+    return impl()->isConst();
+}
+
 // Is a Plain-Old-Datatype (can be memcpy'd)
 bool VariantValue::isPOD() const
 {
