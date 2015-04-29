@@ -56,6 +56,7 @@ void Lua_Variant::initialize()
 	methods["isPOD"]           = exception_translator<isPOD>;
 	methods["sizeOf"]          = exception_translator<sizeOf>;
 	methods["alignOf"]         = exception_translator<alignOf>;
+    methods["class"]           = exception_translator<_class>;
 }
 
 int Lua_Variant::index(lua_State* L) {
@@ -91,6 +92,17 @@ int Lua_Variant::index(lua_State* L) {
         }
 
         luaL_error(L, "class has no property %s\n", index);
+    }
+    return 0;
+}
+
+int Lua_Variant::_class(lua_State* L) {
+    Lua_Variant* c = Lua_Variant::checkUserData(L);
+
+    if(c->m_class.isValid()) {
+        Class clazz = c->m_class;
+        Lua_Class::create(L, clazz);
+        return 1;
     }
     return 0;
 }

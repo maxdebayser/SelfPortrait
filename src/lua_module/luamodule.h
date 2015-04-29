@@ -173,6 +173,7 @@ public:
     static int isPOD(lua_State* L);
     static int sizeOf(lua_State* L);
     static int alignOf(lua_State* L);
+    static int _class(lua_State* L);
 
     static int add(lua_State* L);
     static int sub(lua_State* L);
