@@ -22,6 +22,7 @@ public:
 	void testBaseConversion();
     void testEnum();
     void testPrintable();
+    void testAssignement();
 };
 
 

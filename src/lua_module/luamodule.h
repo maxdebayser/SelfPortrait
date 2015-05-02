@@ -163,6 +163,7 @@ public:
     static VariantValue getFromStack(lua_State* L, int idx = 1);
 
     static int newInstance(lua_State* L);
+    static int assign(lua_State* L);
     static int tostring(lua_State* L);
     static int tonumber(lua_State* L);
     static int isValid(lua_State* L);
@@ -173,6 +174,7 @@ public:
     static int isPOD(lua_State* L);
     static int sizeOf(lua_State* L);
     static int alignOf(lua_State* L);
+    static int ptrToValue(lua_State* L);
     static int _class(lua_State* L);
 
     static int add(lua_State* L);

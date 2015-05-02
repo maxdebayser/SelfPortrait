@@ -236,6 +236,10 @@ VariantValue& VariantValue::operator=(VariantValue&& rhs)
 	return *this;
 }
 
+bool VariantValue::assign(const VariantValue& v)
+{
+    return impl()->assign(v);
+}
 
 VariantValue VariantValue::createReference() const {
 	VariantValue ret;

@@ -211,6 +211,8 @@ struct NoopPointerPacker {
 template<class T>
 using PointerPacker = typename Select<sizeof(void*) == 8, PointerPacker_x86_64<T>, NoopPointerPacker<T>>::type;
 
+class VariantValue;
+
 class IValueHolder {
 public:
 
@@ -279,6 +281,8 @@ public:
 	virtual IValueHolder* clone() const = 0;
 	
 	virtual bool equals(const IValueHolder* rhs) const = 0;
+
+    virtual bool assign(const VariantValue& rhs) = 0;
 
     void * ptrToValue() {
         if (m_offsetToPtr) {
@@ -353,66 +357,66 @@ private:
 template <class T>
 class ValueHolder: public IValueHolder {
 
-	template<class Dummy,bool OK>
-	struct CloneHelper {
-		static IValueHolder* clone(const ValueHolder* holder) {
-			return new ValueHolder(holder->m_value);
-		}
-	};
+    template<class Dummy,bool OK>
+    struct CloneHelper {
+        static IValueHolder* clone(const ValueHolder* holder) {
+            return new ValueHolder(holder->m_value);
+        }
+    };
 
-	template<class Dummy>
-	struct CloneHelper<Dummy, false> {
-		static IValueHolder* clone(const ValueHolder*) {
-			throw std::runtime_error("type has no copy constructor");
-		}
-	};
+    template<class Dummy>
+    struct CloneHelper<Dummy, false> {
+        static IValueHolder* clone(const ValueHolder*) {
+            throw std::runtime_error("type has no copy constructor");
+        }
+    };
 
     typedef CloneHelper<T, ::std::is_constructible<T, const T&>::value> Cloner;
 
 
-	template<class U,bool OK>
-	struct CompareHelper {
-		static bool equal(const U& u1, const U& u2) {
-			return u1 == u2;
-		}
-	};
+    template<class U,bool OK>
+    struct CompareHelper {
+        static bool equal(const U& u1, const U& u2) {
+            return u1 == u2;
+        }
+    };
 
-	template<class U>
-	struct CompareHelper<U, false> {
-		static bool equal(const U& u1, const U& u2) {
-			throw std::runtime_error("no equality operator exists for type");
-		}
-	};
+    template<class U>
+    struct CompareHelper<U, false> {
+        static bool equal(const U& u1, const U& u2) {
+            throw std::runtime_error("no equality operator exists for type");
+        }
+    };
 
-	typedef CompareHelper<T, comparable<T>::value> Compare;
+    typedef CompareHelper<T, comparable<T>::value> Compare;
 
 
 public:
-	typedef T ValueType;
+    typedef T ValueType;
 
-	template<class... Args>
-	ValueHolder(Args&&... args)
+    template<class... Args>
+    ValueHolder(Args&&... args)
         : IValueHolder(reinterpret_cast<const void*>(&m_value), true,
 #ifndef NO_RTTI
-					   typeid(ValueType),
+                       typeid(ValueType),
 #endif
-					   sizeof(ValueType),
-					   alignof(ValueType),
-					   ::std::is_pod<ValueType>::value,
-					   ::std::is_integral<ValueType>::value,
-					   ::std::is_floating_point<ValueType>::value,
-					   ::std::is_pointer<ValueType>::value,
+                       sizeof(ValueType),
+                       alignof(ValueType),
+                       ::std::is_pod<ValueType>::value,
+                       ::std::is_integral<ValueType>::value,
+                       ::std::is_floating_point<ValueType>::value,
+                       ::std::is_pointer<ValueType>::value,
                        ::std::is_same<std::string, ValueType>::value,
-					   normalize_type<T>::is_const),
-		m_value( ::std::forward<Args>(args)...)
+                       normalize_type<T>::is_const),
+        m_value( ::std::forward<Args>(args)...)
     {
         static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
         static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
-	}
+    }
 
-	~ValueHolder() noexcept{
-		//m_value.~ValueType();
-	}
+    ~ValueHolder() noexcept{
+        //m_value.~ValueType();
+    }
 
     ValueHolder(const ValueHolder& that)
         : IValueHolder(reinterpret_cast<const void*>(&m_value), true,
@@ -448,98 +452,100 @@ public:
 
     ValueHolder& operator=(ValueHolder) = delete;
 
-	IValueHolder* clone() const override {
-		return Cloner::clone(this);
-	}
+    IValueHolder* clone() const override {
+        return Cloner::clone(this);
+    }
 
-	virtual bool equals(const IValueHolder* rhs) const override {
-		if (rhs != nullptr) {
-			try {
-				rhs->throwCast();
-			} catch (ValueType* ptr) {
+    virtual bool equals(const IValueHolder* rhs) const override {
+        if (rhs != nullptr) {
+            try {
+                rhs->throwCast();
+            } catch (ValueType* ptr) {
                 return Compare::equal(m_value, *ptr);
-			} catch (...) {}
-		}
-		return false;
-	}
+            } catch (...) {}
+        }
+        return false;
+    }
 
-	virtual ::std::string convertToString() const override {
+    virtual bool assign(const VariantValue& rhs) override;
+
+    virtual ::std::string convertToString() const override {
             return ::std::move(strconv::toString(m_value));
-	}
+    }
 
-	virtual number_return convertToNumber(NumberType t) const {
-		number_return r;
+    virtual number_return convertToNumber(NumberType t) const {
+        number_return r;
         if (t == NumberType::INTEGER) {
             r.i = ::convertToInteger(m_value);
         } else {
-			r.f = ::convertToFloatingPoint(m_value);
+            r.f = ::convertToFloatingPoint(m_value);
         }
-		return r;
-	}
+        return r;
+    }
 
-	virtual void throwCast() const {
-		throw const_cast<ValueType*>(&m_value);
-	}
+    virtual void throwCast() const {
+        throw const_cast<ValueType*>(&m_value);
+    }
 
 private:
-	ValueType m_value;
+    ValueType m_value;
 };
 
 
 template <class T>
 class ValueHolder<T&>: public IValueHolder {
 public:
-	typedef T& RefType;
-	typedef typename normalize_type<T&>::type ValueType;
+    typedef T& RefType;
+    typedef typename normalize_type<T&>::type ValueType;
 private:
 
-	template<class Dummy,bool OK>
-	struct CloneHelper {
-		static IValueHolder* clone(const ValueHolder* holder) {
-			return new ValueHolder(holder->m_value);
-		}
-	};
+    template<class Dummy,bool OK>
+    struct CloneHelper {
+        static IValueHolder* clone(const ValueHolder* holder) {
+            return new ValueHolder(holder->m_value);
+        }
+    };
 
-	template<class Dummy>
-	struct CloneHelper<Dummy, false> {
-		static IValueHolder* clone(const ValueHolder*) {
-			throw std::runtime_error("type has no copy constructor");
-		}
-	};
+    template<class Dummy>
+    struct CloneHelper<Dummy, false> {
+        static IValueHolder* clone(const ValueHolder*) {
+            throw std::runtime_error("type has no copy constructor");
+        }
+    };
 
-	typedef CloneHelper<ValueType, ::std::is_constructible<ValueType, ValueType>::value> Cloner;
+    typedef CloneHelper<ValueType, ::std::is_constructible<ValueType, ValueType>::value> Cloner;
 
 
-	template<class U,bool OK>
-	struct CompareHelper {
-		static bool equal(const U& u1, const U& u2) {
-			return u1 == u2;
-		}
-	};
+    template<class U,bool OK>
+    struct CompareHelper {
+        static bool equal(const U& u1, const U& u2) {
+            return u1 == u2;
+        }
+    };
 
-	template<class U>
-	struct CompareHelper<U, false> {
-		static bool equal(const U& u1, const U& u2) {
-			throw std::runtime_error("no equality operator exists for type");
-		}
-	};
+    template<class U>
+    struct CompareHelper<U, false> {
+        static bool equal(const U& u1, const U& u2) {
+            throw std::runtime_error("no equality operator exists for type");
+        }
+    };
 
-	typedef CompareHelper<ValueType, comparable<ValueType>::value> Compare;
+    typedef CompareHelper<ValueType, comparable<ValueType>::value> Compare;
 
 
 public:
 
-	ValueHolder(RefType v)
+    ValueHolder(RefType v)
         : IValueHolder(reinterpret_cast<const void*>(&m_ptr), false,
 #ifndef NO_RTTI
-					   typeid(ValueType),
+                       typeid(ValueType),
 #endif
-					   sizeof(ValueType),
-					   alignof(ValueType),
-					   ::std::is_pod<ValueType>::value,
-					   ::std::is_integral<ValueType>::value,
-					   ::std::is_floating_point<ValueType>::value,
-					   ::std::is_pointer<ValueType>::value,
+                       sizeof(ValueType),
+                       alignof(ValueType),
+                       ::std::is_pod<ValueType>::value,
+                       ::std::is_integral<ValueType>::value,
+                       ::std::is_floating_point<ValueType>::value,
+                       ::std::is_pointer<ValueType>::value,
                        ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
           m_value(v), m_ptr(&v) {
@@ -547,48 +553,49 @@ public:
         static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
     }
 
-	~ValueHolder() noexcept {
-	}
+    ~ValueHolder() noexcept {
+    }
 
-	ValueHolder(const ValueHolder&) = delete;
-	ValueHolder& operator=(ValueHolder) = delete;
+    ValueHolder(const ValueHolder&) = delete;
+    ValueHolder& operator=(ValueHolder) = delete;
 
-	IValueHolder* clone() const override {
-		return Cloner::clone(this);
-	}
+    IValueHolder* clone() const override {
+        return Cloner::clone(this);
+    }
 
-	virtual bool equals(const IValueHolder* rhs) const override {
-		if (rhs != nullptr) {
-			try {
-				rhs->throwCast();
-			} catch (const ValueType* ptr) {
-				return Compare::equal(m_value, *ptr);
-			} catch (...) {}
-		}
-		return false;
-	}
+    virtual bool equals(const IValueHolder* rhs) const override {
+        if (rhs != nullptr) {
+            try {
+                rhs->throwCast();
+            } catch (const ValueType* ptr) {
+                return Compare::equal(m_value, *ptr);
+            } catch (...) {}
+        }
+        return false;
+    }
 
+    virtual bool assign(const VariantValue& rhs) override;
 
-	virtual ::std::string convertToString() const override {
+    virtual ::std::string convertToString() const override {
             return ::std::move(strconv::toString(m_value));
-	}
+    }
 
-	virtual number_return convertToNumber(NumberType t) const {
-		number_return r;
-		if (t == NumberType::INTEGER) {
-			r.i = ::convertToInteger(m_value);
-		} else {
-			r.f = ::convertToFloatingPoint(m_value);
-		}
-		return r;
-	}
+    virtual number_return convertToNumber(NumberType t) const {
+        number_return r;
+        if (t == NumberType::INTEGER) {
+            r.i = ::convertToInteger(m_value);
+        } else {
+            r.f = ::convertToFloatingPoint(m_value);
+        }
+        return r;
+    }
 
-	virtual void throwCast() const {
-		throw &m_value;
-	}
+    virtual void throwCast() const {
+        throw &m_value;
+    }
 
 private:
-	RefType m_value;
+    RefType m_value;
     const void* const m_ptr;
 };
 
@@ -675,6 +682,7 @@ public:
         return false;
     }
 
+    virtual bool assign(const VariantValue& rhs) override;
 
     virtual ::std::string convertToString() const override {
             return ::std::move(strconv::toString(m_value));
@@ -1024,7 +1032,7 @@ private:
             // something must be returned in order to compile, but this value should never be read
             return *reinterpret_cast<type*>(const_cast<void*>(holder->ptrToValue()));
         }
-        static type value(const IValueHolder* holder) {
+        static type& value(const IValueHolder* holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -1032,12 +1040,12 @@ private:
     template<class ValueType>
     struct impossibleConversion<ValueType&> {
         typedef ValueType& type;
-        static type value(const IValueHolder* holder, bool * success) {
+        static type& value(const IValueHolder* holder, bool * success) {
 			if (success != nullptr) *success = false;
             // something must be returned in order to compile, but this value should never be read
             return *reinterpret_cast<ValueType*>(const_cast<void*>(holder->ptrToValue()));
 		}
-        static type value(const IValueHolder* holder) {
+        static type& value(const IValueHolder* holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -1050,7 +1058,7 @@ private:
             // something must be returned in order to compile, but this value should never be read
             return *reinterpret_cast<ValueType*>(const_cast<void*>(holder->ptrToValue()));
 		}
-        static type value(const IValueHolder* holder) {
+        static ValueType& value(const IValueHolder* holder) {
 			throw std::runtime_error("failed conversion");
 		}
 	};
@@ -1068,6 +1076,9 @@ public:
 		}
 		return *ptr;
     }
+
+
+    bool assign(const VariantValue& v);
 
     template<class ValueType> using converter = typename
                 Select<std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
@@ -1088,10 +1099,8 @@ public:
 
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
-            //if (std::is_const<ValueType>::value || !impl()->isConst()) {
-                if (success != nullptr) * success = true;
-                return *ptrc;
-            //}
+            if (success != nullptr) * success = true;
+            return *ptrc;
         }
         auto pptr = isAPriv<const typename normalize_type<ValueType>::ptr_type>();
         if (pptr != nullptr) {
@@ -1108,6 +1117,10 @@ public:
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
             return *ptrc;
+        }
+        auto pptr = isAPriv<const typename normalize_type<ValueType>::ptr_type>();
+        if (pptr != nullptr) {
+            return **pptr;
         }
         return converter<ValueType>::value(impl());
 	}
@@ -1132,6 +1145,11 @@ public:
             if (success != nullptr) * success = true;
             return ::std::forward<ValueType>(*const_cast<typename normalize_type<ValueType>::ptr_type>(ptrc));
         }
+        auto pptr = isAPriv<const typename normalize_type<ValueType>::ptr_type>();
+        if (pptr != nullptr) {
+            if (success != nullptr) * success = true;
+            return ::std::forward<ValueType>(*const_cast<typename normalize_type<ValueType>::ptr_type>(*pptr));
+        }
 
         return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl(), success));
 	}
@@ -1143,7 +1161,10 @@ public:
         if (ptrc != nullptr) {
             return ::std::forward<ValueType>(*const_cast<typename normalize_type<ValueType>::ptr_type>(ptrc));
         }
-
+        auto pptr = isAPriv<const typename normalize_type<ValueType>::ptr_type>();
+        if (pptr != nullptr) {
+            return ::std::forward<ValueType>(*const_cast<typename normalize_type<ValueType>::ptr_type>(*pptr));
+        }
         return ::std::forward<typename converter<ValueType>::type>(converter<ValueType>::value(impl()));
 	}
 
@@ -1292,6 +1313,35 @@ private:
 
     void destroyEmbedded();
 };
+namespace {
 
+template<class T, bool>
+struct copy_helper {
+    static bool assign(T& value, const VariantValue& rhs) {
+        try {
+            value = rhs.convertToThrow<T>();
+            return true;
+        } catch(...) {
+            return false;
+        }
+    }
+};
 
+template<class T>
+struct copy_helper<T,false> {
+    static bool assign(const T&, const VariantValue&) { return false; }
+};
+}
+template<class T>
+bool ValueHolder<T>::assign(const VariantValue& rhs) {
+    return copy_helper<ValueType, !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value>::assign(m_value, rhs);
+}
+template<class T>
+bool ValueHolder<T&>::assign(const VariantValue& rhs) {
+    return copy_helper<ValueType, !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value>::assign(m_value, rhs);
+}
+template<class T>
+bool ValueHolder<T&&>::assign(const VariantValue& rhs) {
+    return copy_helper<ValueType, !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value>::assign(m_value, rhs);
+}
 #endif /* VARIANT_H */

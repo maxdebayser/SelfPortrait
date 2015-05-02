@@ -24,5 +24,8 @@ function testVariant()
     TS_ASSERT [[ type(n21) == 'number' ]]
     TS_ASSERT [[ n21 == 8 ]]
 
+    v2:assign(34)
+    TS_ASSERT [[ v2:tonumber() == 34 ]]
+
     return false
 end

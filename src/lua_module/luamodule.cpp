@@ -46,7 +46,8 @@ const struct luaL_Reg Lua_Variant::lib_m[] = {
 
 void Lua_Variant::initialize()
 {
-	methods["tostring"]        = exception_translator<tostring>;
+    methods["assign"]        = exception_translator<assign>;
+    methods["tostring"]        = exception_translator<tostring>;
 	methods["tonumber"]        = exception_translator<tonumber>;
 	methods["isValid"]         = exception_translator<isValid>;
 	methods["isStdString"]     = exception_translator<isStdString>;
@@ -56,6 +57,7 @@ void Lua_Variant::initialize()
 	methods["isPOD"]           = exception_translator<isPOD>;
 	methods["sizeOf"]          = exception_translator<sizeOf>;
 	methods["alignOf"]         = exception_translator<alignOf>;
+    methods["ptrToValue"]  = exception_translator<ptrToValue>;
     methods["class"]           = exception_translator<_class>;
 }
 
@@ -193,6 +195,15 @@ int Lua_Variant::newInstance(lua_State* L)
 	return 1;
 }
 
+int Lua_Variant::assign(lua_State* L)
+{
+    Lua_Variant* v = checkUserData(L);
+    VariantValue arg = Lua_Variant::getFromStack(L, 2);
+
+    lua_pushboolean(L, v->m_variant.assign(arg));
+    return 1;
+}
+
 int Lua_Variant::tostring(lua_State* L)
 {
 	Lua_Variant* v = checkUserData(L);
@@ -320,6 +331,12 @@ int Lua_Variant::alignOf(lua_State* L)
 	return 1;
 }
 
+int Lua_Variant::ptrToValue(lua_State* L)
+{
+    Lua_Variant* v = checkUserData(L);
+    LuaUtils::LuaValue<size_t>::pushValue(L, reinterpret_cast<size_t>(v->m_variant.ptrToValue()));
+    return 1;
+}
 int Lua_Variant::method_stub(lua_State* L)
 {
     Lua_Class& c = *Lua_Class::checkUserData(L, lua_upvalueindex(1));

@@ -274,3 +274,29 @@ void VariantTestSuite::testLuaAPI()
 
     LuaUtils::callFunc<bool>(L, "testVariant");
 }
+
+
+void VariantTestSuite::testAssignement()
+{
+    VariantValue v1(33);
+    bool ok = false;
+
+    int val1 = v1.convertTo<int>(&ok);
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(val1, 33);
+
+    v1.assign(35);
+
+    ok = false;
+    int val2 = v1.convertTo<int>(&ok);
+    TS_ASSERT(ok);
+    TS_ASSERT_EQUALS(val2, 35);
+
+    VariantValue v2;
+    v2.construct<int&>(val2);
+
+    v2.assign(45);
+
+    TS_ASSERT_EQUALS(val2, 45);
+
+}
