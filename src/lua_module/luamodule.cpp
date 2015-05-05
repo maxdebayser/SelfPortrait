@@ -778,19 +778,13 @@ int Lua_Method::call(lua_State* L)
 	ret = m->m_method.callArgArray(obj, args); // if the method is static, it ignores the first arg
 
 	if (ret.isValid()) {
-
-		if (ret.isArithmetical()) {
-			lua_pushnumber(L, ret.convertTo<lua_Number>());
-		} else if (ret.isStdString()) {
-			lua_pushstring(L, ret.convertTo<std::string>().c_str());
-		} else {
-            Class clazz;
+        Class clazz;
 #ifndef NO_RTTI
+        if (!ret.isArithmetical()) {
             clazz = Class::lookup(ret.typeId());
+        }
 #endif
-            Lua_Variant::create(L, clazz, std::move(ret));
-		}
-
+        Lua_Variant::create(L, clazz, std::move(ret));
 		return 1;
 	} else {
 		return 0;
@@ -904,17 +898,13 @@ int Lua_Attribute::get(lua_State* L)
 	}
 
 	VariantValue ret = c->m_attribute.get(obj);
-	if (ret.isArithmetical()) {
-		lua_pushnumber(L, ret.convertTo<lua_Number>());
-	} else if (ret.isStdString()) {
-		lua_pushstring(L, ret.convertTo<std::string>().c_str());
-	} else {
-        Class clazz;
+    Class clazz;
 #ifndef NO_RTTI
+    if (!ret.isArithmetical()) {
         clazz = Class::lookup(ret.typeId());
+    }
 #endif
-        Lua_Variant::create(L, clazz, std::move(ret));
-	}
+    Lua_Variant::create(L, clazz, std::move(ret));
 
 	return 1;
 }
@@ -1022,17 +1012,13 @@ int Lua_Function::call(lua_State* L)
 
 	if (ret.isValid()) {
 
-		if (ret.isArithmetical()) {
-			lua_pushnumber(L, ret.convertTo<lua_Number>());
-		} else if (ret.isStdString()) {
-			lua_pushstring(L, ret.convertTo<std::string>().c_str());
-		} else {      
-            Class clazz;
+        Class clazz;
 #ifndef NO_RTTI
+        if (!ret.isArithmetical()) {
             clazz = Class::lookup(ret.typeId());
+        }
 #endif
-            Lua_Variant::create(L, clazz, std::move(ret));
-		}
+        Lua_Variant::create(L, clazz, std::move(ret));
 		return 1;
 	} else {
 		return 0;
@@ -1212,7 +1198,9 @@ int Lua_Proxy::reference(lua_State* L)
     VariantValue v = p->m_proxy.reference(c->wrapped());
     Class clazz;
 #ifndef NO_RTTI
-    clazz = Class::lookup(v.typeId());
+    if (!v.isArithmetical()) {
+        clazz = Class::lookup(v.typeId());
+    }
 #endif
     Lua_Variant::create(L, clazz, std::move(v));
 

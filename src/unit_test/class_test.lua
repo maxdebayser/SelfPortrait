@@ -54,7 +54,7 @@ function testClass()
     TS_ASSERT [[not base2Method1:isVolatile()]]
     TS_ASSERT [[not base2Method1:isStatic()]]
     TS_ASSERT [[base2Method1:numberOfArguments() == 0]]
-    TS_ASSERT [[base2Method1:call(b2Inst) == 6]]
+    TS_ASSERT [[base2Method1:call(b2Inst):tonumber() == 6]]
 
     local testConstructors = Test1Class:constructors()
     local testAttributes   = Test1Class:attributes()
@@ -78,12 +78,12 @@ function testClass()
 
     local testInst1 = defaultConstr:call()
     TS_ASSERT [[testInst1:isValid()]]
-    TS_ASSERT [[attr:get(testInst1) == 3]]
+    TS_ASSERT [[attr:get(testInst1):tonumber() == 3]]
 
     local testInst2 = intConstr:call(77);
 
     TS_ASSERT [[testInst2:isValid()]]
-    TS_ASSERT [[attr:get(testInst2) == 77]]
+    TS_ASSERT [[attr:get(testInst2):tonumber() == 77]]
 
     local methods = Test1Class:methods();
 
@@ -108,7 +108,7 @@ function testClass()
     TS_ASSERT [[not base1Method1:isVolatile()]]
     TS_ASSERT [[base1Method1:returnSpelling() == "int"]]
     TS_ASSERT [[base1Method1:numberOfArguments() == 0]]
-    TS_ASSERT [[base1Method1:call(testInst2) == 5]]
+    TS_ASSERT [[base1Method1:call(testInst2):tonumber() == 5]]
 
     TS_ASSERT [[base2Method1:name() == "base2Method1"]]
     TS_ASSERT [[base2Method1:isConst()]]
@@ -116,7 +116,7 @@ function testClass()
     TS_ASSERT [[not base2Method1:isVolatile()]]
     TS_ASSERT [[base2Method1:returnSpelling() == "int"]]
     TS_ASSERT [[base2Method1:numberOfArguments() == 0]]
-    TS_ASSERT [[base2Method1:call(testInst2) == 6]]
+    TS_ASSERT [[base2Method1:call(testInst2):tonumber() == 6]]
 
     TS_ASSERT [[method2:name() == "method2"]]
     TS_ASSERT [[not method2:isConst()]]
@@ -125,7 +125,7 @@ function testClass()
     TS_ASSERT [[method2:returnSpelling() == "double"]]
     TS_ASSERT [[method2:numberOfArguments() == 1]]
     TS_ASSERT [[method2:argumentSpellings()[1] == "double"]]
-    TS_ASSERT [[method2:call(testInst2, 2) == 6.28]]
+    TS_ASSERT [[method2:call(testInst2, 2):tonumber() == 6.28]]
 
     TS_ASSERT [[staticMethod:name() == "staticMethod"]]
     TS_ASSERT [[not staticMethod:isConst()]]
@@ -133,7 +133,7 @@ function testClass()
     TS_ASSERT [[not staticMethod:isVolatile()]]
     TS_ASSERT [[staticMethod:returnSpelling() == "double"]]
     TS_ASSERT [[staticMethod:numberOfArguments() == 0]]
-    TS_ASSERT [[staticMethod:call() == 3.14]]
+    TS_ASSERT [[staticMethod:call():tonumber() == 3.14]]
 
     local searched = Test1Class:findSuperClass(function(c) return c:simpleName() == "TestBase1" end)
     TS_ASSERT(searched)

@@ -36,8 +36,8 @@ function testConstructor()
 
     local v1 = default:call()
 
-    TS_ASSERT[[ attr1:get(v1) == 101 ]]
-    TS_ASSERT[[ attr2:get(v1) == 102 ]]
+    TS_ASSERT[[ attr1:get(v1):tonumber() == 101 ]]
+    TS_ASSERT[[ attr2:get(v1):tonumber() == 102 ]]
 
     local cons1Arg = cons["int"]
     TS_ASSERT(cons1Arg)
@@ -46,8 +46,8 @@ function testConstructor()
     local v2 = cons1Arg:call(33)
 
     TS_ASSERT(v2)
-    TS_ASSERT[[ attr1:get(v2) == 33]]
-    TS_ASSERT[[ attr2:get(v2) == 103 ]]
+    TS_ASSERT[[ attr1:get(v2):tonumber() == 33]]
+    TS_ASSERT[[ attr2:get(v2):tonumber() == 103 ]]
 
 
     local cons2Arg = cons["int,int"]
@@ -57,8 +57,8 @@ function testConstructor()
     local v3 = cons2Arg:call(44, 88)
 
     TS_ASSERT(v3)
-    TS_ASSERT[[ attr1:get(v3) == 44 ]]
-    TS_ASSERT[[ attr2:get(v3) == 88 ]]
+    TS_ASSERT[[ attr1:get(v3):tonumber() == 44 ]]
+    TS_ASSERT[[ attr2:get(v3):tonumber() == 88 ]]
 
     local copyCons = cons["const ConstructorTest::Test &"]
     TS_ASSERT(copyCons)
@@ -66,8 +66,8 @@ function testConstructor()
 
     local v4 = copyCons:call(v3)
     TS_ASSERT(v4)
-    TS_ASSERT[[ attr1:get(v4) == 44 ]]
-    TS_ASSERT[[ attr2:get(v4) == 88 ]]
+    TS_ASSERT[[ attr1:get(v4):tonumber() == 44 ]]
+    TS_ASSERT[[ attr2:get(v4):tonumber() == 88 ]]
 
 
 	local searched = TestClass:findConstructor(function(c) return c:numberOfArguments() == 1 and c:argumentSpellings()[1] == "int" end)
@@ -76,14 +76,14 @@ function testConstructor()
 
     local v5 = TestClass:construct()
 
-    TS_ASSERT[[ attr1:get(v5) == 101 ]]
-    TS_ASSERT[[ attr2:get(v5) == 102 ]]
+    TS_ASSERT[[ attr1:get(v5):tonumber() == 101 ]]
+    TS_ASSERT[[ attr2:get(v5):tonumber() == 102 ]]
 
     local v6 = TestClass:construct(44, 88)
 
     TS_ASSERT(v6)
-    TS_ASSERT[[ attr1:get(v6) == 44 ]]
-    TS_ASSERT[[ attr2:get(v6) == 88 ]]
+    TS_ASSERT[[ attr1:get(v6):tonumber() == 44 ]]
+    TS_ASSERT[[ attr2:get(v6):tonumber() == 88 ]]
 
 
 print("lua checkpoint 1")

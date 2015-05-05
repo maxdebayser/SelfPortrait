@@ -35,7 +35,7 @@ function testProxy()
 
 	TS_ASSERT(handle)
 
-	TS_ASSERT[[ m1:call(handle, 3, 5) == 15 ]]
+        TS_ASSERT[[ m1:call(handle, 3, 5):tonumber() == 15 ]]
 
 	local client = Class.lookup("ProxyTest::Client")
 
@@ -54,7 +54,7 @@ function testProxy()
 
 	setter:call(cinst, handle)
 
-	TS_ASSERT[[ doSomething:call(cinst, 3) == 6 ]]
+        TS_ASSERT[[ doSomething:call(cinst, 3):tonumber() == 6 ]]
 
     return true
 end

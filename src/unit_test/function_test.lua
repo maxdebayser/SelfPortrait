@@ -17,15 +17,15 @@ function testFunction()
 
     TS_ASSERT(func1)
     TS_ASSERT[[ func1:numberOfArguments() == 2 ]]
-    TS_ASSERT[[ func1:call(3, 5) == 8 ]]
-    TS_ASSERT[[ func1:call(2, 4) == 6 ]]
+    TS_ASSERT[[ func1:call(3, 5):tonumber() == 8 ]]
+    TS_ASSERT[[ func1:call(2, 4):tonumber() == 6 ]]
 
 
     local func2 = funcs["int,int"]
     TS_ASSERT(func2)
     TS_ASSERT[[ func2:numberOfArguments() == 2 ]]
-    TS_ASSERT[[ func2:call(3.3, 5.5) == 8 ]]
-    TS_ASSERT[[ func2:call(2, 4) == 6 ]]
+    TS_ASSERT[[ func2:call(3.3, 5.5):tonumber() == 8 ]]
+    TS_ASSERT[[ func2:call(2, 4):tonumber() == 6 ]]
 
 
     return true
@@ -50,10 +50,10 @@ function testReturnByValue()
     local c = Function.lookup("FunctionTest::returnObjectByValue"):call()
 
     TS_ASSERT(c)
-    TS_ASSERT[[ methods["id"]:call(c) == 33 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 33 ]]
 
     local copies = methods["numberOfCopies"]:call()
-    TS_ASSERT[[ copies == 0 ]]
+    TS_ASSERT[[ copies:tonumber() == 0 ]]
 
     return true
 end
@@ -66,16 +66,16 @@ function testReturnByReference()
 
     TS_ASSERT(c)
     methods["changeId"]:call(c, 45)
-    TS_ASSERT[[ methods["id"]:call(c) == 45 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 45 ]]
 
     methods["changeId"]:call(c, 35)
-    TS_ASSERT[[ methods["id"]:call(c) == 35 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 35 ]]
 
     local c2 = Function.lookup("FunctionTest::returnObjectByReference"):call()
-    TS_ASSERT[[ methods["id"]:call(c2) == 35 ]]
+    TS_ASSERT[[ methods["id"]:call(c2):tonumber() == 35 ]]
 
     local copies = methods["numberOfCopies"]:call()
-    TS_ASSERT[[ copies == 0 ]]
+    TS_ASSERT[[ copies:tonumber() == 0 ]]
 
     return true
 end
@@ -87,13 +87,13 @@ function testReturnByConstReference()
     local c = Function.lookup("FunctionTest::returnObjectByConstReference"):call()
 
     TS_ASSERT(c)
-    TS_ASSERT[[ methods["id"]:call(c) == 888 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 888 ]]
     if pcall( function() methods["changeId"]:call(c, 999) end) then
         TS_FAIL("expected exception when changing const object")
     end
 
     local copies = methods["numberOfCopies"]:call()
-    TS_ASSERT[[ copies == 0 ]]
+    TS_ASSERT[[ copies:tonumber() == 0 ]]
     return true
 end
 
@@ -103,16 +103,16 @@ function testParameterByValue()
 
     local c = constr:call(99)
     TS_ASSERT(c)
-    TS_ASSERT[[ methods["id"]:call(c) == 99 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 99 ]]
 
     local id = Function.lookup("FunctionTest::paramByValue"):call(c)
-    TS_ASSERT[[ id == 99 ]]
+    TS_ASSERT[[ id:tonumber() == 99 ]]
 
     local copies = methods["numberOfCopies"]:call()
     local moves = methods["numberOfMoves"]:call()
 
-    TS_ASSERT[[ copies == 0 ]] --estranho
-    TS_ASSERT[[ moves == 1 ]]
+    TS_ASSERT[[ copies:tonumber() == 0 ]] --estranho
+    TS_ASSERT[[ moves:tonumber() == 1 ]]
 
     return true
 end
@@ -123,17 +123,17 @@ function testParameterByReference()
 
     local c = constr:call(99)
     TS_ASSERT(c)
-    TS_ASSERT[[ methods["id"]:call(c) == 99 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 99 ]]
 
     local id = Function.lookup("FunctionTest::paramByReference"):call(c)
-    TS_ASSERT[[ id == 100 ]]
-    TS_ASSERT[[ methods["id"]:call(c) == 100 ]]
+    TS_ASSERT[[ id:tonumber() == 100 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 100 ]]
 
     local copies = methods["numberOfCopies"]:call()
     local moves = methods["numberOfMoves"]:call()
 
-    TS_ASSERT[[ copies == 0 ]] --estranho
-    TS_ASSERT[[ moves == 0 ]]
+    TS_ASSERT[[ copies:tonumber() == 0 ]] --estranho
+    TS_ASSERT[[ moves:tonumber() == 0 ]]
     return true
 end
 
@@ -143,16 +143,16 @@ function testParameterByConstReference()
 
     local c = constr:call(99)
     TS_ASSERT(c)
-    TS_ASSERT[[ methods["id"]:call(c) == 99 ]]
+    TS_ASSERT[[ methods["id"]:call(c):tonumber() == 99 ]]
 
     local id = Function.lookup("FunctionTest::paramByConstReference"):call(c)
-    TS_ASSERT[[ id == 99 ]]
+    TS_ASSERT[[ id:tonumber() == 99 ]]
 
     local copies = methods["numberOfCopies"]:call()
     local moves = methods["numberOfMoves"]:call()
 
-    TS_ASSERT[[ copies == 0 ]] --estranho
-    TS_ASSERT[[ moves == 0 ]]
+    TS_ASSERT[[ copies:tonumber() == 0 ]] --estranho
+    TS_ASSERT[[ moves:tonumber() == 0 ]]
 
     return true
 end

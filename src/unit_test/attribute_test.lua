@@ -39,19 +39,19 @@ function testAttribute()
     TS_ASSERT(not attr1:isConst())
     TS_ASSERT(not attr1:isStatic())
 
-    TS_ASSERT[[ attr1:get(v1) == 101 ]]
+    TS_ASSERT[[ attr1:get(v1):tonumber() == 101 ]]
 
-    TS_ASSERT[[ v1.attr1 == 101 ]]
+    TS_ASSERT[[ v1.attr1:tonumber() == 101 ]]
 
     v1.attr1 = 102
 
-    TS_ASSERT[[ v1.attr1 == 102 ]]
+    TS_ASSERT[[ v1.attr1:tonumber() == 102 ]]
 
     --TS_ASSERT[[ v1:attr1 == 101 ]]
 
-    TS_ASSERT[[ attr1:get(v1) ~= 201 ]]
+    TS_ASSERT[[ attr1:get(v1):tonumber() ~= 201 ]]
     attr1:set(v1, 201)
-    TS_ASSERT[[ attr1:get(v1) == 201 ]]
+    TS_ASSERT[[ attr1:get(v1):tonumber() == 201 ]]
 
 	if pcall( function() attr1:get() end ) then
        TS_FAIL("expected exception when getting non-static attribute without object")
@@ -69,7 +69,7 @@ function testAttribute()
     TS_ASSERT(attr2:isConst())
     TS_ASSERT(not attr2:isStatic())
 
-    TS_ASSERT[[ attr2:get(v1) == 102 ]]
+    TS_ASSERT[[ attr2:get(v1):tonumber() == 102 ]]
 
     if pcall( function() attr2:set(v1, 201) end ) then
        TS_FAIL("expected exception when setting const attribute")
@@ -81,12 +81,12 @@ function testAttribute()
     TS_ASSERT(not attr3:isConst())
     TS_ASSERT(attr3:isStatic())
 
-    TS_ASSERT[[ attr3:get() == 103 ]]
+    TS_ASSERT[[ attr3:get():tonumber() == 103 ]]
     attr3:set(303)
-    TS_ASSERT[[ attr3:get() == 303 ]]
+    TS_ASSERT[[ attr3:get():tonumber() == 303 ]]
     -- reset
     attr3:set(103)
-    TS_ASSERT[[ attr3:get() == 103 ]]
+    TS_ASSERT[[ attr3:get():tonumber() == 103 ]]
 
     local attr4 = attrs["attr4"]
     TS_ASSERT(attr4)
@@ -94,7 +94,7 @@ function testAttribute()
     TS_ASSERT(attr4:isConst())
     TS_ASSERT(attr4:isStatic())
 
-    TS_ASSERT[[ attr4:get() == 104 ]]
+    TS_ASSERT[[ attr4:get():tonumber() == 104 ]]
 
     if pcall( function() attr4:set(204) end ) then
        TS_FAIL("expected exception when setting const static attribute")
