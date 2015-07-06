@@ -12,6 +12,41 @@
 
 namespace SelfPortraitLua {
 
+namespace impl {
+
+    int builtin_exception_translator(lua_State* L, lua_CFunction func)
+    {
+        try {
+            return func(L);
+        } catch(std::exception& ex) {
+            lua_pushstring(L, "caught C++ exception: ");
+            lua_pushstring(L, ex.what());
+            lua_concat(L,2);
+        } catch (...) {
+            lua_pushstring(L, "caught unknown C++ exception");
+        }
+
+        // call lua_error out of the catch block to make sure
+        // that the exception's destructor is called
+        // this is because lua_error calls longjmp and discards the error
+        lua_error(L);
+        return 0; //just to silence warnings
+    }
+
+}
+
+std::function<int(lua_State*, lua_CFunction)>& getExceptionTranslator()
+{
+    static std::function<int(lua_State*, lua_CFunction)> et = impl::builtin_exception_translator;
+    return et;
+}
+
+void setExceptionTranslator(std::function<int(lua_State*, lua_CFunction)> f)
+{
+    getExceptionTranslator() = f;
+}
+
+
 //=====================Definitions==============================================
 
 

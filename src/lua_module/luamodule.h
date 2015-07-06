@@ -30,27 +30,16 @@ public:
 
 
 
+void setExceptionTranslator(std::function<int(lua_State*, lua_CFunction)> f);
+std::function<int(lua_State*, lua_CFunction)>& getExceptionTranslator();
+
 /* For an explanation:
  * http://maxdebayser.blogspot.com.br/2012/11/semi-automatic-conversion-of-c.html
  */
 template<lua_CFunction func>
 static int exception_translator(lua_State* L)
 {
-    try {
-        return func(L);
-    } catch(std::exception& ex) {
-        lua_pushstring(L, "caught C++ exception: ");
-        lua_pushstring(L, ex.what());
-        lua_concat(L,2);
-    } catch (...) {
-        lua_pushstring(L, "caught unknown C++ exception");
-    }
-
-    // call lua_error out of the catch block to make sure
-    // that the exception's destructor is called
-    // this is because lua_error calls longjmp and discards the error
-    lua_error(L);
-    return 0; //just to silence warnings
+    return getExceptionTranslator()(L, func);
 }
 
 
