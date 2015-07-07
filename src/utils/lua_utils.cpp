@@ -97,7 +97,15 @@ namespace LuaUtils {
 	}
 
     int pushTraceBack(lua_State *L) {
+#ifdef LUA51
         lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+#else
+        lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+        if (lua_istable(L, -1)) {
+            lua_getfield(L, -1, "debug");
+            lua_remove(L, -2);
+        }
+#endif
         if (lua_istable(L, -1)) {
             lua_getfield(L, -1, "traceback");
             if (lua_isfunction(L, -1)) {

@@ -650,7 +650,7 @@ int Lua_Class::findAll(lua_State* L, MPtr ptr)
         lua_pushvalue(L, funcPos);
 		binding_mapper< Elem >::type::create(L, a);
 
-        if (lua_pcall(L, 1, 1, 0) != errIndex) {
+        if (lua_pcall(L, 1, 1, errIndex) != 0) {
             std::string msg = strconv::fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
 			lua_pop(L, 1);
             LuaUtils::removeTraceBack(L, errIndex);
