@@ -96,6 +96,29 @@ namespace LuaUtils {
         return 0;
 	}
 
+    int pushTraceBack(lua_State *L) {
+        lua_getfield(L, LUA_GLOBALSINDEX, "debug");
+        if (lua_istable(L, -1)) {
+            lua_getfield(L, -1, "traceback");
+            if (lua_isfunction(L, -1)) {
+                lua_remove(L, -2);
+                return lua_gettop(L);
+            } else {
+                lua_pop(L, 1);
+            }
+        } else {
+            lua_pop(L, 1);
+        }
+        return 0;
+    }
+
+    void removeTraceBack(lua_State* L, int errIndex) {
+        if (errIndex != 0) {
+            lua_remove(L, errIndex);
+        }
+    }
+
+
     LuaStateHolder::LuaStateHolder(lua_State* L, const string& addLuaPath, const string& addCPath)
         : m_L(L)
     {

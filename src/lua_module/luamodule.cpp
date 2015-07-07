@@ -606,18 +606,24 @@ int Lua_Class::findFirst(lua_State* L, MPtr ptr)
 	Lua_Class* c = checkUserData(L);
 
 	Elem a = (c->m_class.*ptr)([&](const Elem& a) -> bool {
-		luaL_checktype(L, -1, LUA_TFUNCTION);
-		lua_pushvalue(L, -1);
+        const int funcPos = lua_gettop(L);
+        luaL_checktype(L, funcPos, LUA_TFUNCTION);
+
+        const int errIndex = LuaUtils::pushTraceBack(L);
+
+        lua_pushvalue(L, funcPos);
 		binding_mapper<Elem>::type::create(L, a);
 
-		if (lua_pcall(L, 1, 1, 0) != 0) {
+        if (lua_pcall(L, 1, 1, errIndex) != 0) {
             std::string msg = strconv::fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
 			lua_pop(L, 1);
+            LuaUtils::removeTraceBack(L, errIndex);
 			throw LuaBindingException(msg);
 		}
 		luaL_checktype(L, -1, LUA_TBOOLEAN);
 		bool ret = lua_toboolean(L, -1);
 		lua_pop(L, 1);
+        LuaUtils::removeTraceBack(L, errIndex);
 		return ret;
 	});
 	if (a.isValid()) {
@@ -636,18 +642,24 @@ int Lua_Class::findAll(lua_State* L, MPtr ptr)
 	typedef typename ElemList::value_type Elem;
 
 	ElemList l = (c->m_class.*ptr)([&](const Elem& a) -> bool {
-		luaL_checktype(L, -1, LUA_TFUNCTION);
-		lua_pushvalue(L, -1);
+        const int funcPos = lua_gettop(L);
+        luaL_checktype(L, funcPos, LUA_TFUNCTION);
+
+        const int errIndex = LuaUtils::pushTraceBack(L);
+
+        lua_pushvalue(L, funcPos);
 		binding_mapper< Elem >::type::create(L, a);
 
-		if (lua_pcall(L, 1, 1, 0) != 0) {
+        if (lua_pcall(L, 1, 1, 0) != errIndex) {
             std::string msg = strconv::fmt_str("Error running anonymous lua function: %1", lua_tostring(L, -1));
 			lua_pop(L, 1);
+            LuaUtils::removeTraceBack(L, errIndex);
 			throw LuaBindingException(msg);
 		}
 		luaL_checktype(L, -1, LUA_TBOOLEAN);
 		bool ret = lua_toboolean(L, -1);
 		lua_pop(L, 1);
+        LuaUtils::removeTraceBack(L, errIndex);
 		return ret;
 	});
 
@@ -1177,6 +1189,7 @@ void LuaClosureWrapper::deleter::operator()(shared_state* s) const {
 
 VariantValue LuaClosureWrapper::operator()(const std::vector<VariantValue>& vargs) const {
 
+    const int errIndex = LuaUtils::pushTraceBack(L);
 
     lua_rawgeti(L, LUA_REGISTRYINDEX, ss->envIndex);
     luaL_checktype(L, -1, LUA_TFUNCTION);
@@ -1191,13 +1204,15 @@ VariantValue LuaClosureWrapper::operator()(const std::vector<VariantValue>& varg
         Lua_Variant::create(L, clazz, std::move(v));
     }
 
-    if (lua_pcall(L, vargs.size(), 1, 0) != 0) {
+    if (lua_pcall(L, vargs.size(), 1, errIndex) != 0) {
         std::string msg = strconv::fmt_str("Error running proxy method handler: %1", lua_tostring(L, -1));
         lua_pop(L, 1);
+        LuaUtils::removeTraceBack(L, errIndex);
         throw LuaBindingException(msg);
     }
     VariantValue ret = Lua_Variant::getFromStack(L, -1);
     lua_pop(L, 1);
+    LuaUtils::removeTraceBack(L, errIndex);
 
     return ret;
 }

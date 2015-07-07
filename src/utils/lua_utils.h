@@ -45,6 +45,10 @@ namespace LuaUtils {
 
     int stackDump(lua_State *L);
 
+    int pushTraceBack(lua_State *L);
+
+    void removeTraceBack(lua_State* L, int errIndex);
+
 	struct popper {
 		popper(lua_State* L, int size = 1) : m_L(L), m_size(size) {}
 		~popper() { if (m_size > 0) lua_pop(m_L, m_size); }
@@ -252,17 +256,21 @@ namespace LuaUtils {
 
 	template<class R, class... Args>
 	R callFuncPriv(lua_State* L, const std::string& name, const Args... args) {
-		luaL_checktype(L, -1, LUA_TFUNCTION);
+
+        const int funcPos = lua_gettop(L);
+        luaL_checktype(L, funcPos, LUA_TFUNCTION);
+        const int errIndex = LuaUtils::pushTraceBack(L);
+        lua_pushvalue(L, funcPos);
 
 		const int size = pushArgs(L, args...);
 
-		if (lua_pcall(L, size, LuaValue<R>::size(), 0) != 0) {
+        if (lua_pcall(L, size, LuaValue<R>::size(), errIndex) != 0) {
 			lua_pushfstring(L, "Error running function %s:\n", name.c_str());
 			lua_insert(L, -2);
 			lua_concat(L, 2);
 			lua_error(L);
 		}
-		popper p(L, LuaValue<R>::size());
+        popper p(L, LuaValue<R>::size()+1+(errIndex != 0));
 		return LuaValue<R>::getStackValue(L, -1);
 	}
 

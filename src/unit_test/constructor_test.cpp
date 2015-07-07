@@ -157,9 +157,11 @@ void ConstructorTestSuite::testLuaAPI()
 	LuaUtils::LuaStateHolder L;
     LuaUtils::addTestFunctionsAndPaths(&*L);
 
-    if (luaL_loadfile(L, strconv::fmt_str("%1/constructor_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,0)) {
+    const int errIndex = LuaUtils::pushTraceBack(L);
+    if (luaL_loadfile(L, strconv::fmt_str("%1/constructor_test.lua", srcpath()).c_str()) || lua_pcall(L,0,0,errIndex)) {
 		luaL_error(L, "cannot run config file: %s\n", lua_tostring(L, -1));
 	}
+    LuaUtils::removeTraceBack(L, errIndex);
 	LuaUtils::callFunc<bool>(L, "testConstructor");
 }
 
