@@ -116,7 +116,7 @@ int Lua_Variant::index(lua_State* L) {
             if (clazz.findMethod([&](const Method& m){ return m.name() == index; }).isValid()) {
                 LuaAdapter<Lua_Class>::create(L,clazz);
                 lua_pushstring(L, index);
-                lua_pushcclosure(L, method_stub, 2);
+                lua_pushcclosure(L, exception_translator<method_stub>, 2);
                 return 1;
 
             } else if ((attr = clazz.findAttribute([&](const Attribute& a){ return a.name() == index; })).isValid()) {
