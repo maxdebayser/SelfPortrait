@@ -1331,17 +1331,31 @@ template<class T>
 struct copy_helper<T,false> {
     static bool assign(const T&, const VariantValue&) { return false; }
 };
+
 }
+
+// Specialize this for problematic cases
+template<class T>
+struct really_assignable {
+    enum { value = !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value };
+};
+
+template<typename U, typename W>
+struct really_assignable<std::pair<const U, W>> {
+    enum { value = false };
+};
+
+
 template<class T>
 bool ValueHolder<T>::assign(const VariantValue& rhs) {
-    return copy_helper<ValueType, !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value>::assign(m_value, rhs);
+    return copy_helper<ValueType, really_assignable<T>::value>::assign(m_value, rhs);
 }
 template<class T>
 bool ValueHolder<T&>::assign(const VariantValue& rhs) {
-    return copy_helper<ValueType, !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value>::assign(m_value, rhs);
+    return copy_helper<ValueType, really_assignable<T>::value>::assign(m_value, rhs);
 }
 template<class T>
 bool ValueHolder<T&&>::assign(const VariantValue& rhs) {
-    return copy_helper<ValueType, !std::is_const<T>::value && std::is_copy_assignable<T>::value && !std::is_abstract<T>::value>::assign(m_value, rhs);
+    return copy_helper<ValueType, really_assignable<T>::value>::assign(m_value, rhs);
 }
 #endif /* VARIANT_H */

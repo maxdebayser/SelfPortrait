@@ -138,6 +138,32 @@ struct NonCopyable {
 	int m_i;
 };
 
+namespace my {
+template<typename T>
+T& value_ref();
+
+
+template<class T, class = decltype(value_ref<T>() = value_ref<T>() )>
+std::true_type  supports_assignment(const T&);
+std::false_type supports_assignment(...);
+
+template<class T> using assigneable = decltype(supports_assignment(value_ref<T>()));
+
+template<class S, class T>
+struct pair {
+    S first;
+    T second;
+
+    pair&
+    operator=(const pair& __p)
+    {
+  first = __p.first;
+  second = __p.second;
+  return *this;
+    }
+};
+
+}
 
 void VariantTestSuite::testNonCopyable()
 {
@@ -156,6 +182,11 @@ void VariantTestSuite::testNonCopyable()
 
     VariantValue v2;
     v2.construct<std::unique_ptr<int>>();
+
+
+    VariantValue v4;
+    typedef std::pair<const std::string, int> problematic_pair;
+    v4.construct<problematic_pair>();
 
 }
 
