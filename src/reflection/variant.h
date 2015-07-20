@@ -263,7 +263,7 @@ public:
 			bool isFloatingPoint,
 			bool isPointer,
 			bool isStdString,
-			bool isConst)
+            bool isConst) noexcept
         : m_offset(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this))
         , m_offsetToPtr(!valInStruct)
 #ifndef NO_RTTI
@@ -278,13 +278,13 @@ public:
         assert(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this) < 64);
     }
 
-	virtual IValueHolder* clone() const = 0;
+    virtual IValueHolder* clone() const = 0;
 	
 	virtual bool equals(const IValueHolder* rhs) const = 0;
 
-    virtual bool assign(const VariantValue& rhs) = 0;
+    virtual bool assign(const VariantValue& rhs) noexcept = 0;
 
-    void * ptrToValue() {
+    void * ptrToValue() noexcept {
         if (m_offsetToPtr) {
             void** ptr = reinterpret_cast<void**>(reinterpret_cast<size_t>(this) + m_offset);
             return *ptr;
@@ -294,7 +294,7 @@ public:
     }
 
 
-    const void * ptrToValue() const {
+    const void * ptrToValue() const noexcept {
         if (m_offsetToPtr) {
             void** ptr = reinterpret_cast<void**>(reinterpret_cast<size_t>(this) + m_offset);
             return *ptr;
@@ -309,27 +309,27 @@ public:
     }
 #endif
 	
-	::std::size_t sizeOf() const { return m_sizeOf; }
+    ::std::size_t sizeOf() const noexcept { return m_sizeOf; }
 	
-	::std::size_t alignOf() const { return m_alignOf; }
+    ::std::size_t alignOf() const noexcept { return m_alignOf; }
 	
-    bool isPOD() const { return m_category == static_cast<unsigned int>(TypeCategories::POD) || isIntegral() || isFloatingPoint() || isPointer(); }
+    bool isPOD() const noexcept { return m_category == static_cast<unsigned int>(TypeCategories::POD) || isIntegral() || isFloatingPoint() || isPointer(); }
 
-    bool isIntegral() const { return m_category == static_cast<unsigned int>(TypeCategories::INTEGRAL); }
+    bool isIntegral() const noexcept { return m_category == static_cast<unsigned int>(TypeCategories::INTEGRAL); }
 
-    bool isFloatingPoint() const { return m_category == static_cast<unsigned int>(TypeCategories::FLOATING); }
+    bool isFloatingPoint() const noexcept { return m_category == static_cast<unsigned int>(TypeCategories::FLOATING); }
 
-    bool isPointer() const { return m_category == static_cast<unsigned int>(TypeCategories::POINTER); }
+    bool isPointer() const noexcept { return m_category == static_cast<unsigned int>(TypeCategories::POINTER); }
 
-    bool isStdString() const { return m_category == static_cast<unsigned int>(TypeCategories::STDSTRING); }
+    bool isStdString() const noexcept { return m_category == static_cast<unsigned int>(TypeCategories::STDSTRING); }
 
-	bool isConst() const { return m_isConst; }
+    bool isConst() const noexcept { return m_isConst; }
 
 	virtual void throwCast() const = 0;
 	
-	virtual ::std::string convertToString() const = 0;
+    virtual ::std::string convertToString() const noexcept = 0;
 
-	virtual number_return convertToNumber(NumberType t) const = 0;
+    virtual number_return convertToNumber(NumberType t) const noexcept = 0;
 
 	virtual ~IValueHolder() noexcept {}
 	IValueHolder() = default;
@@ -366,8 +366,8 @@ class ValueHolder: public IValueHolder {
 
     template<class Dummy>
     struct CloneHelper<Dummy, false> {
-        static IValueHolder* clone(const ValueHolder*) {
-            throw std::runtime_error("type has no copy constructor");
+        static IValueHolder* clone(const ValueHolder*) noexcept {
+            return nullptr;
         }
     };
 
@@ -467,13 +467,13 @@ public:
         return false;
     }
 
-    virtual bool assign(const VariantValue& rhs) override;
+    virtual bool assign(const VariantValue& rhs) noexcept override;
 
-    virtual ::std::string convertToString() const override {
+    virtual ::std::string convertToString() const noexcept override {
             return ::std::move(strconv::toString(m_value));
     }
 
-    virtual number_return convertToNumber(NumberType t) const {
+    virtual number_return convertToNumber(NumberType t) const noexcept {
         number_return r;
         if (t == NumberType::INTEGER) {
             r.i = ::convertToInteger(m_value);
@@ -508,8 +508,8 @@ private:
 
     template<class Dummy>
     struct CloneHelper<Dummy, false> {
-        static IValueHolder* clone(const ValueHolder*) {
-            throw std::runtime_error("type has no copy constructor");
+        static IValueHolder* clone(const ValueHolder*) noexcept {
+            return nullptr;
         }
     };
 
@@ -574,13 +574,13 @@ public:
         return false;
     }
 
-    virtual bool assign(const VariantValue& rhs) override;
+    virtual bool assign(const VariantValue& rhs) noexcept override;
 
-    virtual ::std::string convertToString() const override {
+    virtual ::std::string convertToString() const noexcept override {
             return ::std::move(strconv::toString(m_value));
     }
 
-    virtual number_return convertToNumber(NumberType t) const {
+    virtual number_return convertToNumber(NumberType t) const noexcept {
         number_return r;
         if (t == NumberType::INTEGER) {
             r.i = ::convertToInteger(m_value);
@@ -616,8 +616,8 @@ private:
 
     template<class Dummy>
     struct CloneHelper<Dummy, false> {
-        static IValueHolder* clone(const ValueHolder*) {
-            throw std::runtime_error("type has no copy constructor");
+        static IValueHolder* clone(const ValueHolder*) noexcept {
+            return nullptr;
         }
     };
 
@@ -682,7 +682,7 @@ public:
         return false;
     }
 
-    virtual bool assign(const VariantValue& rhs) override;
+    virtual bool assign(const VariantValue& rhs) noexcept override;
 
     virtual ::std::string convertToString() const override {
             return ::std::move(strconv::toString(m_value));
@@ -1078,7 +1078,7 @@ public:
     }
 
 
-    bool assign(const VariantValue& v);
+    bool assign(const VariantValue& v) noexcept;
 
     template<class ValueType> using converter = typename
                 Select<std::is_integral<ValueType>::value || ::std::is_enum<ValueType>::value,
@@ -1317,7 +1317,7 @@ namespace {
 
 template<class T, bool>
 struct copy_helper {
-    static bool assign(T& value, const VariantValue& rhs) {
+    static bool assign(T& value, const VariantValue& rhs) noexcept {
         try {
             value = rhs.convertToThrow<T>();
             return true;
@@ -1329,7 +1329,7 @@ struct copy_helper {
 
 template<class T>
 struct copy_helper<T,false> {
-    static bool assign(const T&, const VariantValue&) { return false; }
+    static bool assign(const T&, const VariantValue&) noexcept { return false; }
 };
 
 }
@@ -1347,15 +1347,15 @@ struct really_assignable<std::pair<const U, W>> {
 
 
 template<class T>
-bool ValueHolder<T>::assign(const VariantValue& rhs) {
+bool ValueHolder<T>::assign(const VariantValue& rhs) noexcept {
     return copy_helper<ValueType, really_assignable<T>::value>::assign(m_value, rhs);
 }
 template<class T>
-bool ValueHolder<T&>::assign(const VariantValue& rhs) {
+bool ValueHolder<T&>::assign(const VariantValue& rhs) noexcept {
     return copy_helper<ValueType, really_assignable<T>::value>::assign(m_value, rhs);
 }
 template<class T>
-bool ValueHolder<T&&>::assign(const VariantValue& rhs) {
+bool ValueHolder<T&&>::assign(const VariantValue& rhs) noexcept {
     return copy_helper<ValueType, really_assignable<T>::value>::assign(m_value, rhs);
 }
 #endif /* VARIANT_H */

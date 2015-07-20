@@ -61,9 +61,13 @@ VariantValue::VariantValue(const VariantValue& rhs)
     : m_embedded(rhs.m_embedded)
 {
     switch (m_embedded) {
-        case Types::DEFAULT:
+        case Types::DEFAULT: {
             new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
+            if (m_impl.get() == nullptr) {
+                throw std::runtime_error("type has no copy constructor");
+            }
             break;
+        }
         case Types::UINT8:
             new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
             break;
@@ -236,7 +240,7 @@ VariantValue& VariantValue::operator=(VariantValue&& rhs)
 	return *this;
 }
 
-bool VariantValue::assign(const VariantValue& v)
+bool VariantValue::assign(const VariantValue& v) noexcept
 {
     return impl()->assign(v);
 }
