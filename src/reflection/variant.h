@@ -274,8 +274,10 @@ public:
         , m_category(static_cast<unsigned int>(resolveCategory(isPod,isIntegral,isFloatingPoint,isPointer,isStdString)))
 		, m_isConst(isConst)
     {
+#ifdef DEBUG
         assert(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this) > 0);
         assert(reinterpret_cast<ptrdiff_t>(ptr)-reinterpret_cast<ptrdiff_t>(this) < 64);
+#endif
     }
 
     virtual IValueHolder* clone() const = 0;
