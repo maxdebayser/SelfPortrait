@@ -908,44 +908,44 @@ public:
 private:
 
 #ifndef NO_RTTI
-	template<class ValueType>
+    template<class ValueType>
     typename normalize_type<ValueType>::ptr_type isAPriv() const {
 
         const std::type_info& from = impl()->typeId();
-		const std::type_info& to   = typeid(ValueType);
+        const std::type_info& to   = typeid(ValueType);
 
-		if (from == to) {
+        if (from == to) {
             if (!impl()->isConst() || (impl()->isConst() && normalize_type<ValueType>::is_const)) {
                 return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(const_cast<void*>(impl()->ptrToValue()));
-			}
-		}
+            }
+        }
 
-		int offset;
-		bool possible;
-		if (conversion_cache<ValueType>::instance().conversionKnown(from, offset, possible)) {
-			if (possible) {
+        int offset;
+        bool possible;
+        if (conversion_cache::instance().conversionKnown(to, from, offset, possible)) {
+            if (possible) {
                 const bool implConst = impl()->isConst();
-				if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
+                if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
                     return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(reinterpret_cast<char*>(const_cast<void*>(impl()->ptrToValue()))+offset);
-				}
-			} else {
-				// conversion is known to fail, we won't even try
-				return nullptr;
-			}
-		}
+                }
+            } else {
+                // conversion is known to fail, we won't even try
+                return nullptr;
+            }
+        }
 
-		try {
+        try {
             impl()->throwCast();
-		} catch(typename normalize_type<ValueType>::ptr_type ptr) {
+        } catch(typename normalize_type<ValueType>::ptr_type ptr) {
             offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(impl()->ptrToValue());
-			conversion_cache<ValueType>::instance().registerConversion(from, offset, true);
-			return ptr;
-		} catch (...) {
-			conversion_cache<ValueType>::instance().registerConversion(from, 0, false);
-			return nullptr;
-		}
-		return nullptr;
-	}
+            conversion_cache::instance().registerConversion(to, from, offset, true);
+            return ptr;
+        } catch (...) {
+            conversion_cache::instance().registerConversion(to, from, 0, false);
+            return nullptr;
+        }
+        return nullptr;
+    }
 #else
 	template<class ValueType>
 	typename normalize_type<ValueType>::ptr_type isAPriv() const {

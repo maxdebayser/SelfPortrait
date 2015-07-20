@@ -11,12 +11,14 @@
 
 /** This cache keeps track of the dynamic_cast that can be done */
 
-class conversion_cache_base {
+class conversion_cache {
 public:
 
-    bool conversionKnown(const std::type_info& from, int& ptrOffset, bool &possible) const;
+    static conversion_cache& instance();
 
-    void registerConversion(const std::type_info& from, int ptrOffset, bool possible);
+    bool conversionKnown(const std::type_info& to, const std::type_info& from, int& ptrOffset, bool &possible) const;
+
+    void registerConversion(const std::type_info& to, const std::type_info& from, int ptrOffset, bool possible);
 
 private:
 
@@ -25,19 +27,9 @@ private:
         int ptrOffset;
     };
 
-    typedef std::unordered_map<std::type_index, entry> cache_t;
+    typedef std::unordered_map<std::type_index, std::unordered_map<std::type_index, entry>> cache_t;
 
     cache_t m_cache;
-};
-
-template<class To>
-class conversion_cache: public conversion_cache_base {
-public:
-
-	static conversion_cache& instance() {
-		static conversion_cache inst;
-		return inst;
-    }
 };
 
 #endif /* CONVERSION_CACHE */
