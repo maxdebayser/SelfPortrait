@@ -130,7 +130,7 @@ namespace alignment_helper {
     }
 
     constexpr unsigned int alignement_bits(uint64_t x) {
-        return (64 - nlz(x >> 1));
+        return (64 - nlz(x));
     }
 
     enum {
@@ -144,7 +144,7 @@ struct PointerPacker_x86_64 {
 
     enum {
         addr_bits = 48,
-        lo_bits = alignment_helper::alignement_bits(alignof(T)),
+        lo_bits = alignment_helper::alignement_bits(alignof(T)) - 1,
         hi_mask = ~((1ull << addr_bits) - 1),
         lo_mask = ((1ull << lo_bits) - 1),
         usable_bits = addr_bits - lo_bits
@@ -221,6 +221,10 @@ public:
         max_sizeof_bits = 16
     };
 
+    enum {
+        align_storage = alignment_helper::max_alignment_bits - 1
+    };
+
     enum class TypeCategories {
         POD = 0,
         INTEGRAL = 1,
@@ -270,7 +274,7 @@ public:
         , m_typeId(PointerPacker<std::type_info>::ptr_pack(&typeId))
 #endif
 		, m_sizeOf(sizeOf)
-		, m_alignOf(alignOf)
+        , m_alignOf(alignOf >> 1)
         , m_category(static_cast<unsigned int>(resolveCategory(isPod,isIntegral,isFloatingPoint,isPointer,isStdString)))
 		, m_isConst(isConst)
     {
@@ -313,7 +317,12 @@ public:
 	
     ::std::size_t sizeOf() const noexcept { return m_sizeOf; }
 	
-    ::std::size_t alignOf() const noexcept { return m_alignOf; }
+    ::std::size_t alignOf() const noexcept {
+        if (m_alignOf == 0) {
+            return 1;
+        }
+        return m_alignOf << 1;
+    }
 	
     bool isPOD() const noexcept { return m_category == static_cast<unsigned int>(TypeCategories::POD) || isIntegral() || isFloatingPoint() || isPointer(); }
 
@@ -348,7 +357,7 @@ private:
 
     const unsigned long m_sizeOf: max_sizeof_bits;
 
-    const unsigned long m_alignOf: alignment_helper::max_alignment_bits;
+    const unsigned long m_alignOf: align_storage;
 
     const unsigned int m_category: 3;
 	const unsigned int m_isConst : 1;
@@ -412,8 +421,8 @@ public:
                        normalize_type<T>::is_const),
         m_value( ::std::forward<Args>(args)...)
     {
-        static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
-        static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
+        static_assert(alignof(ValueType) <= alignment_helper::max_alignment, "unsupported alignment size");
+        static_assert(sizeof(ValueType) <= IValueHolder::max_sizeof, "unsupported type size");
     }
 
     ~ValueHolder() noexcept{
@@ -551,8 +560,8 @@ public:
                        ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
           m_value(v), m_ptr(&v) {
-        static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
-        static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
+        static_assert(alignof(ValueType) <= alignment_helper::max_alignment, "unsupported alignment size");
+        static_assert(sizeof(ValueType) <= IValueHolder::max_sizeof, "unsupported type size");
     }
 
     ~ValueHolder() noexcept {
@@ -659,8 +668,8 @@ public:
                        ::std::is_same<std::string, ValueType>::value,
                        normalize_type<T>::is_const),
           m_value(v), m_ptr(&v) {
-        static_assert(alignof(ValueType) < alignment_helper::max_alignment, "unsupported alignment size");
-        static_assert(sizeof(ValueType) < IValueHolder::max_sizeof, "unsupported type size");
+        static_assert(alignof(ValueType) <= alignment_helper::max_alignment, "unsupported alignment size");
+        static_assert(sizeof(ValueType) <= IValueHolder::max_sizeof, "unsupported type size");
     }
 
     ~ValueHolder() noexcept {

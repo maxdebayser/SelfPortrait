@@ -23,6 +23,7 @@ public:
     void testEnum();
     void testPrintable();
     void testAssignement();
+    void testAlignemnt();
 };
 
 

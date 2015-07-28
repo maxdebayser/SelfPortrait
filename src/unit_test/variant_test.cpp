@@ -332,3 +332,56 @@ void VariantTestSuite::testAssignement()
     TS_ASSERT_EQUALS(val2, 45);
 
 }
+
+struct AlignTest {
+    long double l;
+};
+
+void VariantTestSuite::testAlignemnt()
+{
+    {
+        VariantValue v;
+        v.construct<char>(0);
+        TS_ASSERT_EQUALS(alignof(char), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<short>(0);
+        TS_ASSERT_EQUALS(alignof(short), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<int>(0);
+        TS_ASSERT_EQUALS(alignof(int), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<long int>(0);
+        TS_ASSERT_EQUALS(alignof(long int), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<long long int>(0);
+        TS_ASSERT_EQUALS(alignof(long long int), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<double>(0);
+        TS_ASSERT_EQUALS(alignof(double), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<long double>(0);
+        TS_ASSERT_EQUALS(alignof(long double), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<int*>(nullptr);
+        TS_ASSERT_EQUALS(alignof(int*), v.alignOf());
+    }
+    {
+        VariantValue v;
+        v.construct<AlignTest>();
+        TS_ASSERT_EQUALS(alignof(AlignTest), v.alignOf());
+    }
+}
