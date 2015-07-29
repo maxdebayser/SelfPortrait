@@ -93,7 +93,10 @@ public:
 	void set(VariantValue& object, const VariantValue& value) const;
 	void set(const VariantValue& object, const VariantValue& value) const;
 
-	bool isValid() const;
+    bool isValid() const
+    {
+        return (m_impl != nullptr);
+    }
 
 	Class getClass() const;
 	
@@ -102,7 +105,12 @@ private:
 
 	Attribute(AbstractAttributeImpl* impl, ClassImpl *cimpl);
 
-	void check_valid() const;
+    void check_valid() const
+    {
+        if (!isValid()) {
+            throw std::runtime_error("Invalid use of uninitialized Attribute handle");
+        }
+    }
 
 	
 	AbstractAttributeImpl* m_impl;
@@ -146,7 +154,11 @@ public:
 	Constructor(Constructor&& rhs);
 	Constructor& operator=(Constructor&& rhs);
 
-	bool isValid() const;
+    bool isValid() const
+    {
+        return m_impl != nullptr;
+    }
+
 
 	::std::size_t numberOfArguments() const;
 	::std::vector< ::std::string> argumentSpellings() const;
@@ -172,7 +184,12 @@ public:
 private:
 	Constructor(ConstructorImpl* impl, ClassImpl* cimpl);
 
-	void check_valid() const;
+    void check_valid() const
+    {
+        if (!isValid()) {
+            throw std::runtime_error("Invalid use of uninitialized Constructor handle");
+        }
+    }
 
 	void setClass(ClassImpl* impl) { m_class = impl; }
 	
@@ -268,7 +285,10 @@ public:
 
 	Method(MethodImpl* impl);
 
-	bool isValid() const;
+    bool isValid() const
+    {
+        return m_impl != nullptr;
+    }
 
 	std::string fullName() const;
 
@@ -276,7 +296,12 @@ private:
 
 	Method(MethodImpl* impl, ClassImpl* cimpl);
 
-	void check_valid() const;
+    void check_valid() const
+    {
+        if (!isValid()) {
+            throw std::runtime_error("Invalid use of uninitialized Method handle");
+        }
+    }
 		
 	MethodImpl* m_impl;
 	ClassImpl* m_class;
@@ -334,7 +359,10 @@ public:
 
 	Class& operator=(Class&& rhs);
 
-	bool isValid() const;
+    bool isValid() const
+    {
+        return m_impl != nullptr;
+    }
 		
 	std::string simpleName() const;
 	
@@ -388,8 +416,12 @@ public:
 	bool hasUnresolvedBases() const;
 	
 private:
-
-	void check_valid() const;
+    void check_valid() const
+    {
+        if (!isValid()) {
+            throw std::runtime_error("Invalid use of uninitialized Class handle");
+        }
+    }
 	
 	Class(ClassImpl* impl);
 	
@@ -446,7 +478,12 @@ public:
 	Function& operator=(const Function& rhs);
 	Function& operator=(Function&& rhs);
 
-	bool isValid() const;
+    //bool isValid() const;
+    bool isValid() const
+    {
+        return m_impl != nullptr;
+    }
+
 
 	::std::string name() const;
 
@@ -473,7 +510,14 @@ public:
 
 private:
 
-	void check_valid() const;
+    //void check_valid() const;
+
+    void check_valid() const
+    {
+        if (!isValid()) {
+            throw std::runtime_error("Invalid use of uninitialized Function handle");
+        }
+    }
 
 	Function(FunctionImpl* impl);
 	FunctionImpl* m_impl;

@@ -17,18 +17,6 @@
 
 //--------attribute-----------------------------------------------
 
-bool Attribute::isValid() const
-{
-	return (m_impl != nullptr);
-}
-
-void Attribute::check_valid() const
-{
-	if (!isValid()) {
-		throw std::runtime_error("Invalid use of uninitialized Attribute handle");
-	}
-}
-
 Attribute::Attribute() : Attribute(nullptr) {}
 
 Attribute::Attribute(AbstractAttributeImpl* impl, ClassImpl *cimpl)
@@ -116,18 +104,6 @@ namespace std {
 
 
 //--------class---------------------------------------------------
-
-bool Class::isValid() const
-{
-	return m_impl != nullptr;
-}
-
-void Class::check_valid() const
-{
-	if (!isValid()) {
-		throw std::runtime_error("Invalid use of uninitialized Class handle");
-	}
-}
 
 Class::Class()
 	: Class(nullptr) {}
@@ -384,17 +360,7 @@ bool inheritedBy(const Class& c1, const Class& c2)
 
 //--------constructor---------------------------------------------
 
-bool Constructor::isValid() const
-{
-	return m_impl != nullptr;
-}
 
-void Constructor::check_valid() const
-{
-	if (!isValid()) {
-		throw std::runtime_error("Invalid use of uninitialized Constructor handle");
-	}
-}
 
 Constructor::Constructor() : Constructor(nullptr) {}
 
@@ -455,10 +421,6 @@ namespace std {
 
 //--------method---------------------------------------------
 
-bool Method::isValid() const
-{
-	return m_impl != nullptr;
-}
 
 std::string Method::fullName() const
 {
@@ -492,13 +454,6 @@ std::string Method::fullName() const
 	}
 
 	return ss.str();
-}
-
-void Method::check_valid() const
-{
-	if (!isValid()) {
-		throw std::runtime_error("Invalid use of uninitialized Method handle");
-	}
 }
 
 Method::Method()
@@ -730,18 +685,6 @@ bool overloads(const Method& m1, const Method& m2)
 
 
 //--------function---------------------------------------------
-
-bool Function::isValid() const
-{
-	return m_impl != nullptr;
-}
-
-void Function::check_valid() const
-{
-	if (!isValid()) {
-		throw std::runtime_error("Invalid use of uninitialized Function handle");
-	}
-}
 
 Function::Function()
 	: Function(nullptr)
