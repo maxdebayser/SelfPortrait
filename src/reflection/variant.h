@@ -939,12 +939,14 @@ private:
     template<class ValueType>
     typename normalize_type<ValueType>::ptr_type isAPriv() const {
 
-        const std::type_info& from = impl()->typeId();
+        auto pimpl = impl();
+        const std::type_info& from = pimpl->typeId();
         const std::type_info& to   = typeid(ValueType);
 
         if (from == to) {
-            if (!impl()->isConst() || (impl()->isConst() && normalize_type<ValueType>::is_const)) {
-                return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(const_cast<void*>(impl()->ptrToValue()));
+            const bool implConst = pimpl->isConst();
+            if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
+                return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(const_cast<void*>(pimpl->ptrToValue()));
             }
         }
 
@@ -952,9 +954,9 @@ private:
         bool possible;
         if (conversion_cache::instance().conversionKnown(to, from, offset, possible)) {
             if (possible) {
-                const bool implConst = impl()->isConst();
+                const bool implConst = pimpl->isConst();
                 if (!implConst || (implConst && normalize_type<ValueType>::is_const)) {
-                    return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(reinterpret_cast<char*>(const_cast<void*>(impl()->ptrToValue()))+offset);
+                    return reinterpret_cast<typename normalize_type<ValueType>::ptr_type>(reinterpret_cast<char*>(const_cast<void*>(pimpl->ptrToValue()))+offset);
                 }
             } else {
                 // conversion is known to fail, we won't even try
@@ -963,9 +965,9 @@ private:
         }
 
         try {
-            impl()->throwCast();
+            pimpl->throwCast();
         } catch(typename normalize_type<ValueType>::ptr_type ptr) {
-            offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(impl()->ptrToValue());
+            offset = reinterpret_cast<const char*>(ptr) - reinterpret_cast<const char*>(pimpl->ptrToValue());
             conversion_cache::instance().registerConversion(to, from, offset, true);
             return ptr;
         } catch (...) {
