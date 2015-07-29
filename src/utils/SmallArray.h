@@ -76,7 +76,9 @@ protected:
     {}
 
     ~SmallArrayBase() {
-        free(m_excess);
+        if (m_excess) {
+            free(m_excess);
+        }
     }
 
 public:
