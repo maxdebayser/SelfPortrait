@@ -398,7 +398,7 @@ struct LuaClosureWrapper {
 
     }
 
-    VariantValue operator()(const std::vector<VariantValue>& vargs) const;
+    VariantValue operator()(const ArgArray& vargs) const;
 };
 
 

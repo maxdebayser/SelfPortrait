@@ -801,7 +801,7 @@ int Lua_Method::isStatic(lua_State* L)
 int Lua_Method::call(lua_State* L)
 {
 	Lua_Method* m = checkUserData(L);
-    vector<VariantValue> args;
+    ArgArray args;
 
 	VariantValue obj;
 
@@ -870,7 +870,7 @@ void Lua_Constructor::initialize()
 int Lua_Constructor::call(lua_State* L)
 {
 	Lua_Constructor* c = checkUserData(L);
-	vector<VariantValue> args;
+    ArgArray args;
 
 	int n = lua_gettop(L);
 	for (int i = 2; i <= n; ++i) {
@@ -1044,7 +1044,7 @@ int Lua_Function::name(lua_State* L)
 int Lua_Function::call(lua_State* L)
 {
 	Lua_Function* f = checkUserData(L);
-	vector<VariantValue> args;
+    ArgArray args;
 
 
 	int n = lua_gettop(L);
@@ -1187,7 +1187,7 @@ void LuaClosureWrapper::deleter::operator()(shared_state* s) const {
     delete s;
 }
 
-VariantValue LuaClosureWrapper::operator()(const std::vector<VariantValue>& vargs) const {
+VariantValue LuaClosureWrapper::operator()(const ArgArray& vargs) const {
 
     const int errIndex = LuaUtils::pushTraceBack(L);
 

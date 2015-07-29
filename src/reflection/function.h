@@ -5,10 +5,9 @@
 #ifndef FUNCTION_H
 #define FUNCTION_H
 
-#include <array>
+#include "config.h"
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #ifndef NO_RTTI
 #include <typeinfo>
 #endif
@@ -39,7 +38,7 @@ struct function_type<_Result(*)(Args...)> {
 
 	template<class R, ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<R, Ind<I...>> {
-		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ptr_to_function ptr, const ArgArray& args) {
 			VariantValue ret;
             ret.construct<R>(ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return ret;
@@ -48,14 +47,14 @@ struct function_type<_Result(*)(Args...)> {
 	
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<void, Ind<I...>> {
-		static VariantValue call(ptr_to_function ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ptr_to_function ptr, const ArgArray& args) {
             ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
 
 	template <_Result(*ptr)(Args...)>
-	static VariantValue bindcall(const ::std::vector<VariantValue>& args) {
+    static VariantValue bindcall(const ArgArray& args) {
 		return call_helper<Result, typename make_indices<sizeof...(Args)>::type>::call(ptr, args);
 	}
 };
@@ -89,7 +88,7 @@ public:
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 #endif
 
-	VariantValue call(const ::std::vector<VariantValue>& args) const;
+    VariantValue call(const ArgArray& args) const;
 	
 	FunctionImpl(const FunctionImpl&) = delete;
 	FunctionImpl(FunctionImpl&&) = delete;

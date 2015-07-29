@@ -81,7 +81,7 @@ const ::std::type_info& MethodImpl::returnType() const
 #endif
 
 
-VariantValue MethodImpl::call(const ::std::vector<VariantValue>& args) const
+VariantValue MethodImpl::call(const ArgArray& args) const
 {
 	if (args.size() < m_numArgs) {
 		throw ::std::runtime_error("function or constructor called with insufficient number of arguments");
@@ -93,7 +93,7 @@ VariantValue MethodImpl::call(const ::std::vector<VariantValue>& args) const
 	return m_method(v, args);
 }
 
-VariantValue MethodImpl::call(VariantValue& object, const ::std::vector<VariantValue>& args) const
+VariantValue MethodImpl::call(VariantValue& object, const ArgArray& args) const
 {
 	if (args.size() < m_numArgs) {
 		throw ::std::runtime_error("function or constructor called with insufficient number of arguments");
@@ -101,7 +101,7 @@ VariantValue MethodImpl::call(VariantValue& object, const ::std::vector<VariantV
 	return m_method(object, args);
 }
 
-VariantValue MethodImpl::call(const VariantValue& object, const ::std::vector<VariantValue>& args) const
+VariantValue MethodImpl::call(const VariantValue& object, const ArgArray& args) const
 {
 	if (args.size() < m_numArgs) {
 		throw ::std::runtime_error("function or constructor called with insufficient number of arguments");
@@ -112,7 +112,7 @@ VariantValue MethodImpl::call(const VariantValue& object, const ::std::vector<Va
 	return m_method(object, args);
 }
 
-VariantValue MethodImpl::call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const
+VariantValue MethodImpl::call(volatile VariantValue& object, const ArgArray& args) const
 {
 	if (args.size() < m_numArgs) {
 		throw ::std::runtime_error("function or constructor called with insufficient number of arguments");
@@ -123,7 +123,7 @@ VariantValue MethodImpl::call(volatile VariantValue& object, const ::std::vector
 	return m_method(object, args);
 }
 
-VariantValue MethodImpl::call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const
+VariantValue MethodImpl::call(const volatile VariantValue& object, const ArgArray& args) const
 {
 	if (args.size() < m_numArgs) {
 		throw ::std::runtime_error("function or constructor called with insufficient number of arguments");

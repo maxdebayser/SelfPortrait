@@ -23,7 +23,7 @@ bool ProxyImpl::hasHandler(size_t method_hash) const {
 	return (m_map.find(method_hash) != m_map.end());
 }
 
-VariantValue ProxyImpl::callArgArray(size_t method_hash, const ::std::vector<VariantValue>& vargs) const
+VariantValue ProxyImpl::callArgArray(size_t method_hash, const ArgArray& vargs) const
 {
 	auto it = m_map.find(method_hash);
 	if (it == m_map.end()) {

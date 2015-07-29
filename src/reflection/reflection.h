@@ -26,6 +26,7 @@
 #ifndef REFLECTION_H
 #define REFLECTION_H
 
+#include "config.h"
 #include "collection_utils.h"
 #include "variant.h"
 
@@ -40,7 +41,6 @@
 #include <initializer_list>
 
 // All user front-end classes
-
 
 class ClassImpl;
 class Class;
@@ -168,15 +168,15 @@ public:
 #ifndef NO_RTTI
 	::std::vector<const ::std::type_info*> argumentTypes() const;
 #endif
-	
+
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(vargs);
 	}
 
-	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const ;
+    VariantValue callArgArray(const ArgArray& vargs) const ;
 
 	Class getClass() const;
 	
@@ -219,7 +219,7 @@ inline bool operator!=(const Constructor& c1, const Constructor& c2) {
 
 class MethodImpl;
 
-typedef VariantValue (*boundmethod)(const volatile VariantValue&, const ::std::vector<VariantValue>& args);
+typedef VariantValue (*boundmethod)(const volatile VariantValue&, const ArgArray& args);
 
 class Method: public AnnotatedFrontend {
 public:
@@ -246,40 +246,40 @@ public:
 
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(vargs );
 	}
 	template<class... Args>
 	VariantValue call(VariantValue& object, Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const VariantValue& object, Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(volatile VariantValue& object, Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const volatile VariantValue& object, Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(object, vargs );
 	}
 
-	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const;
-	VariantValue callArgArray(VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue callArgArray(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue callArgArray(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
-	VariantValue callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const;
+    VariantValue callArgArray(const ArgArray& vargs) const;
+    VariantValue callArgArray(VariantValue& object, const ArgArray& vargs) const;
+    VariantValue callArgArray(const VariantValue& object, const ArgArray& vargs) const;
+    VariantValue callArgArray(volatile VariantValue& object, const ArgArray& vargs) const;
+    VariantValue callArgArray(const volatile VariantValue& object, const ArgArray& vargs) const;
 
 	Class getClass() const;
 
@@ -465,7 +465,7 @@ bool inheritedBy(const Class& c1, const Class& c2);
 
 class FunctionImpl;
 
-typedef VariantValue (*boundfunction)(const ::std::vector<VariantValue>& args);
+typedef VariantValue (*boundfunction)(const ArgArray& args);
 
 class Function: public AnnotatedFrontend {
 public:
@@ -499,12 +499,12 @@ public:
 
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(vargs);
 	}
 
-	VariantValue callArgArray(const ::std::vector<VariantValue>& vargs) const;
+    VariantValue callArgArray(const ArgArray& vargs) const;
 
 	static const FunctionList& findFunctions(const ::std::string& name);
 
@@ -563,7 +563,7 @@ public:
 	~Proxy();
 
 	typedef std::list<Class> IFaceList;
-	typedef std::function<VariantValue(const std::vector<VariantValue>&)> MethodHandler;
+    typedef std::function<VariantValue(const ArgArray&)> MethodHandler;
 
 	Proxy(Class iface);
 

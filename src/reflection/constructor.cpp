@@ -30,7 +30,7 @@ ConstructorImpl::ConstructorImpl(
 	return splitArgs(m_argSpellings);
 }
 
-VariantValue ConstructorImpl::call(const ::std::vector<VariantValue>& args) const
+VariantValue ConstructorImpl::call(const ArgArray& args) const
 {
     if (args.size() < m_numArgs) {
         throw ::std::runtime_error("function or constructor called with insufficient number of arguments");

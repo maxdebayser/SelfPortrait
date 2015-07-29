@@ -402,7 +402,7 @@ bool Constructor::isDefaultConstructor() const {
 }
 #endif
 
-VariantValue Constructor::callArgArray(const ::std::vector<VariantValue>& vargs) const {
+VariantValue Constructor::callArgArray(const ArgArray& vargs) const {
 	check_valid();
 	return m_impl->call(vargs);
 }
@@ -533,27 +533,27 @@ bool Method::isStatic() const {
 	return m_impl->isStatic();
 }
 
-VariantValue Method::callArgArray(const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(const ArgArray& vargs) const {
 	check_valid();
 	return m_impl->call(vargs );	
 }
 
-VariantValue Method::callArgArray(VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(VariantValue& object, const ArgArray& vargs) const {
 	check_valid();
 	return m_impl->call(object, vargs );
 }
 
-VariantValue Method::callArgArray(const VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(const VariantValue& object, const ArgArray& vargs) const {
 	check_valid();
 	return m_impl->call(object, vargs );	
 }
 
-VariantValue Method::callArgArray(volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(volatile VariantValue& object, const ArgArray& vargs) const {
 	check_valid();
 	return m_impl->call(object, vargs );	
 }
 
-VariantValue Method::callArgArray(const volatile VariantValue& object, const ::std::vector<VariantValue>& vargs) const {
+VariantValue Method::callArgArray(const volatile VariantValue& object, const ArgArray& vargs) const {
 	check_valid();
 	return m_impl->call(object, vargs );	
 }
@@ -740,7 +740,7 @@ const ::std::type_info& Function::returnType() const {
 }
 #endif
 
-VariantValue Function::callArgArray(const ::std::vector<VariantValue>& vargs) const
+VariantValue Function::callArgArray(const ArgArray& vargs) const
 {
 	check_valid();
 	return m_impl->call(vargs);

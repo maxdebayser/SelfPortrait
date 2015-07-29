@@ -1,5 +1,6 @@
 set(HEADERS
 	lua_utils.h
+    SmallArray.h
 )
 
 set(SOURCES

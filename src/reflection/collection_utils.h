@@ -5,16 +5,15 @@
 #ifndef COLL_UTILS_H
 #define COLL_UTILS_H
 
-#include "variant.h"
-#include <vector>
+#include "config.h"
 
-inline void emplace(std::vector<VariantValue>& v )
+inline void emplace(ArgArray& v )
 {
 	// nothing to do
 }
 
 template<class T, class... U>
-inline void emplace(std::vector<VariantValue>& v, T&& t, U&&... u )
+inline void emplace(ArgArray& v, T&& t, U&&... u )
 {
 	v.emplace_back(t);
 	emplace(v, u...);

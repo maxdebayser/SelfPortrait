@@ -1,4 +1,5 @@
 set(HEADERS
+    config.h
 	attribute.h
 	call_utils.h
 	collection_utils.h

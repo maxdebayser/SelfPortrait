@@ -12,6 +12,8 @@ using namespace std;
 
 static const int times = 100000000;
 
+//static const int times =   10000000; // valgrind
+
 void noargtest()
 {
 	std::list<Function> functions = Function::findFunctions("test_functions::noargs");
@@ -93,11 +95,11 @@ void arg1test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0 };
+    ArgArray args = { 0 };
 
 	for (int i = 0; i < times; ++i) {
-		//reflFunc.call(0);
-		reflFunc.callArgArray(args);
+        reflFunc.callArgArray(args);
+        //reflFunc.call(0);
 	}
 
 	final = clock();
@@ -144,10 +146,11 @@ void arg2test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1 };
+    ArgArray args = { 0, 1 };
 
 	for (int i = 0; i < times; ++i) {
-		reflFunc.callArgArray(args);
+        reflFunc.callArgArray(args);
+        //reflFunc.call(0,1);
 	}
 
 	final = clock();
@@ -193,10 +196,11 @@ void arg3test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2 };
+    ArgArray args = { 0, 1, 2 };
 
 	for (int i = 0; i < times; ++i) {
-		reflFunc.callArgArray(args);
+        reflFunc.callArgArray(args);
+        //reflFunc.call(0,1,2);
 	}
 
 	final = clock();
@@ -226,7 +230,8 @@ void arg4test()
 	clock_t start = clock();
 
 	for (int i = 0; i < times; ++i) {
-		test_functions::intarg4(0, 1, 2, 3);
+        reflFunc.callArgArray(args);
+        //test_functions::intarg4(0, 1, 2, 3);
 	}
 
 	clock_t final = clock();
@@ -242,10 +247,11 @@ void arg4test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2, 3 };
+    ArgArray args = { 0, 1, 2, 3 };
 
 	for (int i = 0; i < times; ++i) {
-		reflFunc.callArgArray(args);
+        //reflFunc.callArgArray(args);
+        reflFunc.call(0,1,2,3);
 	}
 
 	final = clock();
@@ -291,7 +297,7 @@ void arg5test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2, 3, 4 };
+    ArgArray args = { 0, 1, 2, 3, 4 };
 
 	for (int i = 0; i < times; ++i) {
 		reflFunc.callArgArray(args);
@@ -340,7 +346,7 @@ void arg6test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2, 3, 4, 5 };
+    ArgArray args = { 0, 1, 2, 3, 4, 5 };
 
 	for (int i = 0; i < times; ++i) {
 		reflFunc.callArgArray(args);
@@ -389,7 +395,7 @@ void arg7test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2, 3, 4, 5, 6 };
+    ArgArray args = { 0, 1, 2, 3, 4, 5, 6 };
 
 	for (int i = 0; i < times; ++i) {
 		reflFunc.callArgArray(args);
@@ -438,7 +444,7 @@ void arg8test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2, 3, 4, 5, 6, 7 };
+    ArgArray args = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
 	for (int i = 0; i < times; ++i) {
 		reflFunc.callArgArray(args);
@@ -487,7 +493,7 @@ void arg9test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+    ArgArray args = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
 
 	for (int i = 0; i < times; ++i) {
 		reflFunc.callArgArray(args);
@@ -540,7 +546,7 @@ void structArgCpy1Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct() };
+    ArgArray args = { TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -590,7 +596,7 @@ void structArgCpy2Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -640,7 +646,7 @@ void structArgCpy3Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -690,7 +696,7 @@ void structArgCpy4Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -740,7 +746,7 @@ void structArgCpy5Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -790,7 +796,7 @@ void structArgCpy6Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -840,7 +846,7 @@ void structArgCpy7Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -891,7 +897,7 @@ void structArgCpy8Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -942,7 +948,7 @@ void structArgCpy9Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -994,7 +1000,7 @@ void structArgRef1Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct() };
+    ArgArray args = { TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1044,7 +1050,7 @@ void structArgRef2Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1094,7 +1100,7 @@ void structArgRef3Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1144,7 +1150,7 @@ void structArgRef4Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1194,7 +1200,7 @@ void structArgRef5Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1244,7 +1250,7 @@ void structArgRef6Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1294,7 +1300,7 @@ void structArgRef7Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1345,7 +1351,7 @@ void structArgRef8Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1396,7 +1402,7 @@ void structArgRef9Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
+    ArgArray args = { TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct(), TestStruct() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1448,7 +1454,7 @@ void arg1Conversiontest()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { val };
+    ArgArray args = { val };
 
 	for (int i = 0; i < times; ++i) {
 		reflFunc.callArgArray(args);
@@ -1501,7 +1507,7 @@ void polyArgRef1Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived() };
+    ArgArray args = { Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1552,7 +1558,7 @@ void polyArgRef2Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived() };
+    ArgArray args = { Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1603,7 +1609,7 @@ void polyArgRef3Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1654,7 +1660,7 @@ void polyArgRef4Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1705,7 +1711,7 @@ void polyArgRef5Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1756,7 +1762,7 @@ void polyArgRef6Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1807,7 +1813,7 @@ void polyArgRef7Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1858,7 +1864,7 @@ void polyArgRef8Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1909,7 +1915,7 @@ void polyArgRef9Test()
 
 	start = clock();
 
-	std::vector<VariantValue> args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
+    ArgArray args = { Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived(), Derived() };
 
 	for (int i = 0; i < times; ++i) {
 		noargRefl.callArgArray(args);
@@ -1946,7 +1952,7 @@ int main()
 	arg3test();
 
 	std::cout << "4 args function call:" << std::endl;
-	arg4test();
+    arg4test();
 
 	std::cout << "5 args function call:" << std::endl;
 	arg5test();

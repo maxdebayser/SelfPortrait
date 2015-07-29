@@ -5,14 +5,13 @@
 #ifndef METHOD_H
 #define METHOD_H
 
+#include "config.h"
 #include "typelist.h"
 #include "variant.h"
 #include "reflection.h"
 #include "str_utils.h"
 #include "call_utils.h"
 
-#include <vector>
-#include <tuple>
 #include <algorithm>
 
 
@@ -44,7 +43,7 @@ struct method_type<_Result(_Clazz::*)(Args...)> {
 
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
 			VariantValue ret;
             ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
@@ -54,14 +53,14 @@ struct method_type<_Result(_Clazz::*)(Args...)> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
             (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
 
 	template<_Result(_Clazz::*ptr)(Args...)>
-	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
+    static VariantValue bindcall(const volatile VariantValue& object, const ArgArray& args)  {
 		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
@@ -91,7 +90,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const> {
 
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
 			VariantValue ret;
             ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
@@ -101,14 +100,14 @@ struct method_type<_Result(_Clazz::*)(Args...) const> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
             (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
 
 	template<_Result(_Clazz::*ptr)(Args...) const>
-	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
+    static VariantValue bindcall(const volatile VariantValue& object, const ArgArray& args)  {
 		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
@@ -136,7 +135,7 @@ struct method_type<_Result(_Clazz::*)(Args...) volatile> {
 
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
 			VariantValue ret;
             ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
@@ -146,14 +145,14 @@ struct method_type<_Result(_Clazz::*)(Args...) volatile> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
             (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
 
 	template<_Result(_Clazz::*ptr)(Args...) volatile>
-	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args)  {
+    static VariantValue bindcall(const volatile VariantValue& object, const ArgArray& args)  {
 		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
@@ -181,7 +180,7 @@ struct method_type<_Result(_Clazz::*)(Args...) const volatile> {
 
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
 
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
 			VariantValue ret;
             ret.construct<Result>((object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
@@ -191,14 +190,14 @@ struct method_type<_Result(_Clazz::*)(Args...) const volatile> {
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<Ind<I...>, void> {
 		static_assert(size<Arguments>() == sizeof...(I), "number of arguments and number of indices don't match");
-		static VariantValue call(ClazzRef object, ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ClazzRef object, ptr_to_method ptr, const ArgArray& args) {
             (object.*ptr)(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
 
 	template<_Result(_Clazz::*ptr)(Args...) const volatile>
-	static VariantValue bindcall(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) {
+    static VariantValue bindcall(const volatile VariantValue& object, const ArgArray& args) {
 		Clazz& ref = verifyObject<Clazz>(object, is_const);
 		return call_helper<typename make_indices<sizeof...(Args)>::type, Result>::call(ref, ptr, args);
 	}
@@ -220,7 +219,7 @@ struct method_type<_Result(*)(Args...)> {
 
 	template<class R, ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<R, Ind<I...>> {
-		static VariantValue call(ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ptr_to_method ptr, const ArgArray& args) {
 			VariantValue ret;
             ret.construct<Result>(ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...));
 			return std::move(ret);
@@ -229,14 +228,14 @@ struct method_type<_Result(*)(Args...)> {
 
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<void, Ind<I...>> {
-		static VariantValue call(ptr_to_method ptr, const ::std::vector<VariantValue>& args) {
+        static VariantValue call(ptr_to_method ptr, const ArgArray& args) {
             ptr(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return VariantValue();
 		}
 	};
 
 	template <_Result(*ptr)(Args...)>
-	static VariantValue bindcall(const volatile VariantValue&, const ::std::vector<VariantValue>& args)  {
+    static VariantValue bindcall(const volatile VariantValue&, const ArgArray& args)  {
 		return call_helper<Result, typename make_indices<sizeof...(Args)>::type>::call(ptr, args);
 	}
 };
@@ -280,11 +279,11 @@ public:
 #endif
 
 
-	VariantValue call(const ::std::vector<VariantValue>& args) const;
-	VariantValue call(VariantValue& object, const ::std::vector<VariantValue>& args) const;
-	VariantValue call(const VariantValue& object, const ::std::vector<VariantValue>& args) const;
-	VariantValue call(volatile VariantValue& object, const ::std::vector<VariantValue>& args) const;
-	VariantValue call(const volatile VariantValue& object, const ::std::vector<VariantValue>& args) const;
+    VariantValue call(const ArgArray& args) const;
+    VariantValue call(VariantValue& object, const ArgArray& args) const;
+    VariantValue call(const VariantValue& object, const ArgArray& args) const;
+    VariantValue call(volatile VariantValue& object, const ArgArray& args) const;
+    VariantValue call(const volatile VariantValue& object, const ArgArray& args) const;
 	
 	MethodImpl(const MethodImpl&) = delete;
 	MethodImpl(MethodImpl&&) = delete;

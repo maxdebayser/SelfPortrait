@@ -5,6 +5,7 @@
 #ifndef CONSTRUCTOR_H
 #define CONSTRUCTOR_H
 
+#include "config.h"
 #include "typelist.h"
 #include "variant.h"
 #include <tuple>
@@ -13,7 +14,7 @@
 #include "str_utils.h"
 #include "call_utils.h"
 
-typedef VariantValue (*boundcons)(const ::std::vector<VariantValue>& args);
+typedef VariantValue (*boundcons)(const ArgArray& args);
 #include <iostream>
 using namespace std;
 namespace {
@@ -29,14 +30,14 @@ struct constructor_type {
 
 	template<class Ind>
 	struct call_helper<true, Ind> {
-		static VariantValue call(const ::std::vector<VariantValue>& args) {
+        static VariantValue call(const ArgArray& args) {
 			throw ::std::runtime_error("Class declares pure virtual members or has a private destructor");
 		}
 	};
 
 	template< ::std::size_t... I, template< ::std::size_t...> class Ind>
 	struct call_helper<false, Ind<I...>> {
-		static VariantValue call(const ::std::vector<VariantValue>& args) {
+        static VariantValue call(const ArgArray& args) {
             //verify_call<Arguments, I...>(args);
 			VariantValue ret;
             ret.construct<Clazz>(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
@@ -44,7 +45,7 @@ struct constructor_type {
 		}
 	};
 
-	static VariantValue bindcall(const ::std::vector<VariantValue>& args) {
+    static VariantValue bindcall(const ArgArray& args) {
 		return call_helper< ::std::is_abstract<Clazz>::value || !::std::is_destructible<Clazz>::value, typename make_indices<sizeof...(Args)>::type>::call(args);
 	}
 };
@@ -67,7 +68,7 @@ public:
 
 	::std::vector< ::std::string> argumentSpellings() const;
 
-	VariantValue call(const ::std::vector<VariantValue>& args) const;
+    VariantValue call(const ArgArray& args) const;
 
 
 #ifndef NO_RTTI

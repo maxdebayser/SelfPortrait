@@ -5,12 +5,12 @@
 #ifndef PROXY_H
 #define PROXY_H
 
+#include "config.h"
 #include "collection_utils.h"
 #include "reflection.h"
 
 
 #include <map>
-#include <vector>
 #include <memory>
 
 #include <functional>
@@ -32,11 +32,11 @@ public:
 
 	bool hasHandler(size_t method_hash) const;
 
-	VariantValue callArgArray(size_t method_hash, const ::std::vector<VariantValue>& vargs) const;
+    VariantValue callArgArray(size_t method_hash, const ArgArray& vargs) const;
 
 	template<class... Args>
 	VariantValue call(size_t method_hash, const Args&... args) const {
-		::std::vector<VariantValue> vargs;
+        ArgArray vargs;
 		emplace(vargs, args...);
 		return callArgArray(method_hash, vargs );
 	}

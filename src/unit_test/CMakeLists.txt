@@ -9,6 +9,7 @@ set(HEADERS
 	utilities_test.h
 	variant_test.h
         type_utils_test.h
+    SmallArray_test.h
 )
 
 set(SOURCES
@@ -22,6 +23,7 @@ set(SOURCES
 	utilities_test.cpp
 	variant_test.cpp
         type_utils_test.cpp
+    SmallArray_test.cpp
 )
 
 IF(SELFPORTRAIT_BUILD_PARSER)
