@@ -726,61 +726,64 @@ private:
 class VariantValue {
 public:
 	//! Creates an empty variant
-	explicit VariantValue();
+    explicit
+    VariantValue(): m_deleter(deleterNULL), m_getter(getterNULL)
+    {}
 
-    VariantValue(std::uint8_t t) : m_embedded(Types::UINT8) {
+    VariantValue(std::uint8_t t) : m_deleter(deleterUINT8), m_getter(getterUINT8) {
         new(&m_uint8) ValueHolder<std::uint8_t>(t);
     }
-    VariantValue(std::int8_t t) : m_embedded(Types::INT8) {
+    VariantValue(std::int8_t t) : m_deleter(deleterINT8), m_getter(getterINT8) {
         new(&m_int8) ValueHolder<std::int8_t>(t);
     }
-    VariantValue(std::uint16_t t) : m_embedded(Types::UINT16) {
+    VariantValue(std::uint16_t t) : m_deleter(deleterUINT16), m_getter(getterUINT16) {
         new(&m_uint16) ValueHolder<std::uint16_t>(t);
     }
-    VariantValue(std::int16_t t) : m_embedded(Types::INT16) {
+    VariantValue(std::int16_t t) : m_deleter(deleterINT16), m_getter(getterINT16) {
         new(&m_int16) ValueHolder<std::int16_t>(t);
     }
-    VariantValue(std::uint32_t t) : m_embedded(Types::UINT32) {
+    VariantValue(std::uint32_t t) : m_deleter(deleterUINT32), m_getter(getterUINT32) {
         new(&m_uint32) ValueHolder<std::uint32_t>(t);
     }
-    VariantValue(std::int32_t t) : m_embedded(Types::INT32) {
+    VariantValue(std::int32_t t) : m_deleter(deleterINT32), m_getter(getterINT32) {
         new(&m_int32) ValueHolder<std::int32_t>(t);
     }
-    VariantValue(std::uint64_t t) : m_embedded(Types::UINT64) {
+    VariantValue(std::uint64_t t) : m_deleter(deleterUINT64), m_getter(getterUINT64) {
         new(&m_uint64) ValueHolder<std::uint64_t>(t);
     }
-    VariantValue(std::int64_t t) : m_embedded(Types::INT64) {
+    VariantValue(std::int64_t t) : m_deleter(deleterINT64), m_getter(getterINT64) {
         new(&m_int64) ValueHolder<std::int64_t>(t);
     }
-    VariantValue(float t) : m_embedded(Types::FLOAT) {
+    VariantValue(float t) : m_deleter(deleterFLOAT), m_getter(getterFLOAT) {
         new(&m_float) ValueHolder<float>(t);
     }
-    VariantValue(double t) : m_embedded(Types::DOUBLE) {
+    VariantValue(double t) : m_deleter(deleterDOUBLE), m_getter(getterDOUBLE) {
         new(&m_double) ValueHolder<double>(t);
     }
-    VariantValue(std::string t) : m_embedded(Types::STRING) {
+    VariantValue(std::string t) : m_deleter(deleterSTRING), m_getter(getterSTRING) {
         new(&m_string) ValueHolder<std::string>(t);
     }
 
-	template<class ValueType>
-    VariantValue(const ValueType& t) : m_embedded(Types::DEFAULT) {
+    template<class ValueType>
+    VariantValue(const ValueType& t) : m_deleter(deleterDEFAULT), m_getter(getterDEFAULT) {
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>(t));
     }
 
-	template<class ValueType>
-    VariantValue(ValueType* t) : m_embedded(Types::DEFAULT) {
+    template<class ValueType>
+    VariantValue(ValueType* t) : m_deleter(deleterDEFAULT), m_getter(getterDEFAULT) {
 
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType*>(t));
     }
 
 
-	template<class ValueType, class... Args>
-	VariantValue& construct(Args&&... args) {
-        destroyEmbedded();
-        m_embedded = Types::DEFAULT;
+    template<class ValueType, class... Args>
+    VariantValue& construct(Args&&... args) {
+        m_deleter(this);
+        m_deleter = deleterDEFAULT;
+        m_getter = getterDEFAULT;
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( ::std::forward<Args>(args)... ));
-		return *this;
-	}
+        return *this;
+    }
 
     VariantValue& construct(std::uint8_t t) {
         *this = t; return *this;
@@ -825,79 +828,93 @@ public:
 	
 	VariantValue& operator=(VariantValue&& rhs);
 
-    ~VariantValue();
+    ~VariantValue() {
+        m_deleter(this);
+    }
 	
-	template<class ValueType>
-	VariantValue& operator=(ValueType value) {
-        destroyEmbedded();
-        m_embedded = Types::DEFAULT;
+    template<class ValueType>
+    VariantValue& operator=(ValueType value) {
+        m_deleter(this);
+        m_deleter = deleterDEFAULT;
+        m_getter = getterDEFAULT;
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( value ));
-		return *this;
-	}
+        return *this;
+    }
 
     VariantValue& operator=(std::uint8_t t) {
-        destroyEmbedded();
-        m_embedded = Types::UINT8;
+        m_deleter(this);
+        m_deleter = deleterUINT8;
+        m_getter = getterUINT8;
         new(&m_uint8) ValueHolder<std::uint8_t>(t);
         return *this;
     }
     VariantValue& operator=(std::int8_t t) {
-        destroyEmbedded();
-        m_embedded = Types::INT8;
+        m_deleter(this);
+        m_deleter = deleterINT8;
+        m_getter = getterINT8;
         new(&m_int8) ValueHolder<std::int8_t>(t);
         return *this;
     }
     VariantValue& operator=(std::uint16_t t) {
-        destroyEmbedded();
-        m_embedded = Types::UINT16;
+        m_deleter(this);
+        m_deleter = deleterUINT16;
+        m_getter = getterUINT16;
         new(&m_uint16) ValueHolder<std::uint16_t>(t);
         return *this;
     }
     VariantValue& operator=(std::int16_t t) {
-        destroyEmbedded();
-        m_embedded = Types::INT8;
+        m_deleter(this);
+        m_deleter = deleterINT16;
+        m_getter = getterINT16;
         new(&m_int16) ValueHolder<std::int16_t>(t);
         return *this;
     }
     VariantValue& operator=(std::uint32_t t) {
-        destroyEmbedded();
-        m_embedded = Types::UINT32;
+        m_deleter(this);
+        m_deleter = deleterUINT32;
+        m_getter = getterUINT32;
         new(&m_uint32) ValueHolder<std::uint32_t>(t);
         return *this;
     }
     VariantValue& operator=(std::int32_t t) {
-        destroyEmbedded();
-        m_embedded = Types::INT32;
+        m_deleter(this);
+        m_deleter = deleterINT32;
+        m_getter = getterINT32;
         new(&m_int32) ValueHolder<std::int32_t>(t);
         return *this;
     }
     VariantValue& operator=(std::uint64_t t) {
-        destroyEmbedded();
-        m_embedded = Types::UINT64;
+        m_deleter(this);
+        m_deleter = deleterUINT64;
+        m_getter = getterUINT64;
         new(&m_uint64) ValueHolder<std::uint64_t>(t);
         return *this;
     }
     VariantValue& operator=(std::int64_t t) {
-        destroyEmbedded();
-        m_embedded = Types::INT64;
+        m_deleter(this);
+        m_deleter = deleterINT64;
+        m_getter = getterINT64;
         new(&m_int64) ValueHolder<std::int64_t>(t);
         return *this;
     }
     VariantValue& operator=(double t) {
-        destroyEmbedded();
-        m_embedded = Types::DOUBLE;
+        m_deleter(this);
+        m_deleter = deleterDOUBLE;
+        m_getter = getterDOUBLE;
         new(&m_double) ValueHolder<double>(t);
         return *this;
     }
     VariantValue& operator=(float t) {
-        destroyEmbedded();
-        m_embedded = Types::FLOAT;
+        m_deleter(this);
+        m_deleter = deleterFLOAT;
+        m_getter = getterFLOAT;
         new(&m_float) ValueHolder<float>(t);
         return *this;
     }
     VariantValue& operator=(std::string t) {
-        destroyEmbedded();
-        m_embedded = Types::STRING;
+        m_deleter(this);
+        m_deleter = deleterSTRING;
+        m_getter = getterSTRING;
         new(&m_string) ValueHolder<std::string>(t);
         return *this;
     }
@@ -914,7 +931,7 @@ public:
 		return const_cast<const VariantValue*>(this)->template isA<ValueType>();
 	}
 
-    bool isEmbedded() const { return m_embedded != Types::DEFAULT; }
+    bool isEmbedded() const { return m_deleter != &deleterDEFAULT; }
 	
 private:
 
@@ -1215,7 +1232,7 @@ public:
 	}
 	
 
-    bool isValid() const { return impl() != nullptr; }
+    bool isValid() const { return m_getter != &getterNULL; }
 
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
@@ -1249,23 +1266,6 @@ public:
 	
 private:
 
-    enum class Types : char {
-        DEFAULT,
-        INT8,
-        UINT8,
-        INT16,
-        UINT16,
-        INT32,
-        UINT32,
-        INT64,
-        UINT64,
-        DOUBLE,
-        FLOAT,
-        STRING
-    };
-
-    Types m_embedded;
-
     union {
 
         std::shared_ptr<IValueHolder> m_impl;
@@ -1283,39 +1283,47 @@ private:
         ValueHolder<std::string>   m_string;
     };
 
+    typedef void (*TypeDependentDeleter)(VariantValue*);
+    typedef IValueHolder* (*TypeDependentGetter)(VariantValue*);
+
+    TypeDependentDeleter m_deleter;
+    TypeDependentGetter m_getter;
+
+    static void deleterNULL(VariantValue*) noexcept {}
+    static void deleterDEFAULT(VariantValue* self) noexcept { self->m_impl.~shared_ptr<IValueHolder>(); }
+    static void deleterUINT8(VariantValue* self) noexcept { self->m_uint8.~ValueHolder<std::uint8_t>();}
+    static void deleterINT8(VariantValue* self) noexcept { self->m_int8.~ValueHolder<std::int8_t>();}
+    static void deleterUINT16(VariantValue* self) noexcept { self->m_uint16.~ValueHolder<std::uint16_t>();}
+    static void deleterINT16(VariantValue* self) noexcept { self->m_int16.~ValueHolder<std::int16_t>();}
+    static void deleterUINT32(VariantValue* self) noexcept { self->m_uint32.~ValueHolder<std::uint32_t>();}
+    static void deleterINT32(VariantValue* self) noexcept { self->m_int32.~ValueHolder<std::int32_t>();}
+    static void deleterUINT64(VariantValue* self) noexcept { self->m_uint64.~ValueHolder<std::uint64_t>();}
+    static void deleterINT64(VariantValue* self) noexcept { self->m_int64.~ValueHolder<std::int64_t>();}
+    static void deleterDOUBLE(VariantValue* self) noexcept { self->m_double.~ValueHolder<double>();}
+    static void deleterFLOAT(VariantValue* self) noexcept { self->m_float.~ValueHolder<float>();}
+    static void deleterSTRING(VariantValue* self) noexcept { self->m_string.~ValueHolder<std::string>(); }
+
+    static IValueHolder* getterNULL(VariantValue*) noexcept { return nullptr; }
+    static IValueHolder* getterDEFAULT(VariantValue* self) noexcept { return self->m_impl.get(); }
+    static IValueHolder* getterUINT8(VariantValue* self) noexcept { return &self->m_uint8; }
+    static IValueHolder* getterINT8(VariantValue* self) noexcept { return &self->m_int8; }
+    static IValueHolder* getterUINT16(VariantValue* self) noexcept { return &self->m_uint16;}
+    static IValueHolder* getterINT16(VariantValue* self) noexcept { return &self->m_int16;}
+    static IValueHolder* getterUINT32(VariantValue* self) noexcept { return &self->m_uint32;}
+    static IValueHolder* getterINT32(VariantValue* self) noexcept { return &self->m_int32;}
+    static IValueHolder* getterUINT64(VariantValue* self) noexcept { return &self->m_uint64;}
+    static IValueHolder* getterINT64(VariantValue* self) noexcept { return &self->m_int64;}
+    static IValueHolder* getterDOUBLE(VariantValue* self) noexcept { return &self->m_double;}
+    static IValueHolder* getterFLOAT(VariantValue* self) noexcept { return &self->m_double;}
+    static IValueHolder* getterSTRING(VariantValue* self) noexcept { return &self->m_string; }
+
     IValueHolder* impl() {
-        switch (m_embedded) {
-            case Types::DEFAULT:
-                return m_impl.get();
-            case Types::UINT8:
-                return &m_uint8;
-            case Types::INT8:
-                return &m_int8;
-            case Types::UINT16:
-                return &m_uint16;
-            case Types::INT16:
-                return &m_int16;
-            case Types::UINT32:
-                return &m_uint32;
-            case Types::INT32:
-                return &m_int32;
-            case Types::UINT64:
-                return &m_uint64;
-            case Types::INT64:
-                return &m_int64;
-            case Types::DOUBLE:
-                return &m_double;
-            case Types::FLOAT:
-                return &m_double;
-            case Types::STRING:
-                return &m_string;
-        }
-        return m_impl.get();
+        return m_getter(this);
     }
+
     const IValueHolder* impl() const {
         return const_cast<VariantValue*>(this)->impl();
     }
-
 	void check_valid() const {
 		if (!isValid()) {
 			throw ::std::runtime_error("variant has no value");

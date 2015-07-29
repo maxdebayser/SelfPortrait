@@ -4,240 +4,142 @@
 */
 #include "variant.h"
 
-VariantValue::VariantValue()
-    : m_embedded(Types::DEFAULT)
-{
-    new(&m_impl) shared_ptr<IValueHolder>();
-}
-
-void VariantValue::destroyEmbedded()
-{
-    switch (m_embedded) {
-        case Types::DEFAULT:
-            m_impl.~shared_ptr<IValueHolder>();
-            break;
-        case Types::UINT8:
-            m_uint8.~ValueHolder<std::uint8_t>();
-            break;
-        case Types::INT8:
-            m_int8.~ValueHolder<std::int8_t>();
-            break;
-        case Types::UINT16:
-            m_uint16.~ValueHolder<std::uint16_t>();
-            break;
-        case Types::INT16:
-            m_int16.~ValueHolder<std::int16_t>();
-            break;
-        case Types::UINT32:
-            m_uint32.~ValueHolder<std::uint32_t>();
-            break;
-        case Types::INT32:
-            m_int32.~ValueHolder<std::int32_t>();
-            break;
-        case Types::UINT64:
-            m_uint64.~ValueHolder<std::uint64_t>();
-            break;
-        case Types::INT64:
-            m_int64.~ValueHolder<std::int64_t>();
-            break;
-        case Types::DOUBLE:
-            m_double.~ValueHolder<double>();
-            break;
-        case Types::FLOAT:
-            m_float.~ValueHolder<float>();
-            break;
-        case Types::STRING:
-            m_string.~ValueHolder<std::string>();
-            break;
-    }
-}
-
-VariantValue::~VariantValue()
-{
-    destroyEmbedded();
-}
-
 VariantValue::VariantValue(const VariantValue& rhs)
-    : m_embedded(rhs.m_embedded)
+    : m_deleter(rhs.m_deleter), m_getter(rhs.m_getter)
 {
-    switch (m_embedded) {
-        case Types::DEFAULT: {
-            new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
-            if (m_impl.get() == nullptr) {
-                throw std::runtime_error("type has no copy constructor");
-            }
-            break;
+    if (rhs.m_deleter == &deleterINT32) {
+        new(&m_int32) ValueHolder<std::int32_t>(rhs.m_int32);
+    } else if (rhs.m_deleter == &deleterDOUBLE) {
+        new(&m_double) ValueHolder<double>(rhs.m_double);
+    } else if (rhs.m_deleter == &deleterDEFAULT) {
+        new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
+        if (m_impl.get() == nullptr) {
+            m_deleter(this);
+            throw std::runtime_error("type has no copy constructor");
         }
-        case Types::UINT8:
-            new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
-            break;
-        case Types::INT8:
-            new(&m_int8) ValueHolder<std::int8_t>(rhs.m_int8);
-            break;
-        case Types::UINT16:
-            new(&m_uint16) ValueHolder<std::uint16_t>(rhs.m_uint16);
-            break;
-        case Types::INT16:
-            new(&m_int16) ValueHolder<std::int16_t>(rhs.m_int16);
-            break;
-        case Types::UINT32:
-            new(&m_uint32) ValueHolder<std::uint32_t>(rhs.m_uint32);
-            break;
-        case Types::INT32:
-            new(&m_int32) ValueHolder<std::int32_t>(rhs.m_int32);
-            break;
-        case Types::UINT64:
-            new(&m_uint64) ValueHolder<std::uint64_t>(rhs.m_uint64);
-            break;
-        case Types::INT64:
-            new(&m_int64) ValueHolder<std::int64_t>(rhs.m_int64);
-            break;
-        case Types::DOUBLE:
-            new(&m_double) ValueHolder<double>(rhs.m_double);
-            break;
-        case Types::FLOAT:
-            new(&m_float) ValueHolder<float>(rhs.m_float);
-            break;
-        case Types::STRING:
-            new(&m_string) ValueHolder<std::string>(rhs.m_string);
-            break;
+    } else if (rhs.m_deleter == &deleterUINT8) {
+        new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
+    } else if (rhs.m_deleter == &deleterINT8) {
+        new(&m_int8) ValueHolder<std::int8_t>(rhs.m_int8);
+    } else if (rhs.m_deleter == &deleterUINT16) {
+        new(&m_uint16) ValueHolder<std::uint16_t>(rhs.m_uint16);
+    } else if (rhs.m_deleter == &deleterINT16) {
+        new(&m_int16) ValueHolder<std::int16_t>(rhs.m_int16);
+    } else if (rhs.m_deleter == &deleterUINT32) {
+        new(&m_uint32) ValueHolder<std::uint32_t>(rhs.m_uint32);
+    } else if (rhs.m_deleter == &deleterUINT64) {
+        new(&m_uint64) ValueHolder<std::uint64_t>(rhs.m_uint64);
+    } else if (rhs.m_deleter == &deleterINT64) {
+        new(&m_int64) ValueHolder<std::int64_t>(rhs.m_int64);
+    } else if (rhs.m_deleter == &deleterFLOAT) {
+        new(&m_float) ValueHolder<float>(rhs.m_float);
+    } else if (rhs.m_deleter == &deleterSTRING) {
+        new(&m_string) ValueHolder<std::string>(rhs.m_string);
     }
 }
 
 VariantValue::VariantValue(VariantValue&& rhs)
-    : m_embedded(rhs.m_embedded)
+    : m_deleter(rhs.m_deleter), m_getter(rhs.m_getter)
 {
-    switch (m_embedded) {
-        case Types::DEFAULT:
-            new(&m_impl) shared_ptr<IValueHolder>(std::move(rhs.m_impl));
-            break;
-        case Types::UINT8:
-            new(&m_uint8) ValueHolder<std::uint8_t>(std::move(rhs.m_uint8));
-            break;
-        case Types::INT8:
-            new(&m_int8) ValueHolder<std::int8_t>(std::move(rhs.m_int8));
-            break;
-        case Types::UINT16:
-            new(&m_uint16) ValueHolder<std::uint16_t>(std::move(rhs.m_uint16));
-            break;
-        case Types::INT16:
-            new(&m_int16) ValueHolder<std::int16_t>(std::move(rhs.m_int16));
-            break;
-        case Types::UINT32:
-            new(&m_uint32) ValueHolder<std::uint32_t>(std::move(rhs.m_uint32));
-            break;
-        case Types::INT32:
-            new(&m_int32) ValueHolder<std::int32_t>(std::move(rhs.m_int32));
-            break;
-        case Types::UINT64:
-            new(&m_uint64) ValueHolder<std::uint64_t>(std::move(rhs.m_uint64));
-            break;
-        case Types::INT64:
-            new(&m_int64) ValueHolder<std::int64_t>(std::move(rhs.m_int64));
-            break;
-        case Types::DOUBLE:
-            new(&m_double) ValueHolder<double>(std::move(rhs.m_double));
-            break;
-        case Types::FLOAT:
-            new(&m_float) ValueHolder<float>(std::move(rhs.m_float));
-            break;
-        case Types::STRING:
-            new(&m_string) ValueHolder<std::string>(std::move(rhs.m_string));
-            break;
+    //cout << "move constructor called" << endl;
+    if (rhs.m_deleter == &deleterINT32) {
+        new(&m_int32) ValueHolder<std::int32_t>(std::move(rhs.m_int32));
+    } else if (rhs.m_deleter == &deleterDOUBLE) {
+        new(&m_double) ValueHolder<double>(std::move(rhs.m_double));
+    } else if (rhs.m_deleter == &deleterDEFAULT) {
+        new(&m_impl) shared_ptr<IValueHolder>(std::move(rhs.m_impl));
+    } else if (rhs.m_deleter == &deleterUINT8) {
+        new(&m_uint8) ValueHolder<std::uint8_t>(std::move(rhs.m_uint8));
+    } else if (rhs.m_deleter == &deleterINT8) {
+        new(&m_int8) ValueHolder<std::int8_t>(std::move(rhs.m_int8));
+    } else if (rhs.m_deleter == &deleterUINT16) {
+        new(&m_uint16) ValueHolder<std::uint16_t>(std::move(rhs.m_uint16));
+    } else if (rhs.m_deleter == &deleterINT16) {
+        new(&m_int16) ValueHolder<std::int16_t>(std::move(rhs.m_int16));
+    } else if (rhs.m_deleter == &deleterUINT32) {
+        new(&m_uint32) ValueHolder<std::uint32_t>(std::move(rhs.m_uint32));
+    } else if (rhs.m_deleter == &deleterUINT64) {
+        new(&m_uint64) ValueHolder<std::uint64_t>(std::move(rhs.m_uint64));
+    } else if (rhs.m_deleter == &deleterINT64) {
+        new(&m_int64) ValueHolder<std::int64_t>(std::move(rhs.m_int64));
+    } else if (rhs.m_deleter == &deleterFLOAT) {
+        new(&m_float) ValueHolder<float>(std::move(rhs.m_float));
+    } else if (rhs.m_deleter == &deleterSTRING) {
+        new(&m_string) ValueHolder<std::string>(std::move(rhs.m_string));
     }
 }
 
 VariantValue& VariantValue::operator=(const VariantValue& rhs)
 {
-    destroyEmbedded();
-    m_embedded = rhs.m_embedded;
-
-    switch (m_embedded) {
-        case Types::DEFAULT:
-            new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
-            break;
-        case Types::UINT8:
-            new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
-            break;
-        case Types::INT8:
-            new(&m_int8) ValueHolder<std::int8_t>(rhs.m_int8);
-            break;
-        case Types::UINT16:
-            new(&m_uint16) ValueHolder<std::uint16_t>(rhs.m_uint16);
-            break;
-        case Types::INT16:
-            new(&m_int16) ValueHolder<std::int16_t>(rhs.m_int16);
-            break;
-        case Types::UINT32:
-            new(&m_uint32) ValueHolder<std::uint32_t>(rhs.m_uint32);
-            break;
-        case Types::INT32:
-            new(&m_int32) ValueHolder<std::int32_t>(rhs.m_int32);
-            break;
-        case Types::UINT64:
-            new(&m_uint64) ValueHolder<std::uint64_t>(rhs.m_uint64);
-            break;
-        case Types::INT64:
-            new(&m_int64) ValueHolder<std::int64_t>(rhs.m_int64);
-            break;
-        case Types::DOUBLE:
-            new(&m_double) ValueHolder<double>(rhs.m_double);
-            break;
-        case Types::FLOAT:
-            new(&m_float) ValueHolder<float>(rhs.m_float);
-            break;
-        case Types::STRING:
-            new(&m_string) ValueHolder<std::string>(rhs.m_string);
-            break;
+    //cout << "move asignement operator called" << endl;
+    m_deleter(this);
+    m_deleter = rhs.m_deleter;
+    m_getter = rhs.m_getter;
+    if (rhs.m_deleter == &deleterINT32) {
+        new(&m_int32) ValueHolder<std::int32_t>(rhs.m_int32);
+    } else if (rhs.m_deleter == &deleterDOUBLE) {
+        new(&m_double) ValueHolder<double>(rhs.m_double);
+    } else if (rhs.m_deleter == &deleterDEFAULT) {
+        new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
+        if (m_impl.get() == nullptr) {
+            m_deleter(this);
+            throw std::runtime_error("type has no copy constructor");
+        }
+    } else if (rhs.m_deleter == &deleterUINT8) {
+        new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
+    } else if (rhs.m_deleter == &deleterINT8) {
+        new(&m_int8) ValueHolder<std::int8_t>(rhs.m_int8);
+    } else if (rhs.m_deleter == &deleterUINT16) {
+        new(&m_uint16) ValueHolder<std::uint16_t>(rhs.m_uint16);
+    } else if (rhs.m_deleter == &deleterINT16) {
+        new(&m_int16) ValueHolder<std::int16_t>(rhs.m_int16);
+    } else if (rhs.m_deleter == &deleterUINT32) {
+        new(&m_uint32) ValueHolder<std::uint32_t>(rhs.m_uint32);
+    } else if (rhs.m_deleter == &deleterUINT64) {
+        new(&m_uint64) ValueHolder<std::uint64_t>(rhs.m_uint64);
+    } else if (rhs.m_deleter == &deleterINT64) {
+        new(&m_int64) ValueHolder<std::int64_t>(rhs.m_int64);
+    } else if (rhs.m_deleter == &deleterFLOAT) {
+        new(&m_float) ValueHolder<float>(rhs.m_float);
+    } else if (rhs.m_deleter == &deleterSTRING) {
+        new(&m_string) ValueHolder<std::string>(rhs.m_string);
     }
-
-	return *this;
+    return *this;
 }
 
 VariantValue& VariantValue::operator=(VariantValue&& rhs)
 {
-    destroyEmbedded();
-    m_embedded = rhs.m_embedded;
+    //cout << "asignement operator called" << endl;
+    m_deleter(this);
+    m_deleter = rhs.m_deleter;
+    m_getter = rhs.m_getter;
 
-    switch (m_embedded) {
-        case Types::DEFAULT:
-            new(&m_impl) shared_ptr<IValueHolder>(std::move(rhs.m_impl));
-            break;
-        case Types::UINT8:
-            new(&m_uint8) ValueHolder<std::uint8_t>(std::move(rhs.m_uint8));
-            break;
-        case Types::INT8:
-            new(&m_int8) ValueHolder<std::int8_t>(std::move(rhs.m_int8));
-            break;
-        case Types::UINT16:
-            new(&m_uint16) ValueHolder<std::uint16_t>(std::move(rhs.m_uint16));
-            break;
-        case Types::INT16:
-            new(&m_int16) ValueHolder<std::int16_t>(std::move(rhs.m_int16));
-            break;
-        case Types::UINT32:
-            new(&m_uint32) ValueHolder<std::uint32_t>(std::move(rhs.m_uint32));
-            break;
-        case Types::INT32:
-            new(&m_int32) ValueHolder<std::int32_t>(std::move(rhs.m_int32));
-            break;
-        case Types::UINT64:
-            new(&m_uint64) ValueHolder<std::uint64_t>(std::move(rhs.m_uint64));
-            break;
-        case Types::INT64:
-            new(&m_int64) ValueHolder<std::int64_t>(std::move(rhs.m_int64));
-            break;
-        case Types::DOUBLE:
-            new(&m_double) ValueHolder<double>(std::move(rhs.m_double));
-            break;
-        case Types::FLOAT:
-            new(&m_float) ValueHolder<float>(std::move(rhs.m_float));
-            break;
-        case Types::STRING:
-            new(&m_string) ValueHolder<std::string>(std::move(rhs.m_string));
-            break;
+    if (rhs.m_deleter == &deleterINT32) {
+        new(&m_int32) ValueHolder<std::int32_t>(std::move(rhs.m_int32));
+    } else if (rhs.m_deleter == &deleterDOUBLE) {
+        new(&m_double) ValueHolder<double>(std::move(rhs.m_double));
+    } else if (rhs.m_deleter == &deleterDEFAULT) {
+        new(&m_impl) shared_ptr<IValueHolder>(std::move(rhs.m_impl));
+    } else if (rhs.m_deleter == &deleterUINT8) {
+        new(&m_uint8) ValueHolder<std::uint8_t>(std::move(rhs.m_uint8));
+    } else if (rhs.m_deleter == &deleterINT8) {
+        new(&m_int8) ValueHolder<std::int8_t>(std::move(rhs.m_int8));
+    } else if (rhs.m_deleter == &deleterUINT16) {
+        new(&m_uint16) ValueHolder<std::uint16_t>(std::move(rhs.m_uint16));
+    } else if (rhs.m_deleter == &deleterINT16) {
+        new(&m_int16) ValueHolder<std::int16_t>(std::move(rhs.m_int16));
+    } else if (rhs.m_deleter == &deleterUINT32) {
+        new(&m_uint32) ValueHolder<std::uint32_t>(std::move(rhs.m_uint32));
+    } else if (rhs.m_deleter == &deleterUINT64) {
+        new(&m_uint64) ValueHolder<std::uint64_t>(std::move(rhs.m_uint64));
+    } else if (rhs.m_deleter == &deleterINT64) {
+        new(&m_int64) ValueHolder<std::int64_t>(std::move(rhs.m_int64));
+    } else if (rhs.m_deleter == &deleterFLOAT) {
+        new(&m_float) ValueHolder<float>(std::move(rhs.m_float));
+    } else if (rhs.m_deleter == &deleterSTRING) {
+        new(&m_string) ValueHolder<std::string>(std::move(rhs.m_string));
     }
-	return *this;
+    return *this;
 }
 
 bool VariantValue::assign(const VariantValue& v) noexcept
@@ -248,8 +150,11 @@ bool VariantValue::assign(const VariantValue& v) noexcept
 VariantValue VariantValue::createReference() const {
 	VariantValue ret;
 
-    if (m_embedded == Types::DEFAULT) {
-        ret.m_impl = m_impl;
+    check_valid();
+    if (!isEmbedded()) {
+        ret.m_deleter = m_deleter;
+        ret.m_getter = m_getter;
+        new(&ret.m_impl) shared_ptr<IValueHolder>(m_impl);
     } else {
         ret = *this;
     }
