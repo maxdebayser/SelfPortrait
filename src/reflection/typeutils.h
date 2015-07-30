@@ -52,8 +52,8 @@ struct static_and<H,T...> {
 
 template<class T>
 struct equal_test_helper {
-    template<class U, class = decltype(std::declval<U>() == std::declval<U>() )>
-    static std::true_type  supports_equal_test(const U&);
+    template<class U, class W = decltype(std::declval<U>() == std::declval<U>() )>
+    static typename Select<std::is_same<bool, W>::value, std::true_type, std::false_type>::type supports_equal_test(const U&);
 
     static std::false_type supports_equal_test(...);
 };
