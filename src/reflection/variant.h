@@ -1305,7 +1305,7 @@ private:
     static void deleterFLOAT(VariantValue* self) noexcept { self->m_float.~ValueHolder<float>();}
     static void deleterSTRING(VariantValue* self) noexcept { self->m_string.~ValueHolder<std::string>(); }
 
-    static IValueHolder* getterNULL(VariantValue*) noexcept { return nullptr; }
+    static constexpr IValueHolder* getterNULL(VariantValue*) noexcept { return nullptr; }
     static IValueHolder* getterDEFAULT(VariantValue* self) noexcept { return self->m_impl.get(); }
     static IValueHolder* getterUINT8(VariantValue* self) noexcept { return &self->m_uint8; }
     static IValueHolder* getterINT8(VariantValue* self) noexcept { return &self->m_int8; }
