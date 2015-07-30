@@ -229,9 +229,8 @@ void arg4test()
 
 	clock_t start = clock();
 
-	for (int i = 0; i < times; ++i) {
-        reflFunc.callArgArray(args);
-        //test_functions::intarg4(0, 1, 2, 3);
+    for (int i = 0; i < times; ++i) {
+        test_functions::intarg4(0, 1, 2, 3);
 	}
 
 	clock_t final = clock();
@@ -250,8 +249,8 @@ void arg4test()
     ArgArray args = { 0, 1, 2, 3 };
 
 	for (int i = 0; i < times; ++i) {
-        //reflFunc.callArgArray(args);
-        reflFunc.call(0,1,2,3);
+        reflFunc.callArgArray(args);
+        //reflFunc.call(0,1,2,3);
 	}
 
 	final = clock();
