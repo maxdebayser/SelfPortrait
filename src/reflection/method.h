@@ -5,7 +5,7 @@
 #ifndef METHOD_H
 #define METHOD_H
 
-#include "config.h"
+#include "selfportrait_config.h"
 #include "typelist.h"
 #include "variant.h"
 #include "reflection.h"

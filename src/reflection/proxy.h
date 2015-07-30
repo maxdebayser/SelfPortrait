@@ -5,7 +5,7 @@
 #ifndef PROXY_H
 #define PROXY_H
 
-#include "config.h"
+#include "selfportrait_config.h"
 #include "collection_utils.h"
 #include "reflection.h"
 

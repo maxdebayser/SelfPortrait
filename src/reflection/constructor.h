@@ -5,7 +5,7 @@
 #ifndef CONSTRUCTOR_H
 #define CONSTRUCTOR_H
 
-#include "config.h"
+#include "selfportrait_config.h"
 #include "typelist.h"
 #include "variant.h"
 #include <tuple>

@@ -26,7 +26,7 @@
 #ifndef REFLECTION_H
 #define REFLECTION_H
 
-#include "config.h"
+#include "selfportrait_config.h"
 #include "collection_utils.h"
 #include "variant.h"
 

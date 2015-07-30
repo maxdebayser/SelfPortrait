@@ -5,7 +5,7 @@
 #ifndef FUNCTION_H
 #define FUNCTION_H
 
-#include "config.h"
+#include "selfportrait_config.h"
 #include <stdexcept>
 #include <string>
 #ifndef NO_RTTI

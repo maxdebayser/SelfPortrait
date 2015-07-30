@@ -5,7 +5,7 @@
 #ifndef COLL_UTILS_H
 #define COLL_UTILS_H
 
-#include "config.h"
+#include "selfportrait_config.h"
 
 inline void emplace(ArgArray& v )
 {
