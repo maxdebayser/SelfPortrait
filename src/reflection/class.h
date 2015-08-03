@@ -9,6 +9,7 @@
 #include <string>
 #include <list>
 #include <memory>
+#include <unordered_map>
 #ifndef NO_RTTI
 #include <typeinfo>
 #endif
@@ -40,7 +41,7 @@ public:
 	
 	const AttributeList& attributes() const;
 
-	void registerSuperClass(const char* className);
+    void registerSuperClass(const char* className, std::function<VariantValue(const VariantValue&)> castFunction);
 
 	void resolveBases();
 
@@ -80,6 +81,8 @@ public:
 
 	void registerInterface(StubCreator c);
 
+    VariantValue castUp(const Class& base, const VariantValue& baseRef) const;
+
 private:
 
 	void registerSuperClassInternal(Class c);
@@ -88,8 +91,9 @@ private:
 	::std::string m_fqn = "error, meta-class uninitialized";
 	MethodList m_methods;
 	ConstructorList m_constructors;
-	std::list<const char*> m_unresolvedBases;
+    std::list<std::pair<const char*, std::function<VariantValue(const VariantValue&)>>> m_unresolvedBases;
 	ClassList m_superclasses;
+    std::unordered_map<Class, std::function<VariantValue(const VariantValue&)>> m_castFunctions;
 	AttributeList m_attributes;
 	bool m_open;
 

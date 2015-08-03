@@ -211,6 +211,7 @@ private:
     static const struct luaL_Reg lib_m[];
 
     friend class LuaAdapter<Lua_Variant>;
+    friend class Lua_Class;
 };
 
 
@@ -238,6 +239,7 @@ public:
     static int findAllMethods(lua_State* L);
     static int findSuperClass(lua_State* L);
     static int findAllSuperClasses(lua_State* L);
+    static int castUp(lua_State* L);
 
     static void initialize();
 

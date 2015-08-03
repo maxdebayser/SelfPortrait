@@ -86,7 +86,13 @@ return &instance;\
 }
 
 #define REFL_SUPER_CLASS(CLASS_NAME) \
-instance.registerSuperClass(#CLASS_NAME);
+    instance.registerSuperClass(#CLASS_NAME, [=](const VariantValue& b) {\
+        auto& br = b.convertToThrow<CLASS_NAME&>();\
+        VariantValue ret;\
+        auto& dr = static_cast<ThisClass&>(br);\
+        ret.construct<ThisClass&>(dr);\
+        return ret;\
+});
 
 
 #ifndef NO_RTTI

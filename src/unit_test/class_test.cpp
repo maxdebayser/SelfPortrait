@@ -71,6 +71,15 @@ namespace ClassTest {
 	public:
 		void method1() {}
 	};
+
+    class Test3: public Test1 {
+    public:
+        int attribute3;
+        Test3(int arg) : Test1(arg/2), attribute3(arg) {}
+        int method3() {
+            return attribute3+2;
+        }
+    };
 }
 
 REFL_BEGIN_CLASS(ClassTest::TestBase1)
@@ -98,6 +107,13 @@ REFL_BEGIN_CLASS(ClassTest::Test1)
 	REFL_METHOD(operator=, ClassTest::Test1&, const ClassTest::Test1&)
 	REFL_METHOD(operator=, ClassTest::Test1&, ClassTest::Test1&&)
 	REFL_METHOD(returnsRefToAbstract, ClassTest::TestBase1&)
+REFL_END_CLASS
+
+REFL_BEGIN_CLASS(ClassTest::Test3)
+    REFL_SUPER_CLASS(ClassTest::Test1)
+    REFL_METHOD(method3, int)
+    REFL_ATTRIBUTE(attribute3, int)
+    REFL_CONSTRUCTOR(int)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(ClassTest::Test2)
@@ -291,6 +307,37 @@ void ClassTestSuite::testClass()
 	WITH_RTTI(TS_ASSERT(staticMethod.returnType() == typeid(double)));
 	TS_ASSERT_EQUALS(staticMethod.numberOfArguments(), 0);
 	TS_ASSERT_EQUALS(staticMethod.call().value<double>(), 3.14);
+
+    ClassTest::Test1 t(666);
+    VariantValue inst3;
+    inst3.construct<ClassTest::TestBase1&>(t);
+    TS_ASSERT_THROWS_ANYTHING(method1.call(inst3).value<string>());
+
+    VariantValue inst4 = test.castUp(inst3, base1);
+    bool success = false;
+    ClassTest::Test1& derivedRef = inst4.convertTo<ClassTest::Test1&>(&success);
+    TS_ASSERT(success);
+    TS_ASSERT_EQUALS(derivedRef.attribute1, 666);
+    TS_ASSERT_EQUALS(method1.call(inst4).value<string>(), "this is a test");
+
+    Class test_3 = Class::lookup("ClassTest::Test3");
+
+    ClassTest::Test3 t2(666);
+    TS_ASSERT_EQUALS(t2.attribute1, 333);
+    TS_ASSERT_EQUALS(t2.attribute3, 666);
+    VariantValue inst5;
+    inst5.construct<ClassTest::TestBase1&>(t2);
+    VariantValue inst6 = test_3.castUp(inst5, base1);
+    success = false;
+    ClassTest::Test3& derivedRef2 = inst6.convertTo<ClassTest::Test3&>(&success);
+    TS_ASSERT(success);
+    TS_ASSERT_EQUALS(derivedRef2.attribute1, 333);
+    TS_ASSERT_EQUALS(derivedRef2.attribute3, 666);
+
+    t2.attribute1 = 787;
+    t2.attribute3 = 13;
+    TS_ASSERT_EQUALS(derivedRef2.attribute1, 787);
+    TS_ASSERT_EQUALS(derivedRef2.attribute3, 13);
 }
 
 

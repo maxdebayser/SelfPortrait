@@ -449,6 +449,7 @@ void Lua_Class::initialize()
 {
 	methods["fullyQualifiedName"]  = exception_translator<fullyQualifiedName>;
 	methods["simpleName"]          = exception_translator<simpleName>;
+    methods["castUp"]              = exception_translator<castUp>;
 	methods["isInterface"]         = exception_translator<isInterface>;
 	methods["methods"]             = exception_translator<getMethods>;
 	methods["constructors"]        = exception_translator<getConstructors>;
@@ -496,6 +497,24 @@ int Lua_Class::simpleName(lua_State* L)
 
 	lua_pushstring(L, c->m_class.simpleName().c_str());
 	return 1;
+}
+
+int Lua_Class::castUp(lua_State* L)
+{
+    Lua_Class* c    = checkUserData(L, 1);
+    Lua_Variant* v  = Lua_Variant::checkUserData(L,2);
+    Class base = v->m_class;
+
+    if (lua_gettop(L) == 3) {
+        Lua_Class* cbase = checkUserData(L, 3);
+        base = cbase->m_class;
+    } else if (!base.isValid()) {
+        luaL_error(L, "The class for this variant is unknown, please add is as the second argument");
+    }
+
+    VariantValue ret = c->m_class.castUp(v->m_variant, base);
+    Lua_Variant::create(L, c->m_class, std::move(ret));
+    return 1;
 }
 
 int Lua_Class::isInterface(lua_State* L)

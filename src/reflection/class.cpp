@@ -76,10 +76,11 @@ void ClassImpl::registerAttribute(Attribute attr)
 	m_attributes.push_back(attr);
 }
 
-void ClassImpl::registerSuperClass(const char* className)
+void ClassImpl::registerSuperClass(const char* className, std::function<VariantValue(const VariantValue&)> castFunction)
 {
 	assert_open();
-	m_unresolvedBases.push_back(className);
+    m_unresolvedBases.emplace_back(className, castFunction);
+
 }
 
 void ClassImpl::registerSuperClassInternal(Class c)
@@ -104,10 +105,12 @@ bool ClassImpl::hasUnresolvedBases() const
 void ClassImpl::resolveBases()
 {
 	for (auto it = m_unresolvedBases.begin(); it!= m_unresolvedBases.end(); ++it) {
-		Class c = Class::lookup(*it);
+        Class c = Class::lookup(it->first);
 		if (c.isValid()) {
+            auto f = it->second;
 			it = m_unresolvedBases.erase(it);
 			registerSuperClassInternal(c);
+            m_castFunctions.emplace(c, f);
 		}
 	}
 }
@@ -140,6 +143,16 @@ VariantValue ClassImpl::newInterface(std::shared_ptr<ProxyImpl>& proxyImpl) cons
 void ClassImpl::registerInterface(StubCreator sc)
 {
 	m_stubCreator = sc;
+}
+
+VariantValue ClassImpl::castUp(const Class& base, const VariantValue& baseRef) const
+{
+    auto it = m_castFunctions.find(base);
+    if (it == m_castFunctions.end()) {
+        throw std::logic_error(strconv::fmt_str("No cast function registered for %1", base.fullyQualifiedName()));
+    }
+    auto f = it->second;
+    return std::move(f(baseRef));
 }
 
 #endif

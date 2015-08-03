@@ -93,6 +93,7 @@ function testClass()
     local method1
     local method2
     local staticMethod
+    local refToAbstract
 
     for _, m in ipairs(methods) do
         if m:name() == "base1Method1" then base1Method1 = m end
@@ -100,6 +101,7 @@ function testClass()
         if m:name() == "method1"      then method1      = m end
         if m:name() == "method2"      then method2      = m end
         if m:name() == "staticMethod" then staticMethod = m end
+        if m:name() == "returnsRefToAbstract" then refToAbstract = m end
     end
 
     TS_ASSERT [[base1Method1:name() == "base1Method1"]]
@@ -138,6 +140,11 @@ function testClass()
     local searched = Test1Class:findSuperClass(function(c) return c:simpleName() == "TestBase1" end)
     TS_ASSERT(searched)
     TS_ASSERT[[searched:simpleName() == "TestBase1"]]
+
+    TS_ASSERT [[method1:call(testInst2):tostring() == "this is a test"]]
+    local abstract = refToAbstract:call(testInst2)
+    local upRef = Test1Class:castUp(abstract)
+    TS_ASSERT [[method1:call(upRef):tostring() == "this is a test"]]
 
     return false
 end

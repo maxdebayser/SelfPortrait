@@ -407,6 +407,8 @@ public:
 
 	static Class lookup(const ::std::string& name);
 
+    VariantValue castUp(const VariantValue& baseRef, const Class& base) const;
+
 #ifndef NO_RTTI
 	static Class lookup(const ::std::type_info& id);
 #endif

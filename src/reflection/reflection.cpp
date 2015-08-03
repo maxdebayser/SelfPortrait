@@ -277,6 +277,59 @@ bool Class::hasUnresolvedBases() const
 	return m_impl->hasUnresolvedBases();
 }
 
+static std::list<Class> inheritancePath(const Class& derived, const Class& base)
+{
+    if (derived == base) {
+        return { base };
+    }
+
+    if (!inherits(derived, base)) {
+        return {};
+    }
+
+    std::list<Class> ret = { derived };
+
+    for(auto& c: derived.superclasses()) {
+        if (c == base || inherits(c, base)) {
+            ret.splice(ret.begin(), inheritancePath(c, base));
+            break;
+        }
+    }
+    return ret;
+}
+
+VariantValue Class::castUp(const VariantValue& baseRef, const Class& base) const
+{
+    auto path = inheritancePath(*this, base);
+    if (path.empty()) {
+        throw std::logic_error(strconv::fmt_str("This class (%1)) is not derived from class %2", this->fullyQualifiedName(), base.fullyQualifiedName()));
+    }
+
+    if (path.back() != *this) {
+        throw std::logic_error("inheritance path is wrong");
+    }
+
+    if (path.front() != base) {
+        throw std::logic_error("inheritance path is wrong");
+    }
+
+    VariantValue v = baseRef.createReference();
+    auto it_d = path.begin();
+    it_d++;
+    auto it_b = path.begin();
+
+    while(it_d != path.end()) {
+        const Class& d = *it_d;
+        const Class& b = *it_b;
+
+        v = d.m_impl->castUp(b, v);
+
+        ++it_d;
+        ++it_b;
+    }
+    return std::move(v);
+}
+
 const Class ClassRegistry::forName(const ::std::string& name) const
 {
 	auto it = m_registryByName.find(name);
@@ -325,18 +378,17 @@ namespace {
 	CRel classifyRelationship(const Class& c1, const Class& c2)
 	{
 		// even if there is no difference in "abstractness" the order is deterministic
-		if (c1 == c2) {
+        if (c1 == c2) {
 			return SAME;
 		}
 
-		if (find(c2.superclasses().begin(), c2.superclasses().end(), c1) != c2.superclasses().end()) {
+        if (find(c2.superclasses().begin(), c2.superclasses().end(), c1) != c2.superclasses().end()) {
 			return MORE_ABSTRACT;
 		}
 
-		if (find(c1.superclasses().begin(), c1.superclasses().end(), c2) != c1.superclasses().end()) {
+        if (find(c1.superclasses().begin(), c1.superclasses().end(), c2) != c1.superclasses().end()) {
 			return LESS_ABSTRACT;
-		}
-
+        }
 		return UNRELATED;
 	}
 }
