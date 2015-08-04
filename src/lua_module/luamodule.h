@@ -9,13 +9,14 @@
 
 
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <exception>
 
 namespace SelfPortraitLua {
 
-typedef map<string, lua_CFunction> MethodTable;
+typedef std::unordered_map<string, lua_CFunction> MethodTable;
 
 class LuaBindingException: public std::exception
 {
