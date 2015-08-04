@@ -85,14 +85,28 @@ template<> ClassImpl* ClassImpl::inst<CLASS_NAME>() {\
 return &instance;\
 }
 
+template<class B, class D, bool P>
+struct cast_helper {
+    static VariantValue cast(const VariantValue&) {
+        return VariantValue();
+    }
+};
+
+template<class B, class D>
+struct cast_helper<B,D,true> {
+    static VariantValue cast(const VariantValue& b) {
+        VariantValue ret;
+        auto br = b.convertToThrow<D*>();
+        auto dr = dynamic_cast<B*>(br);
+        if (dr) {
+            ret.construct<B&>(*dr);
+        }
+        return ret;
+    }
+};
+
 #define REFL_SUPER_CLASS(CLASS_NAME) \
-    instance.registerSuperClass(#CLASS_NAME, [=](const VariantValue& b) {\
-        auto& br = b.convertToThrow<CLASS_NAME&>();\
-        VariantValue ret;\
-        auto& dr = static_cast<ThisClass&>(br);\
-        ret.construct<ThisClass&>(dr);\
-        return ret;\
-});
+    instance.registerSuperClass(#CLASS_NAME, cast_helper<ThisClass, CLASS_NAME, std::is_polymorphic<CLASS_NAME>::value>::cast);
 
 
 #ifndef NO_RTTI

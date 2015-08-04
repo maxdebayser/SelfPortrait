@@ -513,7 +513,8 @@ int Lua_Class::castUp(lua_State* L)
     }
 
     VariantValue ret = c->m_class.castUp(v->m_variant, base);
-    Lua_Variant::create(L, c->m_class, std::move(ret));
+    Class retC = ret.isValid() ? c->m_class : Class();
+    Lua_Variant::create(L, retC, std::move(ret));
     return 1;
 }
 

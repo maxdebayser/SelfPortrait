@@ -314,6 +314,7 @@ void ClassTestSuite::testClass()
     TS_ASSERT_THROWS_ANYTHING(method1.call(inst3).value<string>());
 
     VariantValue inst4 = test.castUp(inst3, base1);
+    TS_ASSERT(inst4.isValid());
     bool success = false;
     ClassTest::Test1& derivedRef = inst4.convertTo<ClassTest::Test1&>(&success);
     TS_ASSERT(success);
@@ -328,6 +329,7 @@ void ClassTestSuite::testClass()
     VariantValue inst5;
     inst5.construct<ClassTest::TestBase1&>(t2);
     VariantValue inst6 = test_3.castUp(inst5, base1);
+    TS_ASSERT(inst6.isValid());
     success = false;
     ClassTest::Test3& derivedRef2 = inst6.convertTo<ClassTest::Test3&>(&success);
     TS_ASSERT(success);
@@ -338,6 +340,16 @@ void ClassTestSuite::testClass()
     t2.attribute3 = 13;
     TS_ASSERT_EQUALS(derivedRef2.attribute1, 787);
     TS_ASSERT_EQUALS(derivedRef2.attribute3, 13);
+
+    ClassTest::Test1 t3(666);
+    VariantValue inst7;
+    inst7.construct<ClassTest::TestBase1&>(t3);
+    VariantValue inst8 = test_3.castUp(inst7, base1);
+    TS_ASSERT(!inst8.isValid());
+
+    Class test_2 = Class::lookup("ClassTest::Test2");
+    VariantValue inst9 = test_2.castUp(inst7, base1);
+    TS_ASSERT(!inst9.isValid());
 }
 
 

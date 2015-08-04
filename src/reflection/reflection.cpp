@@ -302,7 +302,7 @@ VariantValue Class::castUp(const VariantValue& baseRef, const Class& base) const
 {
     auto path = inheritancePath(*this, base);
     if (path.empty()) {
-        throw std::logic_error(strconv::fmt_str("This class (%1)) is not derived from class %2", this->fullyQualifiedName(), base.fullyQualifiedName()));
+        return VariantValue();
     }
 
     if (path.back() != *this) {
