@@ -81,7 +81,7 @@ const struct luaL_Reg Lua_Variant::lib_m[] = {
 
 void Lua_Variant::initialize()
 {
-    methods["assign"]        = exception_translator<assign>;
+    methods["assign"]          = exception_translator<assign>;
     methods["tostring"]        = exception_translator<tostring>;
 	methods["tonumber"]        = exception_translator<tonumber>;
 	methods["isValid"]         = exception_translator<isValid>;
@@ -89,10 +89,11 @@ void Lua_Variant::initialize()
 	methods["isIntegral"]      = exception_translator<isIntegral>;
 	methods["isFloatingPoint"] = exception_translator<isFloatingPoint>;
 	methods["isArithmetical"]  = exception_translator<isArithmetical>;
+    methods["isConst"]         = exception_translator<isConst>;
 	methods["isPOD"]           = exception_translator<isPOD>;
 	methods["sizeOf"]          = exception_translator<sizeOf>;
 	methods["alignOf"]         = exception_translator<alignOf>;
-    methods["ptrToValue"]  = exception_translator<ptrToValue>;
+    methods["ptrToValue"]      = exception_translator<ptrToValue>;
     methods["class"]           = exception_translator<_class>;
 }
 
@@ -343,6 +344,14 @@ int Lua_Variant::isArithmetical(lua_State* L)
 	Lua_Variant* v = checkUserData(L);
 	LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isArithmetical());
 	return 1;
+}
+
+
+int Lua_Variant::isConst(lua_State* L)
+{
+    Lua_Variant* v = checkUserData(L);
+    LuaUtils::LuaValue<bool>::pushValue(L, v->m_variant.isConst());
+    return 1;
 }
 
 int Lua_Variant::isPOD(lua_State* L)

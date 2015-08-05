@@ -161,6 +161,7 @@ public:
     static int isIntegral(lua_State* L);
     static int isFloatingPoint(lua_State* L);
     static int isArithmetical(lua_State* L);
+    static int isConst(lua_State* L);
     static int isPOD(lua_State* L);
     static int sizeOf(lua_State* L);
     static int alignOf(lua_State* L);
