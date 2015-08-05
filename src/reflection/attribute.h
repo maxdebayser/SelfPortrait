@@ -53,10 +53,15 @@ struct attribute_type<_Type _Clazz::*> {
 	
 	enum { is_const = false };
 	
-	static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
+    static VariantValue get(Clazz& object, ptr_to_attr ptr) {
+        VariantValue ret;
+        return ret.construct<Type&>(object.*ptr);
+	}
+
+    static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
         VariantValue ret;
         return ret.construct<const Type&>(object.*ptr);
-	}
+    }
 	
 	static void set(Clazz& object, ptr_to_attr ptr, const VariantValue& value) {
         assignable_helper<Clazz, Type, std::is_copy_assignable<Type>::value>::set(object, ptr, value);
@@ -170,7 +175,8 @@ public:
 		if (!m_isStatic) {
 			throw ::std::runtime_error("cannot get value of non-static property without an object");
 		}
-		return this->get(VariantValue());
+        VariantValue v;
+        return this->get(v, false);
 	}
 
 	void set(const VariantValue& value) const {
@@ -181,7 +187,7 @@ public:
 		}
 	}
 	
-	virtual VariantValue get(const VariantValue& object) const = 0;
+    virtual VariantValue get(VariantValue& object, bool hasToBeConst) const = 0;
 
 	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const = 0;
 
@@ -230,14 +236,21 @@ public:
 			  )
 		, m_ptr(ptr) {}
 
-	virtual VariantValue get(const VariantValue& object) const override {
-		bool success = false;
-		const Clazz& ref = object.convertTo<const Clazz&>(&success);
-
-		if (!success) {
-			throw ::std::runtime_error("accessing attribute of an object of a different class");
-		}
-		return ADescr::get(ref, m_ptr);
+    virtual VariantValue get(VariantValue& object, bool hasToBeConst) const override {
+        bool success = false;
+        if (hasToBeConst || object.isConst()) {
+            const Clazz& ref = object.convertTo<const Clazz&>(&success);
+            if (!success) {
+                throw ::std::runtime_error("accessing attribute of an object of a different class");
+            }
+            return ADescr::get(ref, m_ptr);
+        } else {
+            Clazz& ref = object.convertTo<Clazz&>(&success);
+            if (!success) {
+                throw ::std::runtime_error("accessing attribute of an object of a different class");
+            }
+            return ADescr::get(ref, m_ptr);
+        }
 	}
 
 	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const override {
@@ -278,7 +291,7 @@ public:
 			  )
 		, m_ptr(ptr) {}
 
-	virtual VariantValue get(const VariantValue&) const override { return ADescr::get(m_ptr); }
+    virtual VariantValue get(VariantValue&, bool) const override { return ADescr::get(m_ptr); }
 
 	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const override {
 		ADescr::set(m_ptr, value);

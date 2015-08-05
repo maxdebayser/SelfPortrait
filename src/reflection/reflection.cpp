@@ -78,7 +78,12 @@ void Attribute::set(const VariantValue& value) const {
 
 VariantValue Attribute::get(const VariantValue& object) const {
 	check_valid();
-	return m_impl->get(object);
+    return m_impl->get(const_cast<VariantValue&>(object), true);
+}
+
+VariantValue Attribute::get(VariantValue& object) const {
+    check_valid();
+    return m_impl->get(object, false);
 }
 
 void Attribute::set(VariantValue& object, const VariantValue& value) const  {

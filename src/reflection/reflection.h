@@ -90,6 +90,7 @@ public:
 	void set(const VariantValue& value) const;
 	
 	VariantValue get(const VariantValue& object) const;
+    VariantValue get(VariantValue& object) const;
 	void set(VariantValue& object, const VariantValue& value) const;
 	void set(const VariantValue& object, const VariantValue& value) const;
 

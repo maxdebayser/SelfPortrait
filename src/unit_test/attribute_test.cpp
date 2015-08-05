@@ -73,13 +73,16 @@ void AttributeTestSuite::testVanillaAttribute()
     VariantValue v1 = Test();
     VariantValue r1 = attr1.get(v1);
 
-    // TODO: check if it is possible to implement a conversion to int (calling the copy constructor)
+    TS_ASSERT(r1.isA<int&>());
     TS_ASSERT(r1.isA<const int&>());
-    TS_ASSERT_EQUALS(r1.value<const int&>(), 101);
+    TS_ASSERT(!r1.isConst());
+    TS_ASSERT_EQUALS(r1.value<int&>(), 101);
 
 	attr1.set(v1, 201);
 	r1 = attr1.get(v1);
+    TS_ASSERT(r1.isA<int&>());
     TS_ASSERT(r1.isA<const int&>());
+    TS_ASSERT(!r1.isConst());
     TS_ASSERT_EQUALS(r1.value<const int&>(), 201);
 
 	TS_ASSERT_THROWS(attr1.get(), std::runtime_error);
@@ -88,7 +91,9 @@ void AttributeTestSuite::testVanillaAttribute()
 	const VariantValue v2 = Test();
 	VariantValue r2 = attr1.get(v2);
 
+    TS_ASSERT(!r2.isA<int&>());
     TS_ASSERT(r2.isA<const int&>());
+    TS_ASSERT(r2.isConst());
     TS_ASSERT_EQUALS(r2.value<const int&>(), 101);
 
 	TS_ASSERT_THROWS(attr1.set(v2, 201), std::runtime_error);
