@@ -25,6 +25,7 @@ function testMethod()
     TS_ASSERT(v1)
 
     TS_ASSERT[[ method1:call(v1, 3):tonumber() == 6 ]]
+    TS_ASSERT[[ method1(v1, 3):tonumber() == 6 ]]
 
     TS_ASSERT[[ v1:method1(3):tonumber() == 6 ]]
 

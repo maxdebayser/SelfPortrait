@@ -26,6 +26,7 @@ function testFunction()
     TS_ASSERT[[ func2:numberOfArguments() == 2 ]]
     TS_ASSERT[[ func2:call(3.3, 5.5):tonumber() == 8 ]]
     TS_ASSERT[[ func2:call(2, 4):tonumber() == 6 ]]
+    TS_ASSERT[[ func2(2, 4):tonumber() == 6 ]]
 
 
     return true

@@ -39,6 +39,11 @@ function testConstructor()
     TS_ASSERT[[ attr1:get(v1):tonumber() == 101 ]]
     TS_ASSERT[[ attr2:get(v1):tonumber() == 102 ]]
 
+    local v1_1 = default()
+
+    TS_ASSERT[[ attr1:get(v1_1):tonumber() == 101 ]]
+    TS_ASSERT[[ attr2:get(v1_1):tonumber() == 102 ]]
+
     local cons1Arg = cons["int"]
     TS_ASSERT(cons1Arg)
     TS_ASSERT[[ cons1Arg:numberOfArguments() == 1 ]]

@@ -756,6 +756,15 @@ const struct luaL_Reg Lua_Method::lib_f[] = {
 	{ NULL, NULL }
 };
 
+
+const struct luaL_Reg Lua_Method::lib_m[] = {
+    { "__gc", exception_translator<gc> },
+    { "__index", exception_translator<index> },
+    { "__eq", exception_translator<eq> },
+    { "__call", exception_translator<call> },
+    { NULL, NULL }
+};
+
 void Lua_Method::initialize()
 {
 	methods["name"]              = exception_translator<name>;
@@ -884,6 +893,14 @@ MethodTable Lua_Constructor::methods;
 
 const struct luaL_Reg Lua_Constructor::lib_f[] = {
 	{ NULL, NULL }
+};
+
+const struct luaL_Reg Lua_Constructor::lib_m[] = {
+    { "__gc", exception_translator<gc> },
+    { "__index", exception_translator<index> },
+    { "__eq", exception_translator<eq> },
+    { "__call", exception_translator<call> },
+    { NULL, NULL }
 };
 
 void Lua_Constructor::initialize()
@@ -1051,6 +1068,14 @@ MethodTable Lua_Function::methods;
 const struct luaL_Reg Lua_Function::lib_f[] = {
 	{ "lookup", exception_translator<lookup> },
 	{ NULL, NULL }
+};
+
+const struct luaL_Reg Lua_Function::lib_m[] = {
+    { "__gc", exception_translator<gc> },
+    { "__index", exception_translator<index> },
+    { "__eq", exception_translator<eq> },
+    { "__call", exception_translator<call> },
+    { NULL, NULL }
 };
 
 

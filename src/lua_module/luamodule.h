@@ -292,6 +292,7 @@ private:
     Method m_method;
     static MethodTable methods;
     static const struct luaL_Reg lib_f[];
+    static const struct luaL_Reg lib_m[];
     friend class LuaAdapter<Lua_Method>;
 };
 
@@ -319,6 +320,7 @@ private:
     Constructor m_constructor;
     static MethodTable methods;
     static const struct luaL_Reg lib_f[];
+    static const struct luaL_Reg lib_m[];
     friend class LuaAdapter<Lua_Constructor>;
 };
 
@@ -375,6 +377,7 @@ private:
     Function m_function;
     static MethodTable methods;
     static const struct luaL_Reg lib_f[];
+    static const struct luaL_Reg lib_m[];
     friend class LuaAdapter<Lua_Function>;
 };
 
