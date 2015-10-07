@@ -779,9 +779,11 @@ public:
     template<class ValueType, class... Args>
     VariantValue& construct(Args&&... args) {
         m_deleter(this);
+        m_deleter = deleterNULL; // If the construction fails, the variant will be in a consistent state
+        m_getter = getterNULL;
+        new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( ::std::forward<Args>(args)... ));
         m_deleter = deleterDEFAULT;
         m_getter = getterDEFAULT;
-        new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( ::std::forward<Args>(args)... ));
         return *this;
     }
 
