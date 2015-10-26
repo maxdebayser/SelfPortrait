@@ -1241,7 +1241,7 @@ public:
 	}
 	
 
-    bool isValid() const { return m_getter != &getterNULL; }
+    bool isValid() const { return m_deleter != &deleterNULL; }
 
 #ifndef NO_RTTI
 	const ::std::type_info& typeId() const;
