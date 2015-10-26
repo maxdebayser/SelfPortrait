@@ -12,11 +12,15 @@ VariantValue::VariantValue(const VariantValue& rhs)
     } else if (rhs.m_deleter == &deleterDOUBLE) {
         new(&m_double) ValueHolder<double>(rhs.m_double);
     } else if (rhs.m_deleter == &deleterDEFAULT) {
+        m_deleter = deleterNULL;
+        m_getter  = getterNULL;
         new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
         if (m_impl.get() == nullptr) {
-            m_deleter(this);
+            deleterDEFAULT(this);
             throw std::runtime_error("type has no copy constructor");
         }
+        m_deleter = deleterDEFAULT;
+        m_getter  = getterDEFAULT;
     } else if (rhs.m_deleter == &deleterUINT8) {
         new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
     } else if (rhs.m_deleter == &deleterINT8) {
@@ -71,20 +75,25 @@ VariantValue::VariantValue(VariantValue&& rhs)
 
 VariantValue& VariantValue::operator=(const VariantValue& rhs)
 {
-    //cout << "move asignement operator called" << endl;
+    //std::cout << "copy asignement operator called" << std::endl;
     m_deleter(this);
     m_deleter = rhs.m_deleter;
     m_getter = rhs.m_getter;
+
     if (rhs.m_deleter == &deleterINT32) {
         new(&m_int32) ValueHolder<std::int32_t>(rhs.m_int32);
     } else if (rhs.m_deleter == &deleterDOUBLE) {
         new(&m_double) ValueHolder<double>(rhs.m_double);
     } else if (rhs.m_deleter == &deleterDEFAULT) {
+        m_deleter = deleterNULL;
+        m_getter  = getterNULL;
         new(&m_impl) shared_ptr<IValueHolder>(rhs.m_impl->clone());
         if (m_impl.get() == nullptr) {
-            m_deleter(this);
+            deleterDEFAULT(this);
             throw std::runtime_error("type has no copy constructor");
         }
+        m_deleter = deleterDEFAULT;
+        m_getter  = getterDEFAULT;
     } else if (rhs.m_deleter == &deleterUINT8) {
         new(&m_uint8) ValueHolder<std::uint8_t>(rhs.m_uint8);
     } else if (rhs.m_deleter == &deleterINT8) {
@@ -109,7 +118,7 @@ VariantValue& VariantValue::operator=(const VariantValue& rhs)
 
 VariantValue& VariantValue::operator=(VariantValue&& rhs)
 {
-    //cout << "asignement operator called" << endl;
+    //std::cout << "move assignemnt operator called" << std::endl;
     m_deleter(this);
     m_deleter = rhs.m_deleter;
     m_getter = rhs.m_getter;
@@ -257,3 +266,17 @@ bool VariantValue::operator!=(const VariantValue& that) const
     return !(*this == that);
 }
 
+
+void VariantValue::deleterNULL(VariantValue*) noexcept {}
+void VariantValue::deleterDEFAULT(VariantValue* self) noexcept { self->m_impl.~shared_ptr<IValueHolder>(); }
+void VariantValue::deleterUINT8(VariantValue* self) noexcept { self->m_uint8.~ValueHolder<std::uint8_t>();}
+void VariantValue::deleterINT8(VariantValue* self) noexcept { self->m_int8.~ValueHolder<std::int8_t>();}
+void VariantValue::deleterUINT16(VariantValue* self) noexcept { self->m_uint16.~ValueHolder<std::uint16_t>();}
+void VariantValue::deleterINT16(VariantValue* self) noexcept { self->m_int16.~ValueHolder<std::int16_t>();}
+void VariantValue::deleterUINT32(VariantValue* self) noexcept { self->m_uint32.~ValueHolder<std::uint32_t>();}
+void VariantValue::deleterINT32(VariantValue* self) noexcept { self->m_int32.~ValueHolder<std::int32_t>();}
+void VariantValue::deleterUINT64(VariantValue* self) noexcept { self->m_uint64.~ValueHolder<std::uint64_t>();}
+void VariantValue::deleterINT64(VariantValue* self) noexcept { self->m_int64.~ValueHolder<std::int64_t>();}
+void VariantValue::deleterDOUBLE(VariantValue* self) noexcept { self->m_double.~ValueHolder<double>();}
+void VariantValue::deleterFLOAT(VariantValue* self) noexcept { self->m_float.~ValueHolder<float>();}
+void VariantValue::deleterSTRING(VariantValue* self) noexcept { self->m_string.~ValueHolder<std::string>(); }

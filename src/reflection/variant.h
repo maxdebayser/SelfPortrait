@@ -765,14 +765,17 @@ public:
     }
 
     template<class ValueType>
-    VariantValue(const ValueType& t) : m_deleter(deleterDEFAULT), m_getter(getterDEFAULT) {
+    VariantValue(const ValueType& t) : m_deleter(deleterNULL), m_getter(getterNULL) {
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>(t));
+        m_deleter = deleterDEFAULT;
+        m_getter = getterDEFAULT;
     }
 
     template<class ValueType>
-    VariantValue(ValueType* t) : m_deleter(deleterDEFAULT), m_getter(getterDEFAULT) {
-
+    VariantValue(ValueType* t) : m_deleter(deleterNULL), m_getter(getterNULL) {
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType*>(t));
+        m_deleter = deleterDEFAULT;
+        m_getter = getterDEFAULT;
     }
 
 
@@ -837,9 +840,11 @@ public:
     template<class ValueType>
     VariantValue& operator=(ValueType value) {
         m_deleter(this);
-        m_deleter = deleterDEFAULT;
-        m_getter = getterDEFAULT;
+        m_deleter = deleterNULL;
+        m_getter = getterNULL;
         new(&m_impl) shared_ptr<IValueHolder>(new ValueHolder<ValueType>( value ));
+        m_deleter = deleterDEFAULT;
+        m_getter  = getterDEFAULT;
         return *this;
     }
 
@@ -1293,19 +1298,20 @@ private:
     TypeDependentDeleter m_deleter;
     TypeDependentGetter m_getter;
 
-    static void deleterNULL(VariantValue*) noexcept {}
-    static void deleterDEFAULT(VariantValue* self) noexcept { self->m_impl.~shared_ptr<IValueHolder>(); }
-    static void deleterUINT8(VariantValue* self) noexcept { self->m_uint8.~ValueHolder<std::uint8_t>();}
-    static void deleterINT8(VariantValue* self) noexcept { self->m_int8.~ValueHolder<std::int8_t>();}
-    static void deleterUINT16(VariantValue* self) noexcept { self->m_uint16.~ValueHolder<std::uint16_t>();}
-    static void deleterINT16(VariantValue* self) noexcept { self->m_int16.~ValueHolder<std::int16_t>();}
-    static void deleterUINT32(VariantValue* self) noexcept { self->m_uint32.~ValueHolder<std::uint32_t>();}
-    static void deleterINT32(VariantValue* self) noexcept { self->m_int32.~ValueHolder<std::int32_t>();}
-    static void deleterUINT64(VariantValue* self) noexcept { self->m_uint64.~ValueHolder<std::uint64_t>();}
-    static void deleterINT64(VariantValue* self) noexcept { self->m_int64.~ValueHolder<std::int64_t>();}
-    static void deleterDOUBLE(VariantValue* self) noexcept { self->m_double.~ValueHolder<double>();}
-    static void deleterFLOAT(VariantValue* self) noexcept { self->m_float.~ValueHolder<float>();}
-    static void deleterSTRING(VariantValue* self) noexcept { self->m_string.~ValueHolder<std::string>(); }
+    // deleters cannot be inline because the comaparisons against &deleterFoo can fail misteriously
+    static void deleterNULL(VariantValue*) noexcept;
+    static void deleterDEFAULT(VariantValue* self) noexcept;
+    static void deleterUINT8(VariantValue* self) noexcept;
+    static void deleterINT8(VariantValue* self) noexcept;
+    static void deleterUINT16(VariantValue* self) noexcept;
+    static void deleterINT16(VariantValue* self) noexcept;
+    static void deleterUINT32(VariantValue* self) noexcept;
+    static void deleterINT32(VariantValue* self) noexcept;
+    static void deleterUINT64(VariantValue* self) noexcept;
+    static void deleterINT64(VariantValue* self) noexcept;
+    static void deleterDOUBLE(VariantValue* self) noexcept;
+    static void deleterFLOAT(VariantValue* self) noexcept;
+    static void deleterSTRING(VariantValue* self) noexcept;
 
     static constexpr IValueHolder* getterNULL(VariantValue*) noexcept { return nullptr; }
     static IValueHolder* getterDEFAULT(VariantValue* self) noexcept { return self->m_impl.get(); }
