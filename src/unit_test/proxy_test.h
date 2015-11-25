@@ -14,6 +14,7 @@ public:
 	// test methods must begin with "test", otherwise cxxtestgen ignores them
 
 	void testProxy();
+    void testVoidProxy();
 	void testClient();
 	void testLuaAPI();
 };

@@ -571,25 +571,43 @@ struct FuncRegHelper {
 			typedef CLASS ThisClass;\
 			static VariantValue create(std::shared_ptr<ProxyImpl>& pImpl) { VariantValue ret; ret.construct<STUBCLASSNAME>(pImpl); return std::move(ret); }
 
+#define CHECK_N(x, n, ...) n
+#define CHECK(...) CHECK_N(__VA_ARGS__, 0,)
+
+#define IIF(c) TOKENPASTE(IIF_, c)
+#define IIF_0(t, f) f
+#define IIF_1(t, f) t
+
+#define IF_VOID2(ARG) IF_VOID_##ARG
+#define IF_VOID(ARG) IIF(CHECK(IF_VOID2(ARG)))
+#define IF_VOID_void foo, 1,
+
+#define NOTHING
+
+
 #define REFL_STUB_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) override {\
-		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+            IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 #define REFL_STUB_CONST_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const override {\
-		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+            IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 #define REFL_STUB_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) volatile override {\
-		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+            IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 
 #define REFL_STUB_CONST_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const volatile override {\
-		return impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)).moveValueThrow<RESULT>();\
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+            IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 

@@ -19,6 +19,14 @@ namespace ProxyTest {
 	};
 
 
+    class TestVoid {
+    public:
+        virtual ~TestVoid() {}
+
+        virtual void method1(int, int) = 0;
+
+    };
+
 	class Client {
 	private:
 		Test* m_test = nullptr;
@@ -43,6 +51,16 @@ REFL_BEGIN_CLASS(ProxyTest::Test)
 	REFL_DEFAULT_CONSTRUCTOR()
 	REFL_METHOD(method1, int, int, int)
 	REFL_STUB(TestStub)
+REFL_END_CLASS
+
+REFL_BEGIN_STUB(ProxyTest::TestVoid, TestVoidStub)
+REFL_STUB_METHOD(ProxyTest::TestVoid, method1, void, int, int)
+REFL_END_STUB
+
+REFL_BEGIN_CLASS(ProxyTest::TestVoid)
+    REFL_DEFAULT_CONSTRUCTOR()
+    REFL_METHOD(method1, void, int, int)
+    REFL_STUB(TestVoidStub)
 REFL_END_CLASS
 
 REFL_BEGIN_CLASS(ProxyTest::Client)
@@ -94,6 +112,51 @@ void ProxyTestSuite::testProxy()
 	TS_ASSERT_EQUALS(15, result);
 }
 
+
+void ProxyTestSuite::testVoidProxy()
+{
+    Class test = Class::lookup("ProxyTest::TestVoid");
+
+    TS_ASSERT(test.isValid());
+    TS_ASSERT(test.isInterface());
+
+    Method m = test.findMethod([](const Method& m){ return m.name() == "method1"; });
+
+    int result = 987;
+
+    VariantValue handle;
+    { // inner scope
+        Proxy proxy(test);
+        Proxy::IFaceList ifaces = proxy.interfaces();
+
+        TS_ASSERT_EQUALS(ifaces.size(), 1)
+        TS_ASSERT_EQUALS(ifaces.front(), test)
+
+        proxy.addImplementation(m, [&](const ArgArray& args) -> VariantValue {
+            TS_ASSERT(args.size() == 2);
+            TS_ASSERT(args[0].isA<int>());
+            TS_ASSERT(args[1].isA<int>());
+            int first = args[0].value<int>();
+            int second = args[1].value<int>();
+            result = first*second;
+            return VariantValue();
+        });
+
+        TS_ASSERT(proxy.hasImplementation(m));
+
+        handle = proxy.reference(test);
+    }
+
+    TS_ASSERT(handle.isValid());
+
+    TS_ASSERT(handle.isA<ProxyTest::TestVoid>());
+    TS_ASSERT(handle.isA<ProxyTest::TestVoid&>());
+
+    auto& stub = handle.convertTo<ProxyTest::TestVoid&>();
+
+    stub.method1(3,6);
+    //TS_ASSERT_EQUALS(18, result);
+}
 
 void ProxyTestSuite::testClient()
 {
