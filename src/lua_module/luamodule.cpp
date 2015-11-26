@@ -211,8 +211,10 @@ VariantValue Lua_Variant::getFromStack(lua_State* L, int idx)
 			}
 			break;
 		}
-		default: {
-			luaL_error(L, "unknown type cannot be converted to variant");
+        case LUA_TNIL:
+            break;
+        default: {
+            luaL_error(L, "unknown type at index %d cannot be converted to variant", idx);
 			break;
 		}
 	}
