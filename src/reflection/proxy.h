@@ -35,9 +35,10 @@ public:
     VariantValue callArgArray(size_t method_hash, const ArgArray& vargs) const;
 
 	template<class... Args>
-	VariantValue call(size_t method_hash, const Args&... args) const {
+    VariantValue call(size_t method_hash, Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(method_hash, vargs );
 	}
 

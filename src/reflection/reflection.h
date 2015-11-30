@@ -173,7 +173,7 @@ public:
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(vargs);
 	}
 
@@ -248,31 +248,31 @@ public:
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(vargs );
 	}
 	template<class... Args>
 	VariantValue call(VariantValue& object, Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const VariantValue& object, Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(volatile VariantValue& object, Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(object, vargs );
 	}
 	template<class... Args>
 	VariantValue call(const volatile VariantValue& object, Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(object, vargs );
 	}
 
@@ -503,7 +503,7 @@ public:
 	template<class... Args>
 	VariantValue call(Args&&... args) const {
         ArgArray vargs;
-		emplace(vargs, args...);
+        variant_construct(vargs, std::forward<Args>(args)...);
 		return callArgArray(vargs);
 	}
 

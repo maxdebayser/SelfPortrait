@@ -218,6 +218,12 @@ public:
     const_iterator end() const {
         return {this, Base::size() };
     }
+
+    reference front() { return *(access_elem(0)); }
+    const_reference front() const { return *(access_elem(0)); }
+
+    reference back() { return *(access_elem(Base::size()-1)); }
+    const_reference back() const { return *(access_elem(Base::size()-1)); }
 };
 
 

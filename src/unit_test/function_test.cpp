@@ -271,7 +271,7 @@ void FunctionTestSuite::testParametersByValue()
 	int reflectionMoves = CopyCount::numberOfMoves();
 
 	TS_ASSERT_EQUALS(reflectionCopies, 1);
-    TS_ASSERT_EQUALS(reflectionMoves,  1);
+    TS_ASSERT_EQUALS(reflectionMoves,  0);
 	TS_ASSERT(!c.hasBeenMoved());
 }
 
@@ -287,13 +287,12 @@ void FunctionTestSuite::testParametersByReference()
 	TS_ASSERT_EQUALS(paramByReference(c), 45);
 	TS_ASSERT_EQUALS(c.id(), 45);
 	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT_EQUALS(CopyCount::numberOfMoves(), 0);
 
-	VariantValue param;
-	param.construct<CopyCount&>(c);
-
-	VariantValue r = f.call(param);
+    VariantValue r = f.call(c);
 
 	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT_EQUALS(CopyCount::numberOfMoves(), 0);
 	TS_ASSERT(r.isValid());
 	TS_ASSERT_EQUALS(r.value<int>(), 46);
 	TS_ASSERT_EQUALS(c.id(), 46);
@@ -311,13 +310,12 @@ void FunctionTestSuite::testParametersByConstReference()
 	TS_ASSERT_EQUALS(paramByConstReference(c), 44);
 	TS_ASSERT_EQUALS(c.id(), 44);
 	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT_EQUALS(CopyCount::numberOfMoves(), 0);
 
-	VariantValue param;
-	param.construct<CopyCount&>(c);
-
-	VariantValue r = f.call(param);
+    VariantValue r = f.call(c);
 
 	TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT_EQUALS(CopyCount::numberOfMoves(), 0);
 	TS_ASSERT(r.isValid());
 	TS_ASSERT_EQUALS(r.value<int>(), 44);
 	TS_ASSERT_EQUALS(c.id(), 44);

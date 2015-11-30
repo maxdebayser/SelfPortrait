@@ -24,6 +24,13 @@ public:
 	void testFullName();
 	void testMethodOverriding();
     void testLoggerCase();
+
+    void testReturnByValue();
+    void testReturnByReference();
+    void testReturnByConstReference();
+    void testParametersByValue();
+    void testParametersByReference();
+    void testParametersByConstReference();
 };
 
 

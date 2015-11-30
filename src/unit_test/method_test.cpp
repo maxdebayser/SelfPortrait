@@ -60,7 +60,102 @@ namespace MethodTest {
         static void getLogger5(bool name) {  }
     };
 
+    class CopyCount {
+    public:
+        CopyCount(int id) : m_id(id), m_moved(false) {}
+        CopyCount() : CopyCount(0) {}
+
+        CopyCount(const CopyCount& rhs) : CopyCount(rhs.m_id) {
+            ++s_numCopies;
+        }
+
+        CopyCount(CopyCount&& rhs) : CopyCount(rhs.m_id) {
+            ++s_numMoves;
+            rhs.m_moved = true;
+        }
+
+        CopyCount& operator=(const CopyCount& rhs) {
+            m_id = rhs.m_id;
+            ++s_numCopies;
+            return *this;
+        }
+
+        CopyCount& operator=(CopyCount&& rhs) {
+            m_id = rhs.m_id;
+            ++s_numMoves;
+            rhs.m_moved = true;
+            return *this;
+        }
+
+        int id() const { return m_id; }
+
+        void changeId(int newId) {
+            m_id = newId;
+        }
+
+        static void resetCopyCount() {
+            s_numCopies = 0;
+        }
+        static int numberOfCopies() {
+            return s_numCopies;
+        }
+        static void resetMoveCount() {
+            s_numMoves = 0;
+        }
+        static int numberOfMoves() {
+            return s_numMoves;
+        }
+        static void resetAll() {
+            resetCopyCount();
+            resetMoveCount();
+        }
+
+        bool hasBeenMoved() {
+            return m_moved;
+        }
+
+    private:
+        static int s_numCopies;
+        static int s_numMoves;
+        int m_id;
+        bool m_moved;
+    };
+
+    int CopyCount::s_numCopies = 0;
+    int CopyCount::s_numMoves = 0;
+
+    struct TestParamPassing {
+
+        CopyCount returnObjectByValue() {
+            return CopyCount(33);
+        }
+
+        CopyCount& returnObjectByReference() {
+            static CopyCount instance(777);
+            return instance;
+        }
+
+        const CopyCount& returnObjectByConstReference() {
+            static CopyCount instance(888);
+            return instance;
+        }
+
+
+        int paramByValue(CopyCount c) {
+            return c.id();
+        }
+
+        int paramByReference(CopyCount& c) {
+            c.changeId(c.id()+1);
+            return c.id();
+        }
+
+        int paramByConstReference(const CopyCount& c) {
+            return c.id();
+        }
+    };
 }
+
 
 REFL_BEGIN_CLASS(MethodTest::Test1)
 	REFL_DEFAULT_CONSTRUCTOR()
@@ -96,6 +191,19 @@ REFL_STATIC_METHOD(getLogger2, void, const std::basic_string<char>&, std::basic_
 REFL_STATIC_METHOD(getLogger3, void, const std::basic_string<char>&)
 REFL_STATIC_METHOD(getLogger4, void, std::basic_string<char>)
 REFL_STATIC_METHOD(getLogger5, void, bool)
+REFL_END_CLASS
+
+
+REFL_BEGIN_CLASS(MethodTest::CopyCount)
+    REFL_CONSTRUCTOR(int)
+    REFL_CONST_METHOD(id, int)
+    REFL_METHOD(changeId, void, int)
+    REFL_METHOD(hasBeenMoved, bool)
+    REFL_STATIC_METHOD(resetCopyCount, void)
+    REFL_STATIC_METHOD(numberOfCopies, int)
+    REFL_STATIC_METHOD(resetMoveCount, void)
+    REFL_STATIC_METHOD(numberOfMoves, int)
+    REFL_STATIC_METHOD(resetAll, void)
 REFL_END_CLASS
 
 
@@ -436,4 +544,161 @@ void MethodTestSuite::testLoggerCase()
 
     m3.callArgArray(obj, {str1});
     m4.callArgArray(obj, {str1});
+}
+
+
+void MethodTestSuite::testReturnByValue()
+{
+    auto m = make_method<CopyCount(MethodTest::TestParamPassing::*)()>(&method_type<CopyCount(MethodTest::TestParamPassing::*)()>::bindcall<&MethodTest::TestParamPassing::returnObjectByValue>, NULL, NULL, NULL);
+    TestParamPassing inst;
+    VariantValue vinst;
+    vinst.construct<TestParamPassing>();
+
+    CopyCount::resetAll();
+
+    CopyCount c = inst.returnObjectByValue();
+
+    TS_ASSERT_EQUALS(c.id(), 33);
+
+    int directCallCopies = CopyCount::numberOfCopies();
+    CopyCount::resetAll();
+
+    VariantValue v = m.call(vinst);
+
+    int reflectionCopies = CopyCount::numberOfCopies();
+
+    TS_ASSERT(v.isValid());
+
+    CopyCount& ref = v.convertTo<CopyCount&>();
+
+    TS_ASSERT_EQUALS(ref.id(),33);
+
+    TS_ASSERT_EQUALS(directCallCopies, reflectionCopies);
+
+}
+
+void MethodTestSuite::testReturnByReference()
+{
+
+    auto m = make_method<CopyCount& (MethodTest::TestParamPassing::*)()>(&method_type<CopyCount&(MethodTest::TestParamPassing::*)()>::bindcall<&MethodTest::TestParamPassing::returnObjectByReference>, NULL, NULL, NULL);
+    TestParamPassing inst;
+    VariantValue vinst;
+    vinst.construct<TestParamPassing>();
+
+    CopyCount::resetAll();
+    VariantValue v = m.call(vinst);
+    CopyCount& ref = v.convertTo<CopyCount&>();
+
+    TS_ASSERT_EQUALS(ref.id(), 777);
+    ref.changeId(888);
+    TS_ASSERT_EQUALS(inst.returnObjectByReference().id(), 888);
+    TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT(!inst.returnObjectByReference().hasBeenMoved())
+}
+
+
+void MethodTestSuite::testReturnByConstReference()
+{
+
+    auto m = make_method<const CopyCount& (MethodTest::TestParamPassing::*)()>(&method_type<const CopyCount&(MethodTest::TestParamPassing::*)()>::bindcall<&MethodTest::TestParamPassing::returnObjectByConstReference>, NULL, NULL, NULL);
+    TestParamPassing inst;
+    VariantValue vinst;
+    vinst.construct<TestParamPassing>();
+
+    CopyCount::resetAll();
+    VariantValue v = m.call(vinst);
+    TS_ASSERT(v.isValid());
+    bool ok = false;
+    v.convertTo<CopyCount&>(&ok);
+    TS_ASSERT(!ok);
+
+    const CopyCount& cref = v.convertTo<const CopyCount&>(&ok);
+    TS_ASSERT(ok);
+
+    TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+
+    TS_ASSERT_EQUALS(cref.id(), 888);
+    TS_ASSERT_EQUALS(&cref, &inst.returnObjectByConstReference());
+}
+
+
+void MethodTestSuite::testParametersByValue()
+{
+    auto m = make_method<int(MethodTest::TestParamPassing::*)(CopyCount)>(&method_type<int(MethodTest::TestParamPassing::*)(CopyCount)>::bindcall<&MethodTest::TestParamPassing::paramByValue>, NULL, NULL, NULL);
+    TestParamPassing inst;
+    VariantValue vinst;
+    vinst.construct<TestParamPassing>();
+
+    CopyCount::resetAll();
+
+    CopyCount c(77);
+
+    TS_ASSERT_EQUALS(inst.paramByValue(c), 77);
+
+    int directCallCopies = CopyCount::numberOfCopies();
+    int directCallMoves = CopyCount::numberOfMoves();
+    TS_ASSERT_EQUALS(directCallCopies, 1);
+    TS_ASSERT_EQUALS(directCallMoves,  0);
+
+    CopyCount::resetAll();
+
+    VariantValue v = m.call(vinst, c);
+
+    TS_ASSERT(v.isValid());
+    TS_ASSERT_EQUALS(v.value<int>(), 77);
+    int reflectionCopies = CopyCount::numberOfCopies();
+    int reflectionMoves = CopyCount::numberOfMoves();
+
+    TS_ASSERT_EQUALS(reflectionCopies, 1);
+    TS_ASSERT_EQUALS(reflectionMoves,  0);
+    TS_ASSERT(!c.hasBeenMoved());
+}
+
+
+void MethodTestSuite::testParametersByReference()
+{
+
+    auto m = make_method<int(MethodTest::TestParamPassing::*)(CopyCount&)>(&method_type<int(MethodTest::TestParamPassing::*)(CopyCount&)>::bindcall<&MethodTest::TestParamPassing::paramByReference>, NULL, NULL, NULL);
+    TestParamPassing inst;
+    VariantValue vinst;
+    vinst.construct<TestParamPassing>();
+
+    CopyCount::resetAll();
+
+    CopyCount c(44);
+
+    TS_ASSERT_EQUALS(inst.paramByReference(c), 45);
+    TS_ASSERT_EQUALS(c.id(), 45);
+    TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+
+    VariantValue r = m.call(vinst, c);
+
+    TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT(r.isValid());
+    TS_ASSERT_EQUALS(r.value<int>(), 46);
+    TS_ASSERT_EQUALS(c.id(), 46);
+}
+
+
+void MethodTestSuite::testParametersByConstReference()
+{
+    auto m = make_method<int(MethodTest::TestParamPassing::*)(const CopyCount&)>(&method_type<int(MethodTest::TestParamPassing::*)(const CopyCount&)>::bindcall<&MethodTest::TestParamPassing::paramByConstReference>, NULL, NULL, NULL);
+    TestParamPassing inst;
+    VariantValue vinst;
+    vinst.construct<TestParamPassing>();
+
+    CopyCount::resetAll();
+
+    CopyCount c(44);
+
+    TS_ASSERT_EQUALS(inst.paramByConstReference(c), 44);
+    TS_ASSERT_EQUALS(c.id(), 44);
+    TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+
+    VariantValue r = m.call(vinst, c);
+
+    TS_ASSERT_EQUALS(CopyCount::numberOfCopies(), 0);
+    TS_ASSERT(r.isValid());
+    TS_ASSERT_EQUALS(r.value<int>(), 44);
+    TS_ASSERT_EQUALS(c.id(), 44);
 }

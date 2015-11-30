@@ -338,9 +338,9 @@ public:
 
 	virtual void throwCast() const = 0;
 	
-    virtual ::std::string convertToString() const noexcept = 0;
+    virtual ::std::string convertToString() const = 0;
 
-    virtual number_return convertToNumber(NumberType t) const noexcept = 0;
+    virtual number_return convertToNumber(NumberType t) const = 0;
 
 	virtual ~IValueHolder() noexcept {}
 	IValueHolder() = default;
@@ -507,7 +507,7 @@ template <class T>
 class ValueHolder<T&>: public IValueHolder {
 public:
     typedef T& RefType;
-    typedef typename normalize_type<T&>::type ValueType;
+    typedef T ValueType;
 private:
 
     template<class Dummy,bool OK>
@@ -536,7 +536,7 @@ private:
 
     template<class U>
     struct CompareHelper<U, false> {
-        static bool equal(const U& u1, const U& u2) {
+        static bool equal(const U&, const U& ) {
             throw std::runtime_error("no equality operator exists for type");
         }
     };
@@ -1153,13 +1153,13 @@ public:
 
         auto ptrc = isAPriv<const ValueType>();
         if (ptrc != nullptr) {
-            return *ptrc;
+            return static_cast<typename converter<ValueType>::type>(*ptrc);
         }
         auto pptr = isAPriv<const typename normalize_type<ValueType>::ptr_type>();
         if (pptr != nullptr) {
-            return **pptr;
+            return static_cast<typename converter<ValueType>::type>(**pptr);
         }
-        return converter<ValueType>::value(impl());
+        return static_cast<typename converter<ValueType>::type>(converter<ValueType>::value(impl()));
 	}
 
 

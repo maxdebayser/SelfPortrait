@@ -17,6 +17,12 @@ public:
     void testVoidProxy();
 	void testClient();
 	void testLuaAPI();
+    void testReturnByValue();
+    void testReturnByReference();
+    void testReturnByConstReference();
+    void testParametersByValue();
+    void testParametersByReference();
+    void testParametersByConstReference();
 };
 
 

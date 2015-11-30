@@ -40,7 +40,7 @@ struct constructor_type {
         static VariantValue call(const ArgArray& args) {
             //verify_call<Arguments, I...>(args);
 			VariantValue ret;
-            ret.construct<Clazz>(args[I].moveValueThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
+            ret.construct<Clazz>(args[I].convertToThrow<typename type_at<Arguments, I>::type>("error at argument %1: %2", I)...);
 			return ret;
 		}
 	};

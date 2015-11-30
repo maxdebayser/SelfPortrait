@@ -112,8 +112,8 @@ function testParameterByValue()
     local copies = methods["numberOfCopies"]:call()
     local moves = methods["numberOfMoves"]:call()
 
-    TS_ASSERT[[ copies:tonumber() == 0 ]] --estranho
-    TS_ASSERT[[ moves:tonumber() == 1 ]]
+    TS_ASSERT[[ copies:tonumber() == 1 ]]
+    TS_ASSERT[[ moves:tonumber() == 0 ]]
 
     return true
 end

@@ -19,6 +19,10 @@ public:
 	void testClassRef();
 
     void testCaseGregorian();
+
+    void testParametersByValue();
+    void testParametersByReference();
+    void testParametersByConstReference();
 };
 
 

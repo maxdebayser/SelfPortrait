@@ -455,6 +455,7 @@ struct FuncRegHelper {
 #define _ARGNAME(x, n) ARGNAMEN(x, n)
 #define ARGNAME(...) _ARGNAME(a, NARG(__VA_ARGS__))
 
+
 #define TYPE_ARGNAME_0(...)
 #define TYPE_ARGNAME_1(type) type a1
 #define TYPE_ARGNAME_2(type, ...) type a2, TYPE_ARGNAME_1(__VA_ARGS__)
@@ -583,30 +584,41 @@ struct FuncRegHelper {
 #define IF_VOID_void foo, 1,
 
 #define NOTHING
+#define EMPTY100(...) _ARG100(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+#define EMPTY_01(...) 0
+#define EMPTY_00(...) EMPTY100(__VA_ARGS__)
+#define EMPTY_11(...) EMPTY100(__VA_ARGS__)
+
+#define __EMPTY(N1, N2, ...) EMPTY_##N1##N2(__VA_ARGS__)
+#define _EMPTY(N1, N2, ...) __EMPTY(N1, N2,__VA_ARGS__)
+#define EMPTY(...) _EMPTY(HAS_COMMA(__VA_ARGS__), HAS_COMMA(_TRIGGER_PARENTHESIS_ __VA_ARGS__ ()),__VA_ARGS__)
+
+#define PRODUCE_COMMA(...) IIF(EMPTY(__VA_ARGS__))(COMMA, ) __VA_ARGS__
 
 
 #define REFL_STUB_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__)>::bindcall<&CLASS::METHOD_NAME>) PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 #define REFL_STUB_CONST_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 #define REFL_STUB_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) volatile override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 
 #define REFL_STUB_CONST_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const volatile override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), ARGNAME(__VA_ARGS__)) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 

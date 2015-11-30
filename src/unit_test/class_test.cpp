@@ -105,7 +105,7 @@ REFL_BEGIN_CLASS(ClassTest::Test1)
 	REFL_CONSTRUCTOR(int)
 	REFL_CONSTRUCTOR(const ClassTest::Test1&)
 	REFL_METHOD(operator=, ClassTest::Test1&, const ClassTest::Test1&)
-	REFL_METHOD(operator=, ClassTest::Test1&, ClassTest::Test1&&)
+    REFL_METHOD(operator=, ClassTest::Test1&, ClassTest::Test1&&)
 	REFL_METHOD(returnsRefToAbstract, ClassTest::TestBase1&)
 REFL_END_CLASS
 

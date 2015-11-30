@@ -15,8 +15,22 @@ inline void emplace(ArgArray& v )
 template<class T, class... U>
 inline void emplace(ArgArray& v, T&& t, U&&... u )
 {
-	v.emplace_back(t);
+    v.emplace_back(t);
 	emplace(v, u...);
+}
+
+inline void variant_construct(ArgArray& v )
+{
+    // nothing to do
+}
+
+
+template<class T, class... U>
+inline void variant_construct(ArgArray& v, T&& t, U&&... u )
+{
+    v.emplace_back();
+    v.back().construct<T>(t);
+    variant_construct(v, u...);
 }
 
 
