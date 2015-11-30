@@ -605,20 +605,20 @@ struct FuncRegHelper {
 
 #define REFL_STUB_CONST_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>), PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const>::bindcall<&CLASS::METHOD_NAME>) PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 #define REFL_STUB_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) volatile override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>), PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) volatile>::bindcall<&CLASS::METHOD_NAME>) PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
 
 #define REFL_STUB_CONST_VOLATILE_METHOD(CLASS, METHOD_NAME, RESULT, ...) \
 	RESULT METHOD_NAME ( TYPE_ARGNAME(__VA_ARGS__) ) const volatile override {\
-        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>), PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
+        IF_VOID(RESULT)(NOTHING, return) impl->call(reinterpret_cast<size_t>(&method_type<RESULT(CLASS::*)(__VA_ARGS__) const volatile>::bindcall<&ThisClass::METHOD_NAME>) PRODUCE_COMMA(ARGNAME(__VA_ARGS__))) \
             IF_VOID(RESULT)(NOTHING, .moveValueThrow<RESULT>());\
 	}
 
