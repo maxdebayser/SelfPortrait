@@ -27,6 +27,11 @@ namespace {
     bool operator==(const comparable_template<T>& t1, const comparable_template<T>& t2) {
         return  t1.t == t2.t;
     }
+
+    struct Event {
+        int e;
+    };
+
 }
 
 
@@ -82,4 +87,6 @@ void TypeUtilsTestSuite::testMeta()
 
     static_assert(strconv::convertible_from_string<std::unique_ptr<int>>() == false, "");
     static_assert(strconv::convertible_from_string<Comparable>() == false, "");
+
+    static_assert(comparable<const std::vector<Event>&>::value == false ,"");
 }

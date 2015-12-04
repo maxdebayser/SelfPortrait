@@ -58,12 +58,28 @@ struct equal_test_helper {
     static std::false_type supports_equal_test(...);
 };
 
+template<class T>
+struct equal_test_helper<const T> {
+    static decltype(equal_test_helper<T>::supports_equal_test(std::declval<T>()))  supports_equal_test(const T&);
+};
+
+template<class T>
+struct equal_test_helper<T&> {
+    static decltype(equal_test_helper<T>::supports_equal_test(std::declval<T>()))  supports_equal_test(const T&);
+};
+
+template<class T>
+struct equal_test_helper<const T&> {
+    static decltype(equal_test_helper<T>::supports_equal_test(std::declval<T>()))  supports_equal_test(const T&);
+};
+
 // disable all templates
 template<template <typename...> class templClass, typename... T>
 struct equal_test_helper<templClass<T...>> {
     template <class U>
     static std::false_type supports_equal_test(const U&);
 };
+
 
 // enable basic_string if value_type is comparable
 template<class T, class Traits, class Alloc>
@@ -77,6 +93,7 @@ template<class T, class Alloc>
 struct equal_test_helper<std::vector<T, Alloc>> {
     static decltype(equal_test_helper<T>::supports_equal_test(std::declval<T>()))  supports_equal_test(const std::vector<T, Alloc>&);
 };
+
 
 // enable list if value_type is comparable
 template<class T, class Alloc>
