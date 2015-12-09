@@ -17,7 +17,7 @@ function TS_ASSERT(code)
     local info = debug.getinfo(2, "Sluf");
 
     local calling_globals = {}
-    if _VERSION == "Lua 5.2" then
+    if _VERSION == "Lua 5.2" or _VERSION == "Lua 5.3" then
         --calling_globals = debug.getlocal(2, i)
         for i=1,math.huge do
             local name, value = debug.getupvalue(info.func, i)
@@ -65,7 +65,7 @@ function TS_ASSERT(code)
 
     local func, err
     local chunk = "return "..code
-    if _VERSION == "Lua 5.2" then
+    if _VERSION == "Lua 5.2" or _VERSION == "Lua 5.3" then
         func, err = load(chunk, chunk, "t", env)
     else
         func, err = loadstring(chunk)
