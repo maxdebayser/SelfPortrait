@@ -76,5 +76,5 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Mon Nov 03 2014 Maximilien de Bayser <maxdebayser@gmail.com> 0.2
 - Install the lua module in a location that is on the "luarocks path"
-* Thu Oct 08 2014 Maximilien de Bayser <maxdebayser@gmail.com> 0.1
+* Wed Oct 08 2014 Maximilien de Bayser <maxdebayser@gmail.com> 0.1
 - Package first created for g++-4.9, built without parser
