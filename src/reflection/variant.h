@@ -1265,6 +1265,7 @@ public:
 	
 	// If the type is a POD and you know what you're doing, you can memcpy it, but beware of the alignment
 	const void * ptrToValue() const;
+    void * ptrToValue();
 
     /* These two cannot be global functions, otherwise implicit
      * type conversions and suddenly everything is comparable

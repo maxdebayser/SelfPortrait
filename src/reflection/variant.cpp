@@ -236,6 +236,13 @@ const void * VariantValue::ptrToValue() const
     return impl()->ptrToValue();
 }
 
+// If the type is a POD and you know what you're doing, you can memcpy it, but beware of the alignment
+void * VariantValue::ptrToValue()
+{
+    check_valid();
+    return impl()->ptrToValue();
+}
+
 bool VariantValue::operator==(const VariantValue& that) const
 {
 
