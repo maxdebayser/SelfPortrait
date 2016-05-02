@@ -20,6 +20,7 @@ public:
 	void testHash();
 	void testClassRef();
     void testNonAssignableAttribute();
+    void testNonCopyableAttribute();
 };
 
 

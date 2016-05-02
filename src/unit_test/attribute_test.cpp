@@ -44,6 +44,20 @@ namespace AttributeTest {
         std::unique_ptr<int> attr1;
     };
 
+    struct NonCopyable {
+        int foo;
+        NonCopyable() {}
+        NonCopyable(const NonCopyable&) = delete;
+        NonCopyable(NonCopyable&&) = delete;
+    };
+
+    class Test4 {
+    public:
+        Test4() {}
+        NonCopyable attr1;
+        char attr2[36];
+    };
+
 }
 
 REFL_BEGIN_CLASS(AttributeTest::Test)
@@ -61,6 +75,11 @@ REFL_END_CLASS
 
 REFL_BEGIN_CLASS(AttributeTest::Test3)
 REFL_ATTRIBUTE(attr1, std::unique_ptr<int>)
+REFL_END_CLASS
+
+REFL_BEGIN_CLASS(AttributeTest::Test4)
+REFL_ATTRIBUTE(attr1, AttributeTest::NonCopyable)
+REFL_ATTRIBUTE(attr2, char[36])
 REFL_END_CLASS
 
 using namespace AttributeTest;
@@ -208,4 +227,26 @@ void AttributeTestSuite::testClassRef()
 void AttributeTestSuite::testNonAssignableAttribute()
 {
     static_assert(std::is_copy_assignable<std::unique_ptr<int>>::value == false, "unique_ptr should not be assignable");
+}
+
+
+
+void AttributeTestSuite::testNonCopyableAttribute()
+{
+    Class Test4T = Class::lookup(typeid(AttributeTest::Test4));
+    TS_ASSERT(Test4T.isValid());
+    AttributeTest::Test4 inst;
+
+    Attribute attr1 = Test4T.attributes().front();
+    TS_ASSERT(attr1.isValid());
+
+    VariantValue v1 = attr1.get(&inst);
+
+    TS_ASSERT_EQUALS(v1.sizeOf(), sizeof(NonCopyable));
+
+    Attribute attr2 = Test4T.attributes().back();
+    TS_ASSERT(attr2.isValid());
+
+    VariantValue v2 = attr2.get(&inst);
+    TS_ASSERT_EQUALS(v2.sizeOf(), 36);
 }

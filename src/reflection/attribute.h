@@ -55,12 +55,14 @@ struct attribute_type<_Type _Clazz::*> {
 	
     static VariantValue get(Clazz& object, ptr_to_attr ptr) {
         VariantValue ret;
-        return ret.construct<Type&>(object.*ptr);
+        ret.construct<Type&>(object.*ptr);
+        return std::move(ret);
 	}
 
     static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
         VariantValue ret;
-        return ret.construct<const Type&>(object.*ptr);
+        ret.construct<const Type&>(object.*ptr);
+        return std::move(ret);
     }
 	
 	static void set(Clazz& object, ptr_to_attr ptr, const VariantValue& value) {
@@ -89,7 +91,8 @@ struct attribute_type<const _Type _Clazz::*> {
 
     static VariantValue get(const Clazz& object, ptr_to_attr ptr) {
         VariantValue ret;
-        return ret.construct<const Type&>(object.*ptr);
+        ret.construct<const Type&>(object.*ptr);
+        return std::move(ret);
     }
 
     // const and non-const references bind to this
@@ -176,7 +179,7 @@ public:
 			throw ::std::runtime_error("cannot get value of non-static property without an object");
 		}
         VariantValue v;
-        return this->get(v, false);
+        return std::move(this->get(v, false));
 	}
 
 	void set(const VariantValue& value) const {
@@ -243,13 +246,13 @@ public:
             if (!success) {
                 throw ::std::runtime_error("accessing attribute of an object of a different class");
             }
-            return ADescr::get(ref, m_ptr);
+            return std::move(ADescr::get(ref, m_ptr));
         } else {
             Clazz& ref = object.convertTo<Clazz&>(&success);
             if (!success) {
                 throw ::std::runtime_error("accessing attribute of an object of a different class");
             }
-            return ADescr::get(ref, m_ptr);
+            return std::move(ADescr::get(ref, m_ptr));
         }
 	}
 
@@ -291,7 +294,7 @@ public:
 			  )
 		, m_ptr(ptr) {}
 
-    virtual VariantValue get(VariantValue&, bool) const override { return ADescr::get(m_ptr); }
+    virtual VariantValue get(VariantValue&, bool) const override { return std::move(ADescr::get(m_ptr)); }
 
 	virtual void set(bool isConst, const VariantValue& object, const VariantValue& value) const override {
 		ADescr::set(m_ptr, value);
